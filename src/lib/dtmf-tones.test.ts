@@ -28,7 +28,10 @@ describe("DTMF frequency table", () => {
 });
 
 describe("playDtmfTone", () => {
-  const oscillators: Array<{ frequency: { setValueAtTime: ReturnType<typeof vi.fn> }; start: ReturnType<typeof vi.fn> }> = [];
+  const oscillators: Array<{
+    frequency: { setValueAtTime: ReturnType<typeof vi.fn> };
+    start: ReturnType<typeof vi.fn>;
+  }> = [];
 
   beforeEach(() => {
     oscillators.length = 0;

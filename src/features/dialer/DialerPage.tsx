@@ -1,11 +1,15 @@
 import { Delete, Phone, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
 
 import { StatusDot } from "@/components/RegistrationBadge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { isOverlayOpen, isShortcut, isTypingTarget } from "@/lib/keyboard";
 import { looksDialable, sanitizeDialInput } from "@/lib/phone";
+import { redialValue } from "@/lib/redial";
 import { cn } from "@/lib/utils";
+import { errorMessage, telephony } from "@/services/telephony";
 import { selectDefaultAccount, useAccountsStore } from "@/stores/accounts-store";
 import { useCallsStore } from "@/stores/calls-store";
 import { isEngineRunning, useEngineStore } from "@/stores/engine-store";
@@ -27,17 +31,31 @@ export function DialerPage() {
   const setSection = useUiStore((s) => s.setSection);
   const dialing = useCallsStore((s) => s.dialing);
   const dial = useCallsStore((s) => s.dial);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => inputRef.current?.focus(), []);
-
   const usable = useMemo(() => accounts.filter((a) => a.enabled), [accounts]);
   const selected = usable.find((a) => a.id === dialAccountId) ?? selectDefaultAccount(usable);
   const selectedState = selected ? (statuses[selected.id]?.state ?? "disconnected") : "disconnected";
-  const canCall = looksDialable(dialValue) && !dialing && !!selected && isEngineRunning(engine);
+  const canPlace = !dialing && !!selected && isEngineRunning(engine);
+
+  /** Empty display + "Appeler": bring back the number of the last outgoing call (the user then confirms). */
+  const fillWithLastNumber = async () => {
+    try {
+      const [last] = await telephony.listHistory({ kind: "outgoing", limit: 1 });
+      if (!last) {
+        toast.info("Aucun appel sortant à rappeler");
+        return;
+      }
+      setDialValue(sanitizeDialInput(redialValue(last, accounts)));
+    } catch (e) {
+      toast.error(errorMessage(e));
+    }
+  };
 
   const place = async () => {
-    if (!canCall) return;
+    if (!canPlace) return;
+    if (!looksDialable(dialValue)) {
+      await fillWithLastNumber();
+      return;
+    }
     const call = await dial(dialValue.trim(), dialAccountId ?? selected?.id ?? null);
     if (call) {
       setDialValue("");
@@ -45,10 +63,50 @@ export function DialerPage() {
     }
   };
 
-  const append = (k: string) => {
-    setDialValue(sanitizeDialInput(dialValue + k));
-    inputRef.current?.focus();
-  };
+  const append = (k: string) => setDialValue(sanitizeDialInput(dialValue + k));
+
+  // The keyboard listener below outlives renders: it always calls the latest `place`.
+  const placeRef = useRef<() => Promise<void>>(async () => {});
+  useEffect(() => {
+    placeRef.current = place;
+  });
+
+  // Keys that are not keypad buttons (the keypad handles 0-9 * # itself): editing, calling, SIP-address characters.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || isShortcut(e) || isTypingTarget(e.target) || isOverlayOpen()) return;
+      const { dialValue: value } = useUiStore.getState();
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        setDialValue(e.altKey ? "" : value.slice(0, -1));
+      } else if (e.key === "Escape" || e.key === "Delete") {
+        if (value) {
+          e.preventDefault();
+          setDialValue("");
+        }
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (!e.repeat) void placeRef.current();
+      } else if (e.key.length === 1 && /^[A-Za-z@._:+ -]$/.test(e.key) && !(e.key === " " && value === "")) {
+        e.preventDefault();
+        setDialValue(sanitizeDialInput(value + e.key));
+      }
+    };
+    const onPaste = (e: ClipboardEvent) => {
+      if (isTypingTarget(e.target) || isOverlayOpen()) return;
+      const text = e.clipboardData?.getData("text") ?? "";
+      const line = text.split(/\r?\n/)[0]?.trim() ?? "";
+      if (!line) return;
+      e.preventDefault();
+      setDialValue(sanitizeDialInput(line));
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("paste", onPaste);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("paste", onPaste);
+    };
+  }, [setDialValue]);
 
   if (accounts.length === 0) {
     return (
@@ -94,24 +152,25 @@ export function DialerPage() {
       )}
 
       <div className="relative">
-        <input
-          ref={inputRef}
-          value={dialValue}
-          onChange={(e) => setDialValue(sanitizeDialInput(e.target.value))}
-          onKeyDown={(e) => e.key === "Enter" && void place()}
-          inputMode="tel"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder="Numéro ou adresse SIP"
+        <div
+          role="textbox"
+          aria-readonly="true"
           aria-label="Numéro à appeler"
+          data-testid="dial-display"
+          data-selectable
           className={cn(
-            "bg-card h-16 w-full rounded-2xl border px-14 text-center font-medium tracking-wide shadow-xs outline-none",
-            "placeholder:text-muted-foreground placeholder:text-base placeholder:font-normal placeholder:tracking-normal",
-            "focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px]",
+            "bg-card flex h-16 w-full items-center justify-center rounded-2xl border px-14 text-center font-medium tracking-wide shadow-xs",
             dialValue.length > 14 ? "text-lg" : "text-2xl",
           )}
-        />
+        >
+          {dialValue ? (
+            <span className="min-w-0 truncate">{dialValue}</span>
+          ) : (
+            <span className="text-muted-foreground text-base font-normal tracking-normal">
+              Tapez un numéro ou une adresse SIP
+            </span>
+          )}
+        </div>
         {dialValue && (
           <Button
             variant="ghost"
@@ -126,11 +185,12 @@ export function DialerPage() {
         )}
       </div>
 
-      <Dialpad onKey={append} onLongZero={() => append("+")} />
+      <Dialpad captureKeyboard onKey={append} onLongZero={() => append("+")} />
 
       <Button
         size="lg"
-        disabled={!canCall}
+        disabled={!canPlace}
+        title={looksDialable(dialValue) ? undefined : "Rappeler le dernier numéro composé"}
         onClick={() => void place()}
         className="bg-success text-success-foreground hover:bg-success/90 h-14 w-full rounded-2xl text-base font-semibold"
       >

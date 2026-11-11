@@ -164,7 +164,7 @@ export function CallPanel({ call }: { call: Call }) {
           </div>
 
           {showKeypad && inDialog && (
-            <Dialpad compact className="w-full max-w-64" onKey={(k) => void sendDtmf(call.id, k)} />
+            <Dialpad compact captureKeyboard className="w-full max-w-64" onKey={(k) => void sendDtmf(call.id, k)} />
           )}
 
           <Button
