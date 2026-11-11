@@ -226,6 +226,12 @@ impl UiSink for RecordingSink {
             .unwrap()
             .push(Seen::AudioError(m.to_owned()));
     }
+    fn audio_level(&self, call_id: &str, tx: bool, _db: f32) {
+        self.events.lock().unwrap().push(Seen::Level {
+            call_id: call_id.to_owned(),
+            tx,
+        });
+    }
 }
 
 struct Rig {
