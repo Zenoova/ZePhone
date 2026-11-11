@@ -1,9 +1,35 @@
 import { cn } from "@/lib/utils";
+import { VoiceOrb } from "@/components/VoiceOrb";
 import { isTerminal, useCallsStore } from "@/stores/calls-store";
 import { countUnseenMissed, useHistoryStore } from "@/stores/history-store";
 import { useUiStore } from "@/stores/ui-store";
 
 import { NAV_ITEMS } from "./nav";
+
+/**
+ * The logo is the voice of the person we are talking to — and, between calls, the same living shape
+ * at rest. Clicking it brings the keypad page (which shows the call when there is one).
+ */
+function SidebarOrb() {
+  const setSection = useUiStore((s) => s.setSection);
+  const callId = useCallsStore((s) => Object.values(s.calls).find((c) => !isTerminal(c))?.id ?? "");
+  return (
+    <button
+      type="button"
+      onClick={() => setSection("dialer")}
+      aria-label="ZePhone : clavier et appel en cours"
+      title="Clavier / appel en cours"
+      data-testid="sidebar-orb"
+      data-in-call={callId !== ""}
+      className="focus-visible:ring-ring/50 hidden items-center gap-2.5 rounded-2xl px-3 pt-4 pb-3 text-left outline-none focus-visible:ring-[3px] sm:flex sm:justify-center lg:justify-start"
+    >
+      <span className="block size-11 shrink-0">
+        <VoiceOrb callId={callId} source="rx" tone="remote" vivid />
+      </span>
+      <span className="hidden text-lg font-semibold tracking-tight lg:inline">ZePhone</span>
+    </button>
+  );
+}
 
 function Badge({ count, tone }: { count: number; tone: "success" | "destructive" }) {
   if (count <= 0) return null;
@@ -23,7 +49,6 @@ function Badge({ count, tone }: { count: number; tone: "success" | "destructive"
 export function Sidebar() {
   const section = useUiStore((s) => s.section);
   const setSection = useUiStore((s) => s.setSection);
-  const liveCount = useCallsStore((s) => Object.values(s.calls).filter((c) => !isTerminal(c)).length);
   const unseenMissed = useHistoryStore((s) => countUnseenMissed(s.entries, s.seenAt));
 
   return (
@@ -31,12 +56,7 @@ export function Sidebar() {
       aria-label="Navigation principale"
       className="bg-sidebar text-sidebar-foreground border-sidebar-border flex shrink-0 border-t sm:w-16 sm:flex-col sm:border-t-0 sm:border-r lg:w-56"
     >
-      <div className="hidden items-center gap-2.5 px-4 pt-5 pb-4 sm:flex sm:justify-center lg:justify-start">
-        <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-xl text-base font-bold">
-          Z
-        </div>
-        <span className="hidden text-lg font-semibold tracking-tight lg:inline">ZePhone</span>
-      </div>
+      <SidebarOrb />
       <ul className="flex flex-1 justify-around gap-1 p-1.5 sm:flex-col sm:justify-start sm:p-2">
         {NAV_ITEMS.map(({ id, label, icon: Icon, shortcut }) => {
           const active = section === id;
@@ -57,7 +77,6 @@ export function Sidebar() {
               >
                 <Icon className="size-5 shrink-0" aria-hidden />
                 <span className="sm:sr-only lg:not-sr-only">{label}</span>
-                {id === "calls" && <Badge count={liveCount} tone="success" />}
                 {id === "history" && <Badge count={unseenMissed} tone="destructive" />}
               </button>
             </li>

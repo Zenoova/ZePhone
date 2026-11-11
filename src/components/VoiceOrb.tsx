@@ -23,6 +23,8 @@ interface VoiceOrbProps {
   paused?: boolean;
   /** Gentle breathing even without sound (ringing, connecting). */
   idle?: boolean;
+  /** Livelier idle motion and a bigger body: for small orbs (the sidebar logo) that must read at a glance. */
+  vivid?: boolean;
   className?: string;
 }
 
@@ -32,12 +34,21 @@ const POINTS = 72;
  * A living blob that swells and ripples with the voice, in the spirit of ChatGPT's voice mode. It reads the
  * live level every animation frame (no React re-render) and smooths it: fast attack, slow release.
  */
-export function VoiceOrb({ callId, source, tone = "remote", muted, paused, idle = true, className }: VoiceOrbProps) {
+export function VoiceOrb({
+  callId,
+  source,
+  tone = "remote",
+  muted,
+  paused,
+  idle = true,
+  vivid,
+  className,
+}: VoiceOrbProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Props are read inside the animation loop through a ref so the loop never restarts.
-  const live = useRef({ callId, source, tone, muted, paused, idle });
+  const live = useRef({ callId, source, tone, muted, paused, idle, vivid });
   useEffect(() => {
-    live.current = { callId, source, tone, muted, paused, idle };
+    live.current = { callId, source, tone, muted, paused, idle, vivid };
   });
 
   useEffect(() => {
@@ -71,6 +82,7 @@ export function VoiceOrb({ callId, source, tone = "remote", muted, paused, idle 
         p.muted ? "muted" : p.tone,
         fade,
         p.idle && !flat,
+        Boolean(p.vivid),
       );
       raf = requestAnimationFrame(frame);
     };
@@ -110,6 +122,7 @@ function draw(
   tone: OrbTone | "muted",
   fade: number,
   breathe: boolean,
+  vivid: boolean,
 ) {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
@@ -124,10 +137,10 @@ function draw(
 
   const cx = w / 2;
   const cy = h / 2;
-  const base = (Math.min(w, h) / 2) * 0.6; // leave room for the swell and the glow
-  const breath = breathe ? Math.sin(now / 1100) * 0.035 : 0;
+  const base = (Math.min(w, h) / 2) * (vivid ? 0.68 : 0.6); // leave room for the swell and the glow
+  const breath = breathe ? Math.sin(now / 1100) * (vivid ? 0.06 : 0.035) : 0;
   const swell = 1 + level * 0.16 + breath;
-  const amp = 0.04 + level * 0.23;
+  const amp = (vivid ? 0.085 : 0.04) + level * 0.23;
   const { stops, glow } = PALETTE[tone];
 
   const radiusFor = (offset: number, weight: number) => (a: number) =>
