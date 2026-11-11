@@ -248,3 +248,40 @@ pub async fn started_engine(
     engine.start().await.expect("engine should start");
     Some(engine)
 }
+
+/// A bare Baresip engine (no manager) with synthetic audio, loopback-only networking and
+/// the test modules symlinked next to the bundled ones. Plays the role of "the other phone".
+pub async fn remote_phone(
+    tmp: &std::path::Path,
+    name: &str,
+    freq: u32,
+    rx_wav: &std::path::Path,
+    local_port: Option<u16>,
+) -> Option<BaresipEngine> {
+    use zephone_lib::sip::engine::{AudioOverride, EngineOptions};
+    let extra = test_modules_dir()?;
+    let mut paths = sidecar_paths(tmp.join(name))?;
+    let mods = tmp.join(format!("{name}-modules"));
+    std::fs::create_dir_all(&mods).ok()?;
+    for e in std::fs::read_dir(&paths.modules_dir).ok()? {
+        let p = e.ok()?.path();
+        std::os::unix::fs::symlink(&p, mods.join(p.file_name()?)).ok()?;
+    }
+    for m in ["ausine.so", "aufile.so"] {
+        std::os::unix::fs::symlink(extra.join(m), mods.join(m)).ok()?;
+    }
+    paths.modules_dir = mods;
+    let e = BaresipEngine::new(paths);
+    e.set_options(EngineOptions {
+        local_sip_port: local_port,
+        net_interface: Some("127.0.0.1".into()),
+        audio_override: Some(AudioOverride {
+            modules: vec!["ausine".into(), "aufile".into()],
+            source: format!("ausine,{freq}"),
+            player: format!("aufile,{}", rx_wav.display()),
+        }),
+        ..Default::default()
+    });
+    e.start().await.ok()?;
+    Some(e)
+}
