@@ -1,6 +1,6 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
-import type { AccountStatus, Call, EngineInfo } from "@/types/telephony";
+import type { AccountStatus, AudioLevelEvent, Call, EngineInfo } from "@/types/telephony";
 
 /** Event names emitted by the Rust backend (see `src-tauri/src/app/mod.rs`). */
 export const EVENTS = {
@@ -9,6 +9,7 @@ export const EVENTS = {
   callUpdate: "call:update",
   historyChanged: "history:changed",
   audioError: "audio:error",
+  audioLevel: "audio:level",
 } as const;
 
 export interface TelephonyHandlers {
@@ -17,6 +18,7 @@ export interface TelephonyHandlers {
   onCallUpdate?: (call: Call) => void;
   onHistoryChanged?: () => void;
   onAudioError?: (message: string) => void;
+  onAudioLevel?: (level: AudioLevelEvent) => void;
 }
 
 /** Subscribes to every backend event; returns a function that removes all listeners. */
@@ -27,6 +29,7 @@ export async function subscribeTelephony(h: TelephonyHandlers): Promise<() => vo
     listen<Call>(EVENTS.callUpdate, (e) => h.onCallUpdate?.(e.payload)),
     listen<null>(EVENTS.historyChanged, () => h.onHistoryChanged?.()),
     listen<string>(EVENTS.audioError, (e) => h.onAudioError?.(e.payload)),
+    listen<AudioLevelEvent>(EVENTS.audioLevel, (e) => h.onAudioLevel?.(e.payload)),
   ]);
   return () => unlisteners.forEach((u) => u());
 }

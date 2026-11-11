@@ -1,6 +1,8 @@
 import { toast } from "sonner";
 import { create } from "zustand";
 
+import { clearLevels } from "@/lib/audio-levels";
+import { playMuteSound } from "@/lib/ui-sounds";
 import { errorMessage, telephony } from "@/services/telephony";
 import type { Call } from "@/types/telephony";
 
@@ -47,6 +49,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     const pending = timers.get(call.id);
     if (pending) clearTimeout(pending);
     if (terminal) {
+      clearLevels(call.id);
       timers.set(
         call.id,
         setTimeout(() => get().dismiss(call.id), ENDED_LINGER_MS),
@@ -94,7 +97,8 @@ export const useCallsStore = create<CallsState>((set, get) => ({
   toggleMute: async (id) => {
     const call = get().calls[id];
     if (!call) return;
-    await run(() => telephony.setCallMute(id, !call.muted));
+    const muted = !call.muted;
+    if (await run(() => telephony.setCallMute(id, muted))) playMuteSound(muted);
   },
 
   sendDtmf: async (id, digits) => void (await run(() => telephony.sendDtmf(id, digits))),

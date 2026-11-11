@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+import { pushLevel } from "@/lib/audio-levels";
 import { isTauri, subscribeTelephony, telephony } from "@/services/telephony";
 import { useAccountsStore } from "@/stores/accounts-store";
 import { useCallsStore } from "@/stores/calls-store";
@@ -29,6 +30,7 @@ export function useTelephonyBootstrap(): void {
         onCallUpdate: (call) => useCallsStore.getState().apply(call),
         onHistoryChanged: () => void useHistoryStore.getState().load(),
         onAudioError: (message) => toast.error(`Erreur audio : ${message}`),
+        onAudioLevel: (l) => pushLevel(l.callId, l.tx, l.db),
       });
       if (cancelled) {
         unsubscribe();

@@ -198,6 +198,14 @@ export interface AudioDevices {
   outputs: AudioDevice[];
 }
 
+/** Live level of a call's audio (`audio:level` event): `tx` is our microphone, otherwise the remote voice. */
+export interface AudioLevelEvent {
+  callId: string;
+  tx: boolean;
+  /** dBFS, -96 (silence) … 0. */
+  db: number;
+}
+
 export type MicPermission = "notDetermined" | "denied" | "restricted" | "authorized";
 
 // ----------------------------------------------------------------- system
