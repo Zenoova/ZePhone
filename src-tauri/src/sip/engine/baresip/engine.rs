@@ -96,8 +96,15 @@ impl BaresipEngine {
         let client = self.client().await?;
         let resp = client.request(command, params).await?;
         if !resp.ok {
-            let first = redact(resp.data.trim()).lines().find(|l| !l.trim().is_empty()).unwrap_or("").to_owned();
-            return Err(EngineError::CommandFailed(if first.is_empty() { command.to_owned() } else { first }));
+            // Baresip prints context first and the actual error last
+            // ("call uri: ..." then "ua_connect failed: ..."): keep every non-empty line.
+            let text = redact(resp.data.trim())
+                .lines()
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+                .collect::<Vec<_>>()
+                .join(" | ");
+            return Err(EngineError::CommandFailed(if text.is_empty() { command.to_owned() } else { text }));
         }
         Ok(resp)
     }

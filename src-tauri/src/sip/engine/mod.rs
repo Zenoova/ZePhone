@@ -97,6 +97,23 @@ pub struct EngineOptions {
     /// Extra CA bundle used to verify SIP/TLS servers.
     pub ca_file: Option<std::path::PathBuf>,
     pub sip_trace: bool,
+    /// Fixed local SIP port (all interfaces). `None` = ephemeral port chosen by the engine.
+    pub local_sip_port: Option<u16>,
+    /// Restricts the engine to one network interface (e.g. `en0`) or local IP address.
+    pub net_interface: Option<String>,
+    /// Replaces the system audio devices with file/synthetic drivers. Used by the
+    /// automated end-to-end tests (no sound card needed); never set by the app.
+    pub audio_override: Option<AudioOverride>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct AudioOverride {
+    /// Modules to load instead of the platform audio driver (e.g. `ausine`, `aufile`).
+    pub modules: Vec<String>,
+    /// `audio_source` value, e.g. `ausine,440`.
+    pub source: String,
+    /// `audio_player` value, e.g. `aufile,/tmp/out.wav`.
+    pub player: String,
 }
 
 #[derive(Debug, Clone, thiserror::Error)]

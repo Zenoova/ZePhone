@@ -41,6 +41,15 @@ pub fn sanitize_device(name: Option<&str>) -> String {
     }
 }
 
+/// Interface names (`en0`, `Ethernet 2`) and IP literals only.
+pub fn sanitize_interface(v: &str) -> Option<String> {
+    let v = v.trim();
+    let ok = !v.is_empty()
+        && v.len() <= 64
+        && v.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | ':' | '_' | '-' | ' '));
+    ok.then(|| v.to_owned())
+}
+
 /// Default CA bundle for the platform, if one exists on disk.
 pub fn system_ca_file() -> Option<PathBuf> {
     [
@@ -63,6 +72,10 @@ pub struct ConfigInput<'a> {
     pub module_exists: &'a dyn Fn(&str) -> bool,
 }
 
+fn single_line(s: &str) -> String {
+    s.replace(['\n', '\r'], "")
+}
+
 fn path_value(p: &Path) -> String {
     // Config values are single lines.
     p.to_string_lossy().replace(['\n', '\r'], "")
@@ -76,6 +89,7 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     let driver = audio_driver();
     let player = sanitize_device(input.settings.output_device.as_deref());
     let source = sanitize_device(input.settings.input_device.as_deref());
+    let ov = input.settings.audio_override.as_ref();
     let ca = input.settings.ca_file.clone().or_else(system_ca_file);
 
     let mut c = String::new();
@@ -83,9 +97,18 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     c.push_str("call_local_timeout\t120\n");
     c.push_str("call_max_calls\t\t4\n");
     c.push_str("call_hold_other_calls\tyes\n");
-    c.push_str(&format!("audio_player\t\t{driver},{player}\n"));
-    c.push_str(&format!("audio_source\t\t{driver},{source}\n"));
-    c.push_str(&format!("audio_alert\t\t{driver},{player}\n"));
+    match ov {
+        Some(o) => {
+            c.push_str(&format!("audio_player\t\t{}\n", single_line(&o.player)));
+            c.push_str(&format!("audio_source\t\t{}\n", single_line(&o.source)));
+            c.push_str(&format!("audio_alert\t\t{}\n", single_line(&o.player)));
+        }
+        None => {
+            c.push_str(&format!("audio_player\t\t{driver},{player}\n"));
+            c.push_str(&format!("audio_source\t\t{driver},{source}\n"));
+            c.push_str(&format!("audio_alert\t\t{driver},{player}\n"));
+        }
+    }
     c.push_str(&format!("audio_path\t\t{}\n", path_value(input.sounds_dir)));
     c.push_str("ring_aufile\t\tring.wav\n");
     c.push_str("ringback_aufile\t\tringback.wav\n");
@@ -93,6 +116,12 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     c.push_str("audio_jitter_buffer_type\tadaptive\n");
     c.push_str("audio_jitter_buffer_ms\t20-300\n");
     c.push_str("sip_verify_server\tyes\n");
+    if let Some(iface) = input.settings.net_interface.as_deref().and_then(sanitize_interface) {
+        c.push_str(&format!("net_interface\t\t{iface}\n"));
+    }
+    if let Some(port) = input.settings.local_sip_port {
+        c.push_str(&format!("sip_listen\t\t0.0.0.0:{port}\n"));
+    }
     if let Some(ca) = ca {
         c.push_str(&format!("sip_cafile\t\t{}\n", path_value(&ca)));
     }
@@ -105,7 +134,14 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     }
     c.push_str(&format!("module\t\t\tauconv.{ext}\n"));
     c.push_str(&format!("module\t\t\tauresamp.{ext}\n"));
-    c.push_str(&format!("module\t\t\t{driver}.{ext}\n"));
+    match ov {
+        Some(o) => {
+            for m in &o.modules {
+                c.push_str(&format!("module\t\t\t{}.{ext}\n", single_line(m)));
+            }
+        }
+        None => c.push_str(&format!("module\t\t\t{driver}.{ext}\n")),
+    }
     c.push_str(&format!("module\t\t\tsrtp.{ext}\n"));
     c.push_str(&format!("module_app\t\tmenu.{ext}\n"));
     c.push_str(&format!("module_app\t\tctrl_tcp.{ext}\n"));
@@ -226,6 +262,23 @@ mod tests {
         for forbidden in ["cons.so", "httpd.so", "stdio.so", "account.so"] {
             assert!(!cfg.contains(forbidden), "{forbidden} must not be loaded");
         }
+    }
+
+    #[test]
+    fn network_interface_is_sanitised_and_rendered() {
+        assert_eq!(sanitize_interface("en0").as_deref(), Some("en0"));
+        assert_eq!(sanitize_interface("127.0.0.1").as_deref(), Some("127.0.0.1"));
+        assert_eq!(sanitize_interface("en0\nmodule x.so"), None);
+        assert_eq!(sanitize_interface(""), None);
+        let settings = EngineSettings { net_interface: Some("192.168.1.10".into()), ..Default::default() };
+        let cfg = render_config(&ConfigInput {
+            modules_dir: Path::new("/m"),
+            sounds_dir: Path::new("/s"),
+            ctrl_port: 1,
+            settings: &settings,
+            module_exists: &|_| false,
+        });
+        assert!(cfg.contains("net_interface\t\t192.168.1.10\n"));
     }
 
     #[test]
