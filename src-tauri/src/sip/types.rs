@@ -301,6 +301,10 @@ pub struct Call {
     /// Display name announced by the peer, or the matching contact.
     pub remote_name: Option<String>,
     pub muted: bool,
+    /// We put the call on hold (Baresip only reports holds initiated by the remote party).
+    pub held_locally: bool,
+    /// The remote party put the call on hold.
+    pub held_remotely: bool,
     pub created_at: String,
     pub connected_at: Option<String>,
     pub ended_at: Option<String>,

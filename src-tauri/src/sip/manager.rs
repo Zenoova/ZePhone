@@ -83,7 +83,10 @@ struct State {
     tracker: CallTracker,
 }
 
+pub type OptionsHook = Arc<dyn Fn(EngineOptions) -> EngineOptions + Send + Sync>;
+
 pub struct SipManager {
+    options_hook: std::sync::Mutex<Option<OptionsHook>>,
     engine: Arc<dyn SipEngine>,
     db: Arc<Database>,
     secrets: Arc<dyn SecretStore>,
@@ -119,12 +122,27 @@ impl SipManager {
         sink: Arc<dyn UiSink>,
     ) -> Arc<Self> {
         Arc::new(Self {
+            options_hook: Default::default(),
             engine,
             db,
             secrets,
             sink,
             state: Default::default(),
         })
+    }
+
+    /// Adjusts the engine options derived from the settings. Used by the end-to-end tests
+    /// to swap the sound card for synthetic audio; the application never sets it.
+    pub fn set_options_hook(&self, hook: OptionsHook) {
+        *self.options_hook.lock().unwrap() = Some(hook);
+    }
+
+    fn options(&self, settings: &Settings) -> EngineOptions {
+        let base = engine_options(settings);
+        match self.options_hook.lock().unwrap().as_ref() {
+            Some(hook) => hook(base),
+            None => base,
+        }
     }
 
     // ------------------------------------------------------------ lifecycle
@@ -147,7 +165,7 @@ impl SipManager {
         }
 
         let settings = self.db.get_settings()?;
-        self.engine.set_options(engine_options(&settings));
+        self.engine.set_options(self.options(&settings));
 
         let mut rx = self.engine.subscribe();
         let me = self.clone();
@@ -169,7 +187,7 @@ impl SipManager {
     pub async fn restart_engine(self: &Arc<Self>) -> AppResult<()> {
         let settings = self.db.get_settings()?;
         self.engine.stop().await;
-        self.engine.set_options(engine_options(&settings));
+        self.engine.set_options(self.options(&settings));
         self.engine.start().await.map_err(engine_err)
     }
 
@@ -531,20 +549,31 @@ impl SipManager {
 
     pub async fn hold(&self, id: &str) -> AppResult<()> {
         let c = self.known(id)?;
-        if c.state != CallState::Connected {
+        if !matches!(c.state, CallState::Connected | CallState::OnHold) || c.held_locally {
             return Err(AppError::validation(
                 "Seul un appel connecté peut être mis en attente",
             ));
         }
-        self.engine.hold(id).await.map_err(engine_err)
+        self.engine.hold(id).await.map_err(engine_err)?;
+        self.emit_local_hold(id, true);
+        Ok(())
     }
 
     pub async fn resume(&self, id: &str) -> AppResult<()> {
         let c = self.known(id)?;
-        if c.state != CallState::OnHold {
+        if !c.held_locally {
             return Err(AppError::validation("Cet appel n'est pas en attente"));
         }
-        self.engine.resume(id).await.map_err(engine_err)
+        self.engine.resume(id).await.map_err(engine_err)?;
+        self.emit_local_hold(id, false);
+        Ok(())
+    }
+
+    fn emit_local_hold(&self, id: &str, held: bool) {
+        let updated = self.state.lock().unwrap().tracker.set_local_hold(id, held);
+        if let Some(call) = updated {
+            self.sink.call_update(&call);
+        }
     }
 
     pub async fn set_mute(&self, id: &str, muted: bool) -> AppResult<()> {
@@ -596,7 +625,7 @@ impl SipManager {
         let old = self.db.get_settings()?;
         self.db.save_settings(&new)?;
         let mut restart_required = false;
-        self.engine.set_options(engine_options(&new));
+        self.engine.set_options(self.options(&new));
         if old.audio != new.audio
             && let Err(e) = self
                 .engine
@@ -747,6 +776,13 @@ impl SipManager {
                     return;
                 }
                 self.sink.call_update(&update.call);
+                if event == super::engine::CallEvent::Established {
+                    // Baresip holds the other calls when this one becomes active.
+                    let held = self.state.lock().unwrap().tracker.hold_others(&r.id);
+                    for c in held {
+                        self.sink.call_update(&c);
+                    }
+                }
                 if update.is_new_incoming {
                     let s = self.db.get_settings().unwrap_or_default();
                     self.sink

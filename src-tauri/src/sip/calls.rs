@@ -52,6 +52,19 @@ fn rfc(t: DateTime<Utc>) -> String {
     t.to_rfc3339()
 }
 
+impl Tracked {
+    /// Connected <-> OnHold according to who holds the call.
+    fn recompute_hold(&mut self) {
+        if matches!(self.call.state, CallState::Connected | CallState::OnHold) {
+            self.call.state = if self.call.held_locally || self.call.held_remotely {
+                CallState::OnHold
+            } else {
+                CallState::Connected
+            };
+        }
+    }
+}
+
 impl CallTracker {
     pub fn new() -> Self {
         Self::default()
@@ -91,6 +104,8 @@ impl CallTracker {
                     remote_number: number,
                     remote_name,
                     muted: false,
+                    held_locally: false,
+                    held_remotely: false,
                     created_at: rfc(now),
                     connected_at: None,
                     ended_at: None,
@@ -131,6 +146,31 @@ impl CallTracker {
             t.user_reject = true;
             t.user_hangup = true;
         }
+    }
+
+    /// The user put the call on hold / resumed it (the engine does not report our own holds).
+    pub fn set_local_hold(&mut self, id: &str, held: bool) -> Option<Call> {
+        let t = self.calls.get_mut(id)?;
+        if t.call.held_locally == held {
+            return None;
+        }
+        t.call.held_locally = held;
+        t.recompute_hold();
+        Some(t.call.clone())
+    }
+
+    /// Baresip puts the other calls on hold when a new one becomes active
+    /// (`call_hold_other_calls yes`) without telling us: mirror that.
+    pub fn hold_others(&mut self, active_id: &str) -> Vec<Call> {
+        let mut changed = vec![];
+        for (id, t) in self.calls.iter_mut() {
+            if id != active_id && t.call.state == CallState::Connected && !t.call.held_locally {
+                t.call.held_locally = true;
+                t.recompute_hold();
+                changed.push(t.call.clone());
+            }
+        }
+        changed
     }
 
     pub fn set_muted(&mut self, id: &str, muted: bool) -> Option<Call> {
@@ -185,23 +225,26 @@ impl CallTracker {
                 t.call.state = CallState::Connected;
                 Some(plain(t))
             }
+            // Baresip only emits these when the *remote* party holds / resumes the call.
             CallEvent::Hold => {
                 let t = self.calls.get_mut(&r.id)?;
-                if t.call.state == CallState::Connected {
-                    t.call.state = CallState::OnHold;
-                    Some(plain(t))
-                } else {
-                    None
+                if !matches!(t.call.state, CallState::Connected | CallState::OnHold)
+                    || t.call.held_remotely
+                {
+                    return None;
                 }
+                t.call.held_remotely = true;
+                t.recompute_hold();
+                Some(plain(t))
             }
             CallEvent::Resume => {
                 let t = self.calls.get_mut(&r.id)?;
-                if t.call.state == CallState::OnHold {
-                    t.call.state = CallState::Connected;
-                    Some(plain(t))
-                } else {
-                    None
+                if !t.call.held_remotely {
+                    return None;
                 }
+                t.call.held_remotely = false;
+                t.recompute_hold();
+                Some(plain(t))
             }
             CallEvent::Closed { code, reason } => self.close(r, *code, reason, now),
             CallEvent::TransferFailed { .. } | CallEvent::Dtmf { .. } => None,
@@ -434,6 +477,52 @@ mod tests {
                 .state,
             CallState::Connected
         );
+    }
+
+    #[test]
+    fn local_and_remote_holds_are_tracked_independently() {
+        let mut tr = CallTracker::new();
+        let r = cref("c1", CallDirection::Outgoing);
+        tr.apply(&r, &CallEvent::Established, &ctx(), t0());
+        // We hold: Baresip stays silent, the manager tells the tracker.
+        let c = tr.set_local_hold("c1", true).unwrap();
+        assert_eq!(
+            (c.state, c.held_locally, c.held_remotely),
+            (CallState::OnHold, true, false)
+        );
+        assert!(
+            tr.set_local_hold("c1", true).is_none(),
+            "no change, no update"
+        );
+        // The remote also holds: still on hold even after we resume.
+        assert!(
+            tr.apply(&r, &CallEvent::Hold, &ctx(), t0())
+                .unwrap()
+                .call
+                .held_remotely
+        );
+        assert_eq!(
+            tr.set_local_hold("c1", false).unwrap().state,
+            CallState::OnHold
+        );
+        let c = tr.apply(&r, &CallEvent::Resume, &ctx(), t0()).unwrap().call;
+        assert_eq!((c.state, c.held_remotely), (CallState::Connected, false));
+        assert!(tr.apply(&r, &CallEvent::Resume, &ctx(), t0()).is_none());
+    }
+
+    #[test]
+    fn a_second_active_call_holds_the_first_like_baresip_does() {
+        let mut tr = CallTracker::new();
+        let a = cref("a", CallDirection::Outgoing);
+        let b = cref("b", CallDirection::Incoming);
+        tr.apply(&a, &CallEvent::Established, &ctx(), t0());
+        tr.apply(&b, &CallEvent::Established, &ctx(), t0());
+        let changed = tr.hold_others("b");
+        assert_eq!(changed.len(), 1);
+        assert_eq!(changed[0].id, "a");
+        assert_eq!(tr.get("a").unwrap().state, CallState::OnHold);
+        assert_eq!(tr.get("b").unwrap().state, CallState::Connected);
+        assert!(tr.hold_others("b").is_empty(), "idempotent");
     }
 
     #[test]
