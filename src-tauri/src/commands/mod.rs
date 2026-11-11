@@ -171,6 +171,7 @@ pub async fn update_settings(
 
     // Desktop-shell settings take effect immediately.
     tray::set_visible(&app, settings.general.show_tray_icon);
+    crate::app::window::apply_appearance(&app, &settings.general);
     let autostart = app.autolaunch();
     let enabled = autostart.is_enabled().unwrap_or(false);
     if settings.general.launch_at_login && !enabled {

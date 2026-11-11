@@ -87,6 +87,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     });
 
     tray::setup(&handle, settings.general.show_tray_icon)?;
+    app::window::apply_appearance(&handle, &settings.general);
 
     if settings.general.start_minimized
         && let Some(w) = app.get_webview_window(MAIN_WINDOW)

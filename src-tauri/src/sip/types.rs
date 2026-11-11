@@ -498,6 +498,8 @@ pub struct GeneralSettings {
     /// Keep the app (and the SIP registration) alive in the menu bar when the window is closed.
     pub close_to_tray: bool,
     pub show_tray_icon: bool,
+    /// Frosted-glass window background (macOS vibrancy). Ignored on other platforms.
+    pub translucent: bool,
 }
 
 impl Default for GeneralSettings {
@@ -508,6 +510,7 @@ impl Default for GeneralSettings {
             start_minimized: false,
             close_to_tray: true,
             show_tray_icon: true,
+            translucent: true,
         }
     }
 }

@@ -3,6 +3,7 @@
 
 pub mod sink;
 pub mod tray;
+pub mod window;
 
 use std::sync::{Arc, atomic::AtomicBool};
 
