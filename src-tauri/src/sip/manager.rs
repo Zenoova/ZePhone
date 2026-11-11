@@ -38,6 +38,8 @@ pub trait UiSink: Send + Sync + 'static {
     fn incoming_call(&self, call: &Call, notify: bool);
     fn missed_call(&self, call: &Call, notify: bool);
     fn audio_error(&self, message: &str);
+    /// Live level of a call's audio in dBFS (`tx` = our microphone). Frequent: keep it cheap.
+    fn audio_level(&self, _call_id: &str, _tx: bool, _db: f32) {}
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -800,6 +802,13 @@ impl SipManager {
                     if !s.notifications.ringtone {
                         let _ = self.engine.silence_ringtone().await;
                     }
+                }
+            }
+            EngineEvent::AudioLevel { call_id, tx, db } => {
+                // Only for calls we know about (late reports of a finished call are dropped).
+                let known = self.state.lock().unwrap().tracker.get(&call_id).is_some();
+                if known {
+                    self.sink.audio_level(&call_id, tx, db);
                 }
             }
             EngineEvent::AudioError { message, .. } => self.sink.audio_error(&message),

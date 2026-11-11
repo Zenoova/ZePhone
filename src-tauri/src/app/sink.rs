@@ -105,6 +105,17 @@ impl UiSink for TauriSink {
         }
     }
 
+    fn audio_level(&self, call_id: &str, tx: bool, db: f32) {
+        #[derive(Clone, serde::Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Level<'a> {
+            call_id: &'a str,
+            tx: bool,
+            db: f32,
+        }
+        self.emit(events::AUDIO_LEVEL, Level { call_id, tx, db });
+    }
+
     fn audio_error(&self, message: &str) {
         self.emit(events::AUDIO_ERROR, message.to_owned());
     }

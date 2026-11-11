@@ -181,6 +181,14 @@ pub fn to_engine_event(raw: &RawEvent) -> Option<EngineEvent> {
         "CALL_DTMF_START" => call(CallEvent::Dtmf {
             key: param.to_owned(),
         }),
+        "VU_TX_REPORT" | "VU_RX_REPORT" => {
+            let db = param.trim().parse::<f32>().ok().filter(|d| d.is_finite())?;
+            Some(EngineEvent::AudioLevel {
+                call_id: raw.call_id.clone()?,
+                tx: raw.kind == "VU_TX_REPORT",
+                db: db.clamp(-96.0, 0.0),
+            })
+        }
         "AUDIO_ERROR" => Some(EngineEvent::AudioError {
             call_id: raw.call_id.clone(),
             message: param.to_owned(),
@@ -313,6 +321,56 @@ mod tests {
         let e =
             event(r#"{"event":true,"class":"call","type":"CALL_RINGING","accountaor":"sip:a@b"}"#);
         assert_eq!(to_engine_event(&e), None);
+    }
+
+    #[test]
+    fn maps_audio_level_reports_from_the_vumeter_module() {
+        let rx = event(
+            r#"{"event":true,"class":"call","type":"VU_RX_REPORT","accountaor":"sip:a@b","direction":"outgoing","id":"c1","param":"-37.52"}"#,
+        );
+        assert_eq!(
+            to_engine_event(&rx),
+            Some(EngineEvent::AudioLevel {
+                call_id: "c1".into(),
+                tx: false,
+                db: -37.52
+            })
+        );
+        let tx = event(
+            r#"{"event":true,"class":"call","type":"VU_TX_REPORT","id":"c1","param":"-96.00"}"#,
+        );
+        assert_eq!(
+            to_engine_event(&tx),
+            Some(EngineEvent::AudioLevel {
+                call_id: "c1".into(),
+                tx: true,
+                db: -96.0
+            })
+        );
+        // Out-of-range and garbage values never reach the UI as-is.
+        let hot = event(
+            r#"{"event":true,"class":"call","type":"VU_RX_REPORT","id":"c1","param":"12.0"}"#,
+        );
+        assert_eq!(
+            to_engine_event(&hot),
+            Some(EngineEvent::AudioLevel {
+                call_id: "c1".into(),
+                tx: false,
+                db: 0.0
+            })
+        );
+        assert_eq!(
+            to_engine_event(&event(
+                r#"{"event":true,"type":"VU_RX_REPORT","id":"c1","param":"nan"}"#
+            )),
+            None
+        );
+        assert_eq!(
+            to_engine_event(&event(
+                r#"{"event":true,"type":"VU_RX_REPORT","param":"-20.0"}"#
+            )),
+            None
+        );
     }
 
     #[test]

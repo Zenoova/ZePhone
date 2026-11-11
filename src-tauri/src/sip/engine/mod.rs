@@ -91,6 +91,13 @@ pub enum EngineEvent {
         call: CallRef,
         event: CallEvent,
     },
+    /// Live audio level of a call, in dBFS (-96 = silence, 0 = full scale). `tx` is our microphone,
+    /// otherwise the remote voice as played to us.
+    AudioLevel {
+        call_id: String,
+        tx: bool,
+        db: f32,
+    },
     AudioError {
         call_id: Option<String>,
         message: String,

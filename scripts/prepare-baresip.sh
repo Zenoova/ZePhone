@@ -56,7 +56,7 @@ SOUNDS_SRC="$PREFIX/share/baresip"
 echo "Using Baresip at $PREFIX"
 
 # Only what the app needs: no httpd/cons/stdio/dbus control surface.
-MODULES=(g711 g722 opus auconv auresamp coreaudio srtp menu ctrl_tcp)
+MODULES=(g711 g722 opus auconv auresamp coreaudio srtp menu ctrl_tcp vumeter)
 SOUNDS=(ring.wav ringback.wav)
 
 rm -rf "$TAURI/binaries" "$TAURI/resources/baresip"

@@ -168,6 +168,7 @@ enum Seen {
     Incoming { call: Call, notify: bool },
     Missed { notify: bool },
     AudioError(String),
+    Level { call_id: String, tx: bool },
 }
 
 #[derive(Default)]
@@ -946,5 +947,71 @@ async fn engine_events_after_shutdown_do_not_reach_the_ui() {
         r.sink.all().len(),
         before,
         "no UI work may be triggered while quitting"
+    );
+}
+
+#[tokio::test]
+async fn audio_levels_reach_the_ui_only_for_calls_in_progress() {
+    let (r, _) = registered_rig().await;
+    let rf = cref("lv1", CallDirection::Incoming, "sip:2000@example.com");
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Incoming,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Established,
+    });
+    let m = r.mgr.clone();
+    until("connected", move || {
+        m.calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
+
+    r.engine.emit(EngineEvent::AudioLevel {
+        call_id: "lv1".into(),
+        tx: false,
+        db: -20.0,
+    });
+    r.engine.emit(EngineEvent::AudioLevel {
+        call_id: "lv1".into(),
+        tx: true,
+        db: -30.0,
+    });
+    r.engine.emit(EngineEvent::AudioLevel {
+        call_id: "ghost".into(),
+        tx: false,
+        db: -10.0,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Closed {
+            code: None,
+            reason: String::new(),
+        },
+    });
+    r.engine.emit(EngineEvent::AudioLevel {
+        call_id: "lv1".into(),
+        tx: false,
+        db: -25.0,
+    }); // late report
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    let levels: Vec<_> = r
+        .sink
+        .all()
+        .into_iter()
+        .filter_map(|e| {
+            if let Seen::Level { call_id, tx } = e {
+                Some((call_id, tx))
+            } else {
+                None
+            }
+        })
+        .collect();
+    assert_eq!(
+        levels,
+        vec![("lv1".to_string(), false), ("lv1".to_string(), true)]
     );
 }

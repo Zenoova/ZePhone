@@ -89,6 +89,9 @@ fn path_value(p: &Path) -> String {
 /// Optional modules loaded when present in the module directory.
 pub const OPTIONAL_CODEC_MODULES: &[&str] = &["opus", "g722"];
 
+/// Audio-level reports (`VU_TX_REPORT` / `VU_RX_REPORT`) that drive the call screen animation.
+const VUMETER_MODULE: &str = "vumeter";
+
 pub fn render_config(input: &ConfigInput<'_>) -> String {
     let ext = module_ext();
     let driver = audio_driver();
@@ -163,6 +166,10 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
         None => c.push_str(&format!("module\t\t\t{driver}.{ext}\n")),
     }
     c.push_str(&format!("module\t\t\tsrtp.{ext}\n"));
+    if (input.module_exists)(&format!("{VUMETER_MODULE}.{ext}")) {
+        c.push_str(&format!("module\t\t\t{VUMETER_MODULE}.{ext}\n"));
+        c.push_str("vumeter_stderr\t\tno\n"); // it would otherwise paint ASCII bars on stderr
+    }
     c.push_str(&format!("module_app\t\tmenu.{ext}\n"));
     c.push_str(&format!("module_app\t\tctrl_tcp.{ext}\n"));
     c.push_str(&format!(
@@ -270,7 +277,7 @@ mod tests {
     #[test]
     fn config_binds_control_to_loopback_only() {
         let settings = EngineSettings::default();
-        let exists = |m: &str| m == "opus.so";
+        let exists = |m: &str| m == "opus.so" || m == "vumeter.so";
         let cfg = render_config(&ConfigInput {
             modules_dir: Path::new("/app/modules"),
             sounds_dir: Path::new("/app/sounds"),
@@ -286,6 +293,7 @@ mod tests {
         assert!(cfg.contains("g711.so"));
         assert!(cfg.contains("opus.so"));
         assert!(!cfg.contains("g722.so"));
+        assert!(cfg.contains("module\t\t\tvumeter.so\n") && cfg.contains("vumeter_stderr\t\tno\n"));
         // Opus is preferred over G.711 (earlier module = higher priority).
         assert!(cfg.find("opus.so").unwrap() < cfg.find("g711.so").unwrap());
         // No console / http / accounts modules.

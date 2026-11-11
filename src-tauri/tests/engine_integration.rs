@@ -812,3 +812,137 @@ async fn hold_and_resume_are_signalled_to_the_remote_party() {
     a.stop().await;
     b.stop().await;
 }
+
+fn drain_levels(rx: &mut tokio::sync::broadcast::Receiver<EngineEvent>) -> Vec<(bool, f32)> {
+    let mut out = vec![];
+    while let Ok(ev) = rx.try_recv() {
+        if let EngineEvent::AudioLevel { tx, db, .. } = ev {
+            out.push((tx, db));
+        }
+    }
+    out
+}
+
+#[tokio::test]
+async fn live_audio_levels_follow_the_remote_voice_the_microphone_and_the_mute() {
+    let tmp = tempfile::tempdir().unwrap();
+    let port_b = std::net::UdpSocket::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port();
+    let (Some(a), Some(b)) = (
+        remote_phone(tmp.path(), "a", 440, &tmp.path().join("a.wav"), None).await,
+        remote_phone(
+            tmp.path(),
+            "b",
+            880,
+            &tmp.path().join("b.wav"),
+            Some(port_b),
+        )
+        .await,
+    ) else {
+        eprintln!("SKIPPED: sidecar/test modules missing");
+        return;
+    };
+    let vumeter_present = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("resources/baresip/modules/vumeter.so")
+        .is_file();
+    if !vumeter_present {
+        eprintln!("SKIPPED: vumeter module not bundled");
+        return;
+    }
+    let (mut ea, mut eb) = (a.subscribe(), b.subscribe());
+    let mut levels = a.subscribe();
+    a.add_account(&spec_at("alice", "pw", LOOPBACK, port_b, 0))
+        .await
+        .unwrap();
+    b.add_account(&spec_at("bob", "pw", LOOPBACK, 9, 0))
+        .await
+        .unwrap();
+
+    let call_a = a
+        .dial(
+            "sip:alice@127.0.0.1",
+            &format!("sip:bob@127.0.0.1:{port_b}"),
+        )
+        .await
+        .unwrap();
+    let call_b = match wait_for(&mut eb, 10, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Incoming,
+                ..
+            }
+        )
+    })
+    .await
+    {
+        Some(EngineEvent::Call { call, .. }) => call.id,
+        other => panic!("B was not called: {other:?}"),
+    };
+    b.accept(&call_b).await.unwrap();
+    assert!(
+        wait_for(&mut ea, 10, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Established,
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
+
+    // Speaking: both our microphone (440 Hz sine) and the remote voice (880 Hz) show up, often.
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    let _ = drain_levels(&mut levels);
+    tokio::time::sleep(Duration::from_millis(1500)).await;
+    let live = drain_levels(&mut levels);
+    let (tx, rx): (Vec<f32>, Vec<f32>) = {
+        let tx = live.iter().filter(|(t, _)| *t).map(|(_, d)| *d).collect();
+        let rx = live.iter().filter(|(t, _)| !*t).map(|(_, d)| *d).collect();
+        (tx, rx)
+    };
+    println!(
+        "1.5 s of levels: {} tx, {} rx reports; tx max {:?}, rx max {:?}",
+        tx.len(),
+        rx.len(),
+        tx.iter().cloned().fold(f32::MIN, f32::max),
+        rx.iter().cloned().fold(f32::MIN, f32::max)
+    );
+    assert!(
+        tx.len() >= 8 && rx.len() >= 8,
+        "levels must arrive several times per second (60 ms timer): {} / {}",
+        tx.len(),
+        rx.len()
+    );
+    assert!(
+        tx.iter().cloned().fold(f32::MIN, f32::max) > -30.0,
+        "microphone level too low: {tx:?}"
+    );
+    assert!(
+        rx.iter().cloned().fold(f32::MIN, f32::max) > -30.0,
+        "remote voice level too low: {rx:?}"
+    );
+    assert!(live.iter().all(|(_, d)| (-96.0..=0.0).contains(d)));
+
+    // Muting must silence the microphone level (the UI also dims the orb by itself).
+    a.set_mute(&call_a, true).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    let _ = drain_levels(&mut levels);
+    tokio::time::sleep(Duration::from_millis(800)).await;
+    let muted = drain_levels(&mut levels);
+    let tx_muted: Vec<f32> = muted.iter().filter(|(t, _)| *t).map(|(_, d)| *d).collect();
+    println!("while muted: tx reports {tx_muted:?}");
+    assert!(!tx_muted.is_empty());
+    assert!(
+        tx_muted.iter().all(|d| *d < -60.0),
+        "muted microphone still reports a signal: {tx_muted:?}"
+    );
+
+    a.hangup(&call_a, None).await.unwrap();
+    a.stop().await;
+    b.stop().await;
+}

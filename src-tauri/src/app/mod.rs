@@ -19,6 +19,7 @@ pub mod events {
     pub const CALL_UPDATE: &str = "call:update";
     pub const HISTORY_CHANGED: &str = "history:changed";
     pub const AUDIO_ERROR: &str = "audio:error";
+    pub const AUDIO_LEVEL: &str = "audio:level";
 }
 
 pub struct AppState {
