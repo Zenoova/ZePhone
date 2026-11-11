@@ -693,3 +693,40 @@ async fn rejecting_an_incoming_call_closes_it_on_both_sides_with_the_sip_status(
     a.stop().await;
     b.stop().await;
 }
+
+#[tokio::test]
+async fn every_audio_device_listed_to_the_user_is_accepted_by_baresip() {
+    // The UI lists devices through cpal; Baresip matches CoreAudio names. They must agree,
+    // otherwise a device picked in Settings would silently not be used.
+    let devices = zephone_lib::audio::list_devices();
+    println!(
+        "inputs: {:?}\noutputs: {:?}",
+        devices.inputs, devices.outputs
+    );
+    let dir = tempfile::tempdir().unwrap();
+    let engine = engine_or_skip!(&dir.path().join("w"), EngineOptions::default());
+    let mut checked = 0;
+    for d in devices.inputs.iter().filter(|d| d.selectable) {
+        engine
+            .set_audio_devices(Some(&d.name), None)
+            .await
+            .unwrap_or_else(|e| panic!("Baresip rejected input device {:?}: {e}", d.name));
+        checked += 1;
+    }
+    for d in devices.outputs.iter().filter(|d| d.selectable) {
+        engine
+            .set_audio_devices(None, Some(&d.name))
+            .await
+            .unwrap_or_else(|e| panic!("Baresip rejected output device {:?}: {e}", d.name));
+        checked += 1;
+    }
+    println!("{checked} devices accepted");
+    // A device that does not exist is reported, not silently ignored.
+    assert!(
+        engine
+            .set_audio_devices(Some("No Such Microphone 9000"), None)
+            .await
+            .is_err()
+    );
+    engine.stop().await;
+}

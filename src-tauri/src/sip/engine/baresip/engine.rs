@@ -329,9 +329,15 @@ impl SipEngine for BaresipEngine {
             return Ok(()); // picked up at next start
         }
         let driver = config::audio_driver();
-        let player = config::sanitize_device(output);
-        let source = config::sanitize_device(input);
+        // The `auplay`/`ausrc` commands only accept real device names (the literal "default"
+        // is valid in the config file but not in these commands): resolve "system default"
+        // to the name of the current default device.
+        let (default_in, default_out) = crate::audio::default_names();
+        let player = output.map(str::to_owned).or(default_out);
+        let source = input.map(str::to_owned).or(default_in);
         for (cmd, dev) in [("auplay", player), ("ausrc", source)] {
+            let Some(dev) = dev else { continue };
+            let dev = config::sanitize_device(Some(&dev));
             let resp = self.run(cmd, &format!("{driver},{dev}")).await?;
             // Baresip answers "ok" even when the device is unknown, with a message.
             if resp.data.contains("no such") || resp.data.contains("Format should be") {

@@ -57,6 +57,19 @@ fn collect(
     out
 }
 
+/// Names of the current system default (input, output) devices.
+pub fn default_names() -> (Option<String>, Option<String>) {
+    let host = cpal::default_host();
+    let name_of = |d: Option<cpal::Device>| {
+        d.and_then(|d| d.description().ok())
+            .map(|d| d.name().to_owned())
+    };
+    (
+        name_of(host.default_input_device()),
+        name_of(host.default_output_device()),
+    )
+}
+
 pub fn list_devices() -> AudioDevices {
     let host = cpal::default_host();
     let name_of = |d: Option<cpal::Device>| {
