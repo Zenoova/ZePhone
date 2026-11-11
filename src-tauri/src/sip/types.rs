@@ -498,6 +498,10 @@ pub struct NetworkSettings {
     pub custom_ca_file: Option<String>,
     /// Log SIP messages in the engine output (debug only, kept in memory).
     pub sip_trace: bool,
+    /// Fixed local SIP port; `None` lets the engine pick one.
+    pub local_sip_port: Option<u16>,
+    /// Restrict SIP/RTP to one network interface (`en0`) or local IP address.
+    pub net_interface: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
