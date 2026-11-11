@@ -7,6 +7,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Rust from rustup (Homebrew keeps it keg-only) when it is not already on PATH.
+export PATH="$PATH:/opt/homebrew/opt/rustup/bin:$HOME/.cargo/bin"
 FS_BIN="${FREESWITCH_BIN:-$(command -v freeswitch || true)}"
 [[ -x "$FS_BIN" ]] || { echo "FreeSWITCH not found (brew install freeswitch, or set FREESWITCH_BIN)" >&2; exit 1; }
 SRC_CONF="${FREESWITCH_CONF:-$(brew --prefix 2>/dev/null || echo /opt/homebrew)/etc/freeswitch}"
