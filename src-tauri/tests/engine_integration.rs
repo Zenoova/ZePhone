@@ -511,35 +511,10 @@ async fn call_between_two_engines_carries_audio_both_ways_and_supports_dtmf_hold
         other => panic!("B did not receive the DTMF digit: {other:?}"),
     }
 
-    // Mute / unmute and hold / resume are accepted by the engine.
+    // Mute / unmute are accepted by the engine. (Hold/resume have their own test: the re-INVITE
+    // makes Baresip re-create its file player, which would truncate the WAV measured below.)
     a.set_mute(&call_a, true).await.expect("mute");
     a.set_mute(&call_a, false).await.expect("unmute");
-    a.hold(&call_a).await.expect("hold");
-    assert!(
-        wait_for(&mut eb, 8, |e| matches!(
-            e,
-            EngineEvent::Call {
-                event: CallEvent::Hold,
-                ..
-            }
-        ))
-        .await
-        .is_some(),
-        "B was not told about the hold"
-    );
-    a.resume(&call_a).await.expect("resume");
-    assert!(
-        wait_for(&mut eb, 8, |e| matches!(
-            e,
-            EngineEvent::Call {
-                event: CallEvent::Resume,
-                ..
-            }
-        ))
-        .await
-        .is_some(),
-        "B was not told about the resume"
-    );
     tokio::time::sleep(Duration::from_millis(1500)).await;
 
     // A hangs up; both sides close.
@@ -729,4 +704,111 @@ async fn every_audio_device_listed_to_the_user_is_accepted_by_baresip() {
             .is_err()
     );
     engine.stop().await;
+}
+
+#[tokio::test]
+async fn hold_and_resume_are_signalled_to_the_remote_party() {
+    let tmp = tempfile::tempdir().unwrap();
+    let port_b = std::net::UdpSocket::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port();
+    let (Some(a), Some(b)) = (
+        remote_phone(tmp.path(), "a", 440, &tmp.path().join("a.wav"), None).await,
+        remote_phone(
+            tmp.path(),
+            "b",
+            880,
+            &tmp.path().join("b.wav"),
+            Some(port_b),
+        )
+        .await,
+    ) else {
+        eprintln!("SKIPPED: sidecar/test modules missing");
+        return;
+    };
+    let (mut ea, mut eb) = (a.subscribe(), b.subscribe());
+    a.add_account(&spec_at("alice", "pw", LOOPBACK, port_b, 0))
+        .await
+        .unwrap();
+    b.add_account(&spec_at("bob", "pw", LOOPBACK, 9, 0))
+        .await
+        .unwrap();
+
+    let call_a = a
+        .dial(
+            "sip:alice@127.0.0.1",
+            &format!("sip:bob@127.0.0.1:{port_b}"),
+        )
+        .await
+        .unwrap();
+    let call_b = match wait_for(&mut eb, 10, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Incoming,
+                ..
+            }
+        )
+    })
+    .await
+    {
+        Some(EngineEvent::Call { call, .. }) => call.id,
+        other => panic!("B was not called: {other:?}"),
+    };
+    b.accept(&call_b).await.unwrap();
+    assert!(
+        wait_for(&mut ea, 10, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Established,
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
+    tokio::time::sleep(Duration::from_millis(800)).await;
+
+    a.hold(&call_a).await.expect("hold");
+    assert!(
+        wait_for(&mut eb, 8, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Hold,
+                ..
+            }
+        ))
+        .await
+        .is_some(),
+        "B was not told about the hold"
+    );
+    a.resume(&call_a).await.expect("resume");
+    assert!(
+        wait_for(&mut eb, 8, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Resume,
+                ..
+            }
+        ))
+        .await
+        .is_some(),
+        "B was not told about the resume"
+    );
+    a.hangup(&call_a, None).await.unwrap();
+    assert!(
+        wait_for(&mut eb, 8, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Closed { .. },
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
+    a.stop().await;
+    b.stop().await;
 }
