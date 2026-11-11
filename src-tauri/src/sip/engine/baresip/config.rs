@@ -106,7 +106,12 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
         Some(o) => {
             c.push_str(&format!("audio_player\t\t{}\n", single_line(&o.player)));
             c.push_str(&format!("audio_source\t\t{}\n", single_line(&o.source)));
-            c.push_str(&format!("audio_alert\t\t{}\n", single_line(&o.player)));
+            // Ring tones go to their own file: sharing the player's file would let the
+            // alert stream truncate the call audio when it closes.
+            c.push_str(&format!(
+                "audio_alert\t\t{}.alert\n",
+                single_line(&o.player)
+            ));
         }
         None => {
             c.push_str(&format!("audio_player\t\t{driver},{player}\n"));

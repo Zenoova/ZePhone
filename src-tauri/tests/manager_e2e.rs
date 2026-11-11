@@ -380,22 +380,8 @@ async fn full_call_cycle_through_the_manager_with_audio_and_history() {
     assert!(a.mgr.calls()[0].muted);
     a.mgr.set_mute(&call.id, false).await.unwrap();
     a.mgr.send_dtmf(&call.id, "42#").await.unwrap();
-    a.mgr.hold(&call.id).await.unwrap();
-    until("A on hold", 10, || {
-        a.mgr
-            .calls()
-            .first()
-            .is_some_and(|c| c.state == CallState::OnHold)
-    })
-    .await;
-    a.mgr.resume(&call.id).await.unwrap();
-    until("A resumed", 10, || {
-        a.mgr
-            .calls()
-            .first()
-            .is_some_and(|c| c.state == CallState::Connected)
-    })
-    .await;
+    // (Hold/resume are exercised on the second call: re-INVITEs make Baresip re-create its
+    // file player, which would truncate the WAV used to measure the audio of this call.)
     tokio::time::sleep(Duration::from_millis(2500)).await; // audio flows
     a.mgr.hangup(&call.id).await.unwrap();
     until("A history", 10, || {
@@ -432,22 +418,22 @@ async fn full_call_cycle_through_the_manager_with_audio_and_history() {
     .await
     .expect("B sees the hangup");
     let sz = |p: &std::path::Path| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0);
-    // The WAV writer buffers: wait until both files stop growing before measuring.
-    let (mut last, mut stable) = ((0, 0), 0);
-    for _ in 0..30 {
-        tokio::time::sleep(Duration::from_millis(200)).await;
-        let now = (sz(&a_rx), sz(&b_rx));
-        stable = if now == last { stable + 1 } else { 0 };
-        last = now;
-        if stable >= 3 {
+    // The WAV writer buffers and flushes when the stream is closed, which can lag behind the
+    // SIP hangup: wait (bounded) until both files hold audio, then measure.
+    let mut last = (0, 0);
+    for _ in 0..40 {
+        last = (sz(&a_rx), sz(&b_rx));
+        if last.0 > 16_000 && last.1 > 16_000 {
             break;
         }
+        tokio::time::sleep(Duration::from_millis(200)).await;
     }
     let (heard_by_a, heard_by_b) = last;
     println!("audio received during call 1: A={heard_by_a} bytes, B={heard_by_b} bytes");
     assert!(
         heard_by_a > 16_000,
-        "A heard nothing from B ({heard_by_a} bytes)"
+        "A heard nothing from B ({heard_by_a} bytes)\n--- A engine log ---\n{}",
+        a.mgr.log_tail(80).join("\n")
     );
     assert!(
         heard_by_b > 16_000,
@@ -480,6 +466,22 @@ async fn full_call_cycle_through_the_manager_with_audio_and_history() {
             .calls()
             .first()
             .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
+    a.mgr.hold(&inc.id).await.unwrap();
+    until("incoming call on hold", 10, || {
+        a.mgr
+            .calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::OnHold && c.held_locally)
+    })
+    .await;
+    a.mgr.resume(&inc.id).await.unwrap();
+    until("incoming call resumed", 10, || {
+        a.mgr
+            .calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected && !c.held_locally)
     })
     .await;
     tokio::time::sleep(Duration::from_millis(1500)).await;
