@@ -11,6 +11,8 @@ export function makeCall(over: Partial<Call> = {}): Call {
     remoteNumber: "1002",
     remoteName: null,
     muted: false,
+    heldLocally: false,
+    heldRemotely: false,
     createdAt: "2026-01-01T10:00:00Z",
     connectedAt: null,
     endedAt: null,

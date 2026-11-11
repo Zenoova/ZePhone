@@ -75,6 +75,10 @@ export interface Call {
   remoteNumber: string;
   remoteName: string | null;
   muted: boolean;
+  /** We put the call on hold. */
+  heldLocally: boolean;
+  /** The remote party put the call on hold. */
+  heldRemotely: boolean;
   createdAt: string;
   connectedAt: string | null;
   endedAt: string | null;

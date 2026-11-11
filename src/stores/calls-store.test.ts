@@ -71,7 +71,7 @@ describe("intents sent to the backend", () => {
     apply(makeCall({ state: "connected" }));
     await toggleHold("call1");
     expect(invoke).toHaveBeenLastCalledWith("hold_call", { id: "call1" });
-    apply(makeCall({ state: "onHold" }));
+    apply(makeCall({ state: "onHold", heldLocally: true }));
     await toggleHold("call1");
     expect(invoke).toHaveBeenLastCalledWith("resume_call", { id: "call1" });
   });

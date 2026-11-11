@@ -98,6 +98,7 @@ export function CallPanel({ call }: { call: Call }) {
             role="status"
           >
             {CALL_STATE_LABEL[call.state]}
+            {call.state === "onHold" && call.heldRemotely && !call.heldLocally && " par le correspondant"}
           </p>
           {(inDialog || (terminal && call.durationSecs > 0)) && (
             <p className="tabular text-2xl font-light tracking-wider" aria-label="Durée de l'appel">
@@ -140,12 +141,12 @@ export function CallPanel({ call }: { call: Call }) {
               {call.muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
             </ControlButton>
             <ControlButton
-              label={call.state === "onHold" ? "Reprendre l'appel" : "Mettre en attente"}
-              active={call.state === "onHold"}
+              label={call.heldLocally ? "Reprendre l'appel" : "Mettre en attente"}
+              active={call.heldLocally}
               disabled={!inDialog}
               onClick={() => void toggleHold(call.id)}
             >
-              {call.state === "onHold" ? <Play className="size-5" /> : <Pause className="size-5" />}
+              {call.heldLocally ? <Play className="size-5" /> : <Pause className="size-5" />}
             </ControlButton>
             <ControlButton label="Clavier (tonalités DTMF)" active={showKeypad} disabled={!inDialog} onClick={() => setShowKeypad((v) => !v)}>
               <Grip className="size-5" />

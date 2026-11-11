@@ -88,7 +88,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
   toggleHold: async (id) => {
     const call = get().calls[id];
     if (!call) return;
-    await run(() => (call.state === "onHold" ? telephony.resumeCall(id) : telephony.holdCall(id)));
+    await run(() => (call.heldLocally ? telephony.resumeCall(id) : telephony.holdCall(id)));
   },
 
   toggleMute: async (id) => {
