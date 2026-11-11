@@ -109,4 +109,70 @@ describe("CallPanel", () => {
     show(makeCall({ state: "failed", reason: "Occupé (486)", sipCode: 486 }));
     expect(screen.getByText("Occupé (486)")).toBeInTheDocument();
   });
+
+  describe("layout", () => {
+    it("puts every control in one aligned row, hang-up included", () => {
+      show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
+      const group = screen.getByRole("group", { name: "Commandes de l'appel" });
+      const labels = Array.from(group.querySelectorAll("button")).map((b) => b.getAttribute("aria-label"));
+      expect(labels).toEqual([
+        "Couper le micro",
+        "Mettre en attente",
+        "Clavier (tonalités DTMF)",
+        "Transférer l'appel",
+        "Raccrocher",
+      ]);
+    });
+
+    it("shows the remote voice orb and our own, and says whose is whose", () => {
+      show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
+      expect(screen.getByTestId("orb-remote")).toBeInTheDocument();
+      expect(screen.getByTestId("orb-local")).toBeInTheDocument();
+      expect(screen.getByText("Vous")).toBeInTheDocument();
+    });
+
+    it("the keypad sits between the voices and the controls, hidden until asked for", () => {
+      const { container } = show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
+      const keypad = screen.getByRole("group", { name: "Clavier numérique", hidden: true });
+      const region = keypad.closest("[inert], [aria-hidden]") as HTMLElement;
+      expect(region).toHaveAttribute("aria-hidden", "true");
+      expect(region).toHaveAttribute("inert");
+
+      fireEvent.click(screen.getByRole("button", { name: "Clavier (tonalités DTMF)" }));
+      expect(region).toHaveAttribute("aria-hidden", "false");
+      expect(region).not.toHaveAttribute("inert");
+      // DOM order = visual order: orbs, keypad, controls.
+      const order = [
+        screen.getByTestId("orb-local"),
+        region,
+        screen.getByRole("group", { name: "Commandes de l'appel" }),
+      ];
+      for (let i = 0; i < order.length - 1; i++) {
+        expect(order[i]!.compareDocumentPosition(order[i + 1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      }
+      // The remote orb shrinks to make room.
+      expect(screen.getByTestId("orb-remote").className).toContain("size-24");
+      expect(container).toBeTruthy();
+    });
+
+    it("keyboard digits drive the keypad only while it is open", () => {
+      show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
+      fireEvent.keyDown(window, { key: "4" });
+      expect(invoke).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "Clavier (tonalités DTMF)" }));
+      fireEvent.keyDown(window, { key: "4" });
+      expect(invoke).toHaveBeenLastCalledWith("send_dtmf", { id: "call1", digits: "4" });
+    });
+
+    it("a muted microphone is shown on our orb", () => {
+      show(makeCall({ state: "connected", muted: true, connectedAt: new Date().toISOString() }));
+      expect(screen.getByText("Micro coupé")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Réactiver le micro" })).toHaveAttribute("aria-pressed", "true");
+    });
+
+    it("an unanswered call has no controls to show once it is over", () => {
+      show(makeCall({ state: "ended", durationSecs: 0 }));
+      expect(screen.queryByRole("group", { name: "Commandes de l'appel" })).toBeNull();
+    });
+  });
 });

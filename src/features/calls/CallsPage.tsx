@@ -3,10 +3,11 @@ import { useShallow } from "zustand/react/shallow";
 
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
-import { sortedCalls, useCallsStore } from "@/stores/calls-store";
+import { isTerminal, sortedCalls, useCallsStore } from "@/stores/calls-store";
 import { useUiStore } from "@/stores/ui-store";
 
 import { CallPanel } from "./CallPanel";
+import { CallRow } from "./CallRow";
 
 export function CallsPage() {
   const calls = useCallsStore(useShallow((s) => sortedCalls(s.calls)));
@@ -22,11 +23,23 @@ export function CallsPage() {
       />
     );
   }
+
+  // The call in progress gets the full screen; any other call (call waiting...) is a compact line below.
+  const primary = calls.find((c) => c.state !== "incoming" && !isTerminal(c)) ?? calls[0]!;
+  const others = calls.filter((c) => c.id !== primary.id);
+
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-5">
-      {calls.map((c) => (
-        <CallPanel key={c.id} call={c} />
-      ))}
+    <div className="flex h-full flex-col">
+      {others.length > 0 && (
+        <div className="space-y-2 px-4 pt-4">
+          {others.map((c) => (
+            <CallRow key={c.id} call={c} />
+          ))}
+        </div>
+      )}
+      <div className="min-h-0 flex-1">
+        <CallPanel key={primary.id} call={primary} />
+      </div>
     </div>
   );
 }

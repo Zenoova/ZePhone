@@ -1,9 +1,8 @@
 import { Grip, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneOff, Play } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
-import { ContactAvatar } from "@/components/ContactAvatar";
+import { VoiceOrb } from "@/components/VoiceOrb";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCallDuration } from "@/hooks/use-call-duration";
 import { callDisplayName, formatDuration } from "@/lib/format";
 import { CALL_STATE_LABEL } from "@/lib/labels";
@@ -14,105 +13,190 @@ import type { Call } from "@/types/telephony";
 import { Dialpad } from "../dialer/Dialpad";
 import { TransferDialog } from "./TransferDialog";
 
-function ControlButton({
+function Control({
   label,
+  ariaLabel,
   active,
   disabled,
+  danger,
   onClick,
   children,
 }: {
   label: string;
+  ariaLabel: string;
   active?: boolean;
   disabled?: boolean;
+  danger?: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={onClick}
-          disabled={disabled}
-          aria-pressed={active}
-          aria-label={label}
-          className={cn(
-            "flex size-14 flex-col items-center justify-center rounded-full border transition-colors outline-none",
-            "focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-40",
-            active ? "bg-foreground text-background border-transparent" : "bg-card hover:bg-accent",
-          )}
-        >
-          {children}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
+    <div className="flex flex-col items-center gap-1.5">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-pressed={active}
+        aria-label={ariaLabel}
+        className={cn(
+          "flex size-14 items-center justify-center rounded-full border transition-[background-color,color,transform,opacity] duration-200 outline-none",
+          "focus-visible:ring-ring/50 active:scale-95 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-40",
+          danger
+            ? "bg-destructive hover:bg-destructive/90 border-transparent text-white"
+            : active
+              ? "bg-foreground text-background border-transparent"
+              : "bg-card/80 hover:bg-accent backdrop-blur",
+        )}
+      >
+        {children}
+      </button>
+      <span
+        aria-hidden
+        className={cn(
+          "text-[11px] leading-none font-medium",
+          disabled ? "text-muted-foreground/60" : "text-muted-foreground",
+        )}
+      >
+        {label}
+      </span>
+    </div>
   );
 }
 
-/** Full call screen: state, name/number, timer, and the in-call controls. */
+const ORB_EASE = "transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]";
+
+/**
+ * The call screen: the remote party's voice as a living orb in the middle, our own (smaller) below it,
+ * the keypad that slides in between the orbs and the aligned controls, which stay at the bottom.
+ */
 export function CallPanel({ call }: { call: Call }) {
   const { answer, reject, hangup, toggleHold, toggleMute, sendDtmf } = useCallsStore.getState();
   const seconds = useCallDuration(call);
-  const [showKeypad, setShowKeypad] = useState(false);
+  const [keypadOpen, setKeypadOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
 
   const name = callDisplayName(call);
   const terminal = isTerminal(call);
   const incoming = call.state === "incoming";
   const inDialog = call.state === "connected" || call.state === "onHold";
+  const onHold = call.state === "onHold";
   const subtitle = call.remoteName && call.remoteNumber !== name ? call.remoteNumber : null;
+  const showKeypad = keypadOpen && inDialog;
 
   return (
     <section
       aria-label={`Appel avec ${name}`}
       data-testid="call-panel"
       data-state={call.state}
-      className="bg-card mx-auto flex w-full max-w-md flex-col items-center gap-5 rounded-3xl border p-6 shadow-sm"
+      className="relative flex h-full min-h-[34rem] w-full flex-col items-center overflow-hidden px-5 pt-7 pb-6"
     >
-      {call.accountLabel && <p className="text-muted-foreground text-xs">{call.accountLabel}</p>}
+      {/* soft light behind the orbs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-3/4 bg-[radial-gradient(55%_50%_at_50%_38%,color-mix(in_oklab,var(--primary)_16%,transparent),transparent)]"
+      />
 
-      <div className="flex flex-col items-center gap-3 text-center">
-        <ContactAvatar
-          name={name}
-          className={cn("size-24 text-3xl", (incoming || call.state === "ringing") && "animate-ring-pulse")}
-        />
-        <div className="min-w-0">
-          <h2 className="max-w-[18rem] truncate text-2xl font-semibold" data-selectable>
-            {name}
-          </h2>
-          {subtitle && (
-            <p className="text-muted-foreground text-sm" data-selectable>
-              {subtitle}
-            </p>
+      <header className="relative z-10 flex flex-col items-center gap-0.5 text-center">
+        {call.accountLabel && <p className="text-muted-foreground text-xs">{call.accountLabel}</p>}
+        <h2 className="max-w-[20rem] truncate text-2xl font-semibold" data-selectable>
+          {name}
+        </h2>
+        {subtitle && (
+          <p className="text-muted-foreground text-sm" data-selectable>
+            {subtitle}
+          </p>
+        )}
+        <p
+          role="status"
+          className={cn(
+            "mt-1 text-sm font-medium",
+            call.state === "failed" && "text-destructive",
+            call.state === "connected" && "text-success",
+            onHold && "text-warning-foreground dark:text-warning",
+            !inDialog && !terminal && "text-muted-foreground",
+          )}
+        >
+          {CALL_STATE_LABEL[call.state]}
+          {onHold && call.heldRemotely && !call.heldLocally && " par le correspondant"}
+        </p>
+        {(inDialog || (terminal && call.durationSecs > 0)) && (
+          <p className="tabular text-xl font-light tracking-wider" aria-label="Durée de l'appel">
+            {formatDuration(seconds)}
+          </p>
+        )}
+        {call.state === "failed" && call.reason && (
+          <p className="text-muted-foreground max-w-xs text-xs">{call.reason}</p>
+        )}
+      </header>
+
+      {/* the voices */}
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center gap-3 py-3">
+        <div
+          data-testid="orb-remote"
+          className={cn(
+            "relative",
+            ORB_EASE,
+            showKeypad ? "size-24" : "size-[clamp(11rem,36vh,18rem)]",
+            (incoming || call.state === "ringing") && "animate-ring-pulse rounded-full",
+          )}
+        >
+          <VoiceOrb callId={call.id} source="rx" tone="remote" paused={onHold || terminal} idle={!terminal} />
+          {onHold && (
+            <Pause
+              className="text-foreground/70 absolute top-1/2 left-1/2 size-1/5 -translate-x-1/2 -translate-y-1/2"
+              aria-hidden
+            />
           )}
         </div>
-        <div className="flex flex-col items-center gap-0.5">
-          <p
-            className={cn(
-              "text-sm font-medium",
-              call.state === "failed" && "text-destructive",
-              call.state === "connected" && "text-success",
-              call.state === "onHold" && "text-warning-foreground dark:text-warning",
-            )}
-            role="status"
+        <div className="flex flex-col items-center gap-1">
+          <div
+            data-testid="orb-local"
+            className={cn("relative", ORB_EASE, showKeypad ? "size-14" : "size-[clamp(5rem,15vh,7.5rem)]")}
           >
-            {CALL_STATE_LABEL[call.state]}
-            {call.state === "onHold" && call.heldRemotely && !call.heldLocally && " par le correspondant"}
-          </p>
-          {(inDialog || (terminal && call.durationSecs > 0)) && (
-            <p className="tabular text-2xl font-light tracking-wider" aria-label="Durée de l'appel">
-              {formatDuration(seconds)}
-            </p>
-          )}
-          {call.state === "failed" && call.reason && (
-            <p className="text-muted-foreground max-w-xs text-xs">{call.reason}</p>
-          )}
+            <VoiceOrb
+              callId={call.id}
+              source="tx"
+              tone="local"
+              muted={call.muted}
+              paused={onHold || terminal}
+              idle={inDialog}
+            />
+            {call.muted && (
+              <MicOff
+                className="text-foreground/75 absolute top-1/2 left-1/2 size-1/4 -translate-x-1/2 -translate-y-1/2"
+                aria-hidden
+              />
+            )}
+          </div>
+          <span className="text-muted-foreground -mt-1 text-[11px] font-medium">
+            {call.muted ? "Micro coupé" : "Vous"}
+          </span>
+        </div>
+      </div>
+
+      {/* keypad, between the voices and the controls */}
+      <div
+        inert={!showKeypad}
+        aria-hidden={!showKeypad}
+        className={cn(
+          "relative z-10 grid w-full transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          showKeypad ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className={cn(
+              "mx-auto w-full max-w-64 origin-top px-1 pt-1 pb-4 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              showKeypad ? "translate-y-0 scale-100" : "-translate-y-3 scale-95",
+            )}
+          >
+            <Dialpad compact captureKeyboard={showKeypad} onKey={(k) => void sendDtmf(call.id, k)} />
+          </div>
         </div>
       </div>
 
       {incoming && (
-        <div className="flex w-full items-center justify-center gap-6">
+        <div className="relative z-10 flex w-full max-w-sm items-center justify-center gap-4">
           <Button
             variant="destructive"
             size="lg"
@@ -132,52 +216,52 @@ export function CallPanel({ call }: { call: Call }) {
       )}
 
       {!incoming && !terminal && (
-        <>
-          <div className="flex items-center justify-center gap-3">
-            <ControlButton
-              label={call.muted ? "Réactiver le micro" : "Couper le micro"}
-              active={call.muted}
-              disabled={!inDialog}
-              onClick={() => void toggleMute(call.id)}
-            >
-              {call.muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-            </ControlButton>
-            <ControlButton
-              label={call.heldLocally ? "Reprendre l'appel" : "Mettre en attente"}
-              active={call.heldLocally}
-              disabled={!inDialog}
-              onClick={() => void toggleHold(call.id)}
-            >
-              {call.heldLocally ? <Play className="size-5" /> : <Pause className="size-5" />}
-            </ControlButton>
-            <ControlButton
-              label="Clavier (tonalités DTMF)"
-              active={showKeypad}
-              disabled={!inDialog}
-              onClick={() => setShowKeypad((v) => !v)}
-            >
-              <Grip className="size-5" />
-            </ControlButton>
-            <ControlButton label="Transférer l'appel" disabled={!inDialog} onClick={() => setTransferOpen(true)}>
-              <PhoneForwarded className="size-5" />
-            </ControlButton>
-          </div>
-
-          {showKeypad && inDialog && (
-            <Dialpad compact captureKeyboard className="w-full max-w-64" onKey={(k) => void sendDtmf(call.id, k)} />
-          )}
-
-          <Button
-            variant="destructive"
-            size="lg"
-            className="h-14 w-full max-w-64 rounded-2xl text-base font-semibold dark:bg-destructive dark:hover:bg-destructive/90"
-            onClick={() => void hangup(call.id)}
+        <div
+          role="group"
+          aria-label="Commandes de l'appel"
+          className="relative z-10 grid w-full max-w-sm grid-cols-5 gap-2"
+        >
+          <Control
+            label="Micro"
+            ariaLabel={call.muted ? "Réactiver le micro" : "Couper le micro"}
+            active={call.muted}
+            disabled={!inDialog}
+            onClick={() => void toggleMute(call.id)}
           >
-            <PhoneOff className="size-5" aria-hidden /> Raccrocher
-          </Button>
-          <TransferDialog callId={call.id} open={transferOpen} onOpenChange={setTransferOpen} />
-        </>
+            {call.muted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
+          </Control>
+          <Control
+            label="Attente"
+            ariaLabel={call.heldLocally ? "Reprendre l'appel" : "Mettre en attente"}
+            active={call.heldLocally}
+            disabled={!inDialog}
+            onClick={() => void toggleHold(call.id)}
+          >
+            {call.heldLocally ? <Play className="size-6" /> : <Pause className="size-6" />}
+          </Control>
+          <Control
+            label="Clavier"
+            ariaLabel="Clavier (tonalités DTMF)"
+            active={showKeypad}
+            disabled={!inDialog}
+            onClick={() => setKeypadOpen((v) => !v)}
+          >
+            <Grip className="size-6" />
+          </Control>
+          <Control
+            label="Transfert"
+            ariaLabel="Transférer l'appel"
+            disabled={!inDialog}
+            onClick={() => setTransferOpen(true)}
+          >
+            <PhoneForwarded className="size-6" />
+          </Control>
+          <Control label="Raccrocher" ariaLabel="Raccrocher" danger onClick={() => void hangup(call.id)}>
+            <PhoneOff className="size-6" />
+          </Control>
+        </div>
       )}
+      {!incoming && !terminal && <TransferDialog callId={call.id} open={transferOpen} onOpenChange={setTransferOpen} />}
     </section>
   );
 }

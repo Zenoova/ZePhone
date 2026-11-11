@@ -27,3 +27,6 @@ window.matchMedia ??= ((query: string) => ({
 Element.prototype.scrollIntoView ??= vi.fn();
 Element.prototype.hasPointerCapture ??= () => false;
 Element.prototype.releasePointerCapture ??= () => {};
+
+// jsdom has no canvas: the voice orb simply draws nothing.
+HTMLCanvasElement.prototype.getContext = (() => null) as unknown as typeof HTMLCanvasElement.prototype.getContext;
