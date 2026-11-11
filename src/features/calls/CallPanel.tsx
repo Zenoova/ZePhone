@@ -63,11 +63,9 @@ function Control({
   );
 }
 
-const ORB_EASE = "transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]";
-
 /**
  * The call screen: the remote party's voice as a living orb in the middle, our own (smaller) below it,
- * the keypad that slides in between the orbs and the aligned controls, which stay at the bottom.
+ * and the aligned controls at the bottom. The keypad rises over the voices as a blurred glass sheet.
  */
 export function CallPanel({ call }: { call: Call }) {
   const { answer, reject, hangup, toggleHold, toggleMute, sendDtmf } = useCallsStore.getState();
@@ -134,9 +132,7 @@ export function CallPanel({ call }: { call: Call }) {
         <div
           data-testid="orb-remote"
           className={cn(
-            "relative",
-            ORB_EASE,
-            showKeypad ? "size-24" : "size-[clamp(11rem,36vh,18rem)]",
+            "relative size-[clamp(11rem,36vh,18rem)]",
             (incoming || call.state === "ringing") && "animate-ring-pulse rounded-full",
           )}
         >
@@ -149,10 +145,7 @@ export function CallPanel({ call }: { call: Call }) {
           )}
         </div>
         <div className="flex flex-col items-center gap-1">
-          <div
-            data-testid="orb-local"
-            className={cn("relative", ORB_EASE, showKeypad ? "size-14" : "size-[clamp(5rem,15vh,7.5rem)]")}
-          >
+          <div data-testid="orb-local" className="relative size-[clamp(5rem,15vh,7.5rem)]">
             <VoiceOrb
               callId={call.id}
               source="tx"
@@ -171,27 +164,6 @@ export function CallPanel({ call }: { call: Call }) {
           <span className="text-muted-foreground -mt-1 text-[11px] font-medium">
             {call.muted ? "Micro coupé" : "Vous"}
           </span>
-        </div>
-      </div>
-
-      {/* keypad, between the voices and the controls */}
-      <div
-        inert={!showKeypad}
-        aria-hidden={!showKeypad}
-        className={cn(
-          "relative z-10 grid w-full transition-[grid-template-rows,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          showKeypad ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-        )}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <div
-            className={cn(
-              "mx-auto w-full max-w-64 origin-top px-1 pt-1 pb-4 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              showKeypad ? "translate-y-0 scale-100" : "-translate-y-3 scale-95",
-            )}
-          >
-            <Dialpad compact captureKeyboard={showKeypad} onKey={(k) => void sendDtmf(call.id, k)} />
-          </div>
         </div>
       </div>
 
@@ -216,49 +188,67 @@ export function CallPanel({ call }: { call: Call }) {
       )}
 
       {!incoming && !terminal && (
-        <div
-          role="group"
-          aria-label="Commandes de l'appel"
-          className="relative z-10 grid w-full max-w-sm grid-cols-5 gap-2"
-        >
-          <Control
-            label="Micro"
-            ariaLabel={call.muted ? "Réactiver le micro" : "Couper le micro"}
-            active={call.muted}
-            disabled={!inDialog}
-            onClick={() => void toggleMute(call.id)}
+        <div className="relative z-10 w-full max-w-sm">
+          {/* keypad: a blurred glass sheet that rises over the voices, right above the controls */}
+          <div
+            inert={!showKeypad}
+            aria-hidden={!showKeypad}
+            data-testid="keypad-sheet"
+            className={cn(
+              "glass absolute right-0 bottom-full left-0 mb-3 origin-bottom rounded-3xl p-3.5",
+              "transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              showKeypad
+                ? "translate-y-0 scale-100 opacity-100"
+                : "pointer-events-none translate-y-6 scale-95 opacity-0",
+            )}
           >
-            {call.muted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
-          </Control>
-          <Control
-            label="Attente"
-            ariaLabel={call.heldLocally ? "Reprendre l'appel" : "Mettre en attente"}
-            active={call.heldLocally}
-            disabled={!inDialog}
-            onClick={() => void toggleHold(call.id)}
-          >
-            {call.heldLocally ? <Play className="size-6" /> : <Pause className="size-6" />}
-          </Control>
-          <Control
-            label="Clavier"
-            ariaLabel="Clavier (tonalités DTMF)"
-            active={showKeypad}
-            disabled={!inDialog}
-            onClick={() => setKeypadOpen((v) => !v)}
-          >
-            <Grip className="size-6" />
-          </Control>
-          <Control
-            label="Transfert"
-            ariaLabel="Transférer l'appel"
-            disabled={!inDialog}
-            onClick={() => setTransferOpen(true)}
-          >
-            <PhoneForwarded className="size-6" />
-          </Control>
-          <Control label="Raccrocher" ariaLabel="Raccrocher" danger onClick={() => void hangup(call.id)}>
-            <PhoneOff className="size-6" />
-          </Control>
+            <Dialpad
+              compact
+              captureKeyboard={showKeypad}
+              className="mx-auto max-w-64"
+              onKey={(k) => void sendDtmf(call.id, k)}
+            />
+          </div>
+          <div role="group" aria-label="Commandes de l'appel" className="grid w-full grid-cols-5 gap-2">
+            <Control
+              label="Micro"
+              ariaLabel={call.muted ? "Réactiver le micro" : "Couper le micro"}
+              active={call.muted}
+              disabled={!inDialog}
+              onClick={() => void toggleMute(call.id)}
+            >
+              {call.muted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
+            </Control>
+            <Control
+              label="Attente"
+              ariaLabel={call.heldLocally ? "Reprendre l'appel" : "Mettre en attente"}
+              active={call.heldLocally}
+              disabled={!inDialog}
+              onClick={() => void toggleHold(call.id)}
+            >
+              {call.heldLocally ? <Play className="size-6" /> : <Pause className="size-6" />}
+            </Control>
+            <Control
+              label="Clavier"
+              ariaLabel="Clavier (tonalités DTMF)"
+              active={showKeypad}
+              disabled={!inDialog}
+              onClick={() => setKeypadOpen((v) => !v)}
+            >
+              <Grip className="size-6" />
+            </Control>
+            <Control
+              label="Transfert"
+              ariaLabel="Transférer l'appel"
+              disabled={!inDialog}
+              onClick={() => setTransferOpen(true)}
+            >
+              <PhoneForwarded className="size-6" />
+            </Control>
+            <Control label="Raccrocher" ariaLabel="Raccrocher" danger onClick={() => void hangup(call.id)}>
+              <PhoneOff className="size-6" />
+            </Control>
+          </div>
         </div>
       )}
       {!incoming && !terminal && <TransferDialog callId={call.id} open={transferOpen} onOpenChange={setTransferOpen} />}

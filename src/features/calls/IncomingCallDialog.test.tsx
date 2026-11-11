@@ -35,7 +35,7 @@ describe("IncomingCallDialog", () => {
     expect(screen.getByText("Alice")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Répondre/ }));
     expect(invoke).toHaveBeenCalledWith("answer_call", { id: "call1" });
-    expect(useUiStore.getState().section).toBe("calls");
+    expect(useUiStore.getState().section).toBe("dialer");
   });
 
   it("lets the user decline", () => {

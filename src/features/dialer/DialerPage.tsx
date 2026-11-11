@@ -59,7 +59,7 @@ export function DialerPage() {
     const call = await dial(dialValue.trim(), dialAccountId ?? selected?.id ?? null);
     if (call) {
       setDialValue("");
-      setSection("calls");
+      setSection("dialer");
     }
   };
 
@@ -151,6 +151,7 @@ export function DialerPage() {
         </p>
       )}
 
+      {/* The number is written straight on the background: no field, no placeholder. */}
       <div className="relative">
         <div
           role="textbox"
@@ -158,24 +159,22 @@ export function DialerPage() {
           aria-label="Numéro à appeler"
           data-testid="dial-display"
           data-selectable
-          className={cn(
-            "bg-card flex h-16 w-full items-center justify-center rounded-2xl border px-14 text-center font-medium tracking-wide shadow-xs",
-            dialValue.length > 14 ? "text-lg" : "text-2xl",
-          )}
+          className="flex h-20 w-full items-center justify-center px-14 text-center"
         >
-          {dialValue ? (
-            <span className="min-w-0 truncate">{dialValue}</span>
-          ) : (
-            <span className="text-muted-foreground text-base font-normal tracking-normal">
-              Tapez un numéro ou une adresse SIP
-            </span>
-          )}
+          <span
+            className={cn(
+              "min-w-0 truncate font-light tracking-wide transition-[font-size] duration-150",
+              dialValue.length > 14 ? "text-3xl" : "text-5xl",
+            )}
+          >
+            {dialValue}
+          </span>
         </div>
         {dialValue && (
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full"
+            className="absolute top-1/2 right-0 -translate-y-1/2 rounded-full"
             aria-label="Effacer le dernier caractère"
             onClick={() => setDialValue(dialValue.slice(0, -1))}
             onDoubleClick={() => setDialValue("")}

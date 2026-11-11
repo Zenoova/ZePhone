@@ -80,7 +80,7 @@ describe("DialerPage keyboard", () => {
     fireEvent.keyDown(window, { key: "4", repeat: true });
     fireEvent.keyDown(window, { key: "4", metaKey: true });
     fireEvent.keyDown(window, { key: "4", ctrlKey: true });
-    expect(display()).toHaveTextContent("Tapez un numéro");
+    expect(display().textContent).toBe("");
   });
 
   it("does not hijack real text fields", () => {
@@ -91,7 +91,7 @@ describe("DialerPage keyboard", () => {
       </>,
     );
     press("9", screen.getByLabelText("ailleurs"));
-    expect(display()).toHaveTextContent("Tapez un numéro");
+    expect(display().textContent).toBe("");
   });
 
   it("does not react while a dialog is open", () => {
@@ -102,7 +102,7 @@ describe("DialerPage keyboard", () => {
       </>,
     );
     press("3");
-    expect(display()).toHaveTextContent("Tapez un numéro");
+    expect(display().textContent).toBe("");
   });
 
   it("Backspace, Alt+Backspace and Escape edit the number", () => {
@@ -111,7 +111,7 @@ describe("DialerPage keyboard", () => {
     press("Backspace");
     expect(display()).toHaveTextContent("123");
     fireEvent.keyDown(window, { key: "Backspace", altKey: true });
-    expect(display()).toHaveTextContent("Tapez un numéro");
+    expect(display().textContent).toBe("");
     useUiStore.setState({ dialValue: "55" });
     press("Escape");
     expect(useUiStore.getState().dialValue).toBe("");
@@ -164,7 +164,7 @@ describe("DialerPage redial", () => {
     render(<DialerPage />);
     fireEvent.click(screen.getByRole("button", { name: /Appeler/ }));
     await vi.waitFor(() => expect(toast.info).toHaveBeenCalledWith("Aucun appel sortant à rappeler"));
-    expect(display()).toHaveTextContent("Tapez un numéro");
+    expect(display().textContent).toBe("");
   });
 
   it("the button stays enabled with an empty display when an account is connected", () => {

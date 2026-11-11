@@ -1,31 +1,17 @@
-import { PhoneCall } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
-import { EmptyState } from "@/components/EmptyState";
-import { Button } from "@/components/ui/button";
 import { isTerminal, sortedCalls, useCallsStore } from "@/stores/calls-store";
-import { useUiStore } from "@/stores/ui-store";
 
 import { CallPanel } from "./CallPanel";
 import { CallRow } from "./CallRow";
 
-export function CallsPage() {
-  const calls = useCallsStore(useShallow((s) => sortedCalls(s.calls)));
-  const setSection = useUiStore((s) => s.setSection);
-
-  if (calls.length === 0) {
-    return (
-      <EmptyState
-        icon={PhoneCall}
-        title="Aucun appel en cours"
-        description="Les appels en cours et entrants apparaissent ici, avec micro, attente, clavier et transfert."
-        action={<Button onClick={() => setSection("dialer")}>Ouvrir le clavier</Button>}
-      />
-    );
-  }
+/** Every call in progress: the main one on the full call screen, the others as compact lines. */
+export function CallsView() {
+  const calls = useCallsStore(useShallow((s) => sortedCalls(s.calls).filter((c) => !isTerminal(c))));
+  if (calls.length === 0) return null;
 
   // The call in progress gets the full screen; any other call (call waiting...) is a compact line below.
-  const primary = calls.find((c) => c.state !== "incoming" && !isTerminal(c)) ?? calls[0]!;
+  const primary = calls.find((c) => c.state !== "incoming") ?? calls[0]!;
   const others = calls.filter((c) => c.id !== primary.id);
 
   return (

@@ -37,7 +37,7 @@ export function ContactsPage() {
 
   const call = async (c: Contact) => {
     const started = await dial(c.number);
-    if (started) setSection("calls");
+    if (started) setSection("dialer");
   };
 
   return (

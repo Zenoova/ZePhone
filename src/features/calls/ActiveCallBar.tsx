@@ -8,14 +8,14 @@ import { CALL_STATE_LABEL } from "@/lib/labels";
 import { selectLiveCalls, useCallsStore } from "@/stores/calls-store";
 import { useUiStore } from "@/stores/ui-store";
 
-/** Slim bar shown above any section (except "Appels") while a call is in progress. */
+/** Slim bar shown above any section (except the keypad page, which shows the call itself) while a call is in progress. */
 export function ActiveCallBar() {
   const live = useCallsStore(useShallow((s) => selectLiveCalls(s.calls)));
   const section = useUiStore((s) => s.section);
   const setSection = useUiStore((s) => s.setSection);
   const call = live[0];
   const seconds = useCallDuration(call);
-  if (!call || section === "calls") return null;
+  if (!call || section === "dialer") return null;
   const { toggleMute, hangup } = useCallsStore.getState();
   const connected = call.state === "connected" || call.state === "onHold";
 
@@ -29,7 +29,7 @@ export function ActiveCallBar() {
       <button
         type="button"
         className="min-w-0 flex-1 truncate text-left font-medium"
-        onClick={() => setSection("calls")}
+        onClick={() => setSection("dialer")}
       >
         {callDisplayName(call)} ·{" "}
         {connected ? <span className="tabular">{formatDuration(seconds)}</span> : CALL_STATE_LABEL[call.state]}

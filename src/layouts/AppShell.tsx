@@ -3,13 +3,11 @@ import { useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
-import { CallsPage } from "@/features/calls/CallsPage";
 import { IncomingCallDialog } from "@/features/calls/IncomingCallDialog";
 import { ContactsPage } from "@/features/contacts/ContactsPage";
-import { DialerPage } from "@/features/dialer/DialerPage";
+import { HomePage } from "@/features/home/HomePage";
 import { HistoryPage } from "@/features/history/HistoryPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
-import { shouldReturnToDialer } from "@/lib/call-flow";
 import { useCallsStore } from "@/stores/calls-store";
 import { type Section, useUiStore } from "@/stores/ui-store";
 
@@ -19,14 +17,13 @@ import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 
 const PAGES: Record<Section, () => React.JSX.Element> = {
-  dialer: DialerPage,
-  calls: CallsPage,
+  dialer: HomePage,
   contacts: ContactsPage,
   history: HistoryPage,
   settings: SettingsPage,
 };
 
-/** ⌘1…⌘5 (Ctrl on Windows/Linux) switch sections; new calls open the call screen, the end of the last one returns to the keypad. */
+/** ⌘1…⌘4 (Ctrl on Windows/Linux) switch sections; a new call brings the keypad page, which then shows the call. */
 function useShellBehaviour() {
   const setSection = useUiStore((s) => s.setSection);
   const seen = useRef(new Set<string>());
@@ -46,14 +43,13 @@ function useShellBehaviour() {
 
   useEffect(
     () =>
-      useCallsStore.subscribe((state, prev) => {
+      useCallsStore.subscribe((state) => {
         for (const call of Object.values(state.calls)) {
           if (seen.current.has(call.id)) continue;
           seen.current.add(call.id);
-          if (call.state !== "incoming") setSection("calls");
+          // The call screen lives on the keypad page: show it as soon as a call starts.
+          if (call.state !== "incoming") setSection("dialer");
         }
-        // Back to the keypad once the last call is over.
-        if (shouldReturnToDialer(prev.calls, state.calls, useUiStore.getState().section)) setSection("dialer");
       }),
     [setSection],
   );

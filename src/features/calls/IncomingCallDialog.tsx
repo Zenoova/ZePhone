@@ -54,7 +54,7 @@ export function IncomingCallDialog() {
                 autoFocus
                 onClick={() => {
                   void answer(call.id);
-                  setSection("calls");
+                  setSection("dialer");
                 }}
               >
                 <Phone className="size-5" aria-hidden /> Répondre

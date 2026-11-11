@@ -131,28 +131,23 @@ describe("CallPanel", () => {
       expect(screen.getByText("Vous")).toBeInTheDocument();
     });
 
-    it("the keypad sits between the voices and the controls, hidden until asked for", () => {
-      const { container } = show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
-      const keypad = screen.getByRole("group", { name: "Clavier numérique", hidden: true });
-      const region = keypad.closest("[inert], [aria-hidden]") as HTMLElement;
-      expect(region).toHaveAttribute("aria-hidden", "true");
-      expect(region).toHaveAttribute("inert");
+    it("the keypad is a glass sheet over the voices, right above the controls, hidden until asked for", () => {
+      show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
+      const sheet = screen.getByTestId("keypad-sheet");
+      expect(sheet).toHaveAttribute("aria-hidden", "true");
+      expect(sheet).toHaveAttribute("inert");
+      expect(sheet.className).toContain("glass");
 
       fireEvent.click(screen.getByRole("button", { name: "Clavier (tonalités DTMF)" }));
-      expect(region).toHaveAttribute("aria-hidden", "false");
-      expect(region).not.toHaveAttribute("inert");
-      // DOM order = visual order: orbs, keypad, controls.
-      const order = [
-        screen.getByTestId("orb-local"),
-        region,
-        screen.getByRole("group", { name: "Commandes de l'appel" }),
-      ];
-      for (let i = 0; i < order.length - 1; i++) {
-        expect(order[i]!.compareDocumentPosition(order[i + 1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      }
-      // The remote orb shrinks to make room.
-      expect(screen.getByTestId("orb-remote").className).toContain("size-24");
-      expect(container).toBeTruthy();
+      expect(sheet).toHaveAttribute("aria-hidden", "false");
+      expect(sheet).not.toHaveAttribute("inert");
+      // It overlays: positioned above the controls, inside the same container.
+      const controls = screen.getByRole("group", { name: "Commandes de l'appel" });
+      expect(sheet.parentElement).toBe(controls.parentElement);
+      expect(sheet.compareDocumentPosition(controls) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // The voices keep their size: nothing is pushed aside.
+      expect(screen.getByTestId("orb-remote").className).toContain("size-[clamp(11rem");
+      expect(screen.getByTestId("orb-local").className).toContain("size-[clamp(5rem");
     });
 
     it("keyboard digits drive the keypad only while it is open", () => {

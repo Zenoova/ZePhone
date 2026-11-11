@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type Section = "dialer" | "calls" | "contacts" | "history" | "settings";
+export type Section = "dialer" | "contacts" | "history" | "settings";
 export type SettingsTab = "accounts" | "audio" | "network" | "notifications" | "general" | "about";
 
 interface UiState {

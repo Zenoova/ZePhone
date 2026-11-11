@@ -72,7 +72,7 @@ export function HistoryPage() {
 
   const callBack = async (e: HistoryEntry) => {
     const started = await dial(e.remoteUri.startsWith("sip") ? e.remoteUri : e.remoteNumber, e.accountId);
-    if (started) setSection("calls");
+    if (started) setSection("dialer");
   };
 
   return (
