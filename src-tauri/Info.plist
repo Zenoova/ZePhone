@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>ZePhone a besoin du microphone pour que votre correspondant vous entende pendant un appel.</string>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>ZePhone se connecte à votre serveur SIP/PBX, y compris sur votre réseau local.</string>
+</dict>
+</plist>
