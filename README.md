@@ -260,6 +260,8 @@ Le code Rust est portable (pilote audio, extension des modules, chemins, trousse
 
 ## Limites connues
 
+- **Fond translucide** : il utilise l'API privée `macOSPrivateApi` de Tauri (fenêtre transparente + `NSVisualEffectView`), incompatible avec le Mac App Store ; ce n'est pas le matériau « Liquid Glass » natif de macOS 26 mais l'effet de transparence classique. Sur Windows/Linux il est ignoré.
+
 - **Non vérifié sans matériel/serveur réel** : la capture/lecture sur le micro et les haut-parleurs réels pendant un appel
   (les tests utilisent des sources/puits audio synthétiques ; la sélection des périphériques CoreAudio et la permission micro
   sont, elles, vérifiées) ; l'affichage de l'invite micro et l'attribution TCC au sous-processus Baresip sur un **premier lancement
