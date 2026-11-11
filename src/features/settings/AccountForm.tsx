@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { PasswordInput } from "@/components/PasswordInput";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -168,9 +169,8 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
               : "Stocké dans le trousseau du système, jamais en clair."
           }
         >
-          <Input
+          <PasswordInput
             id="a-pass"
-            type="password"
             autoComplete="new-password"
             value={form.password}
             onChange={text("password")}
