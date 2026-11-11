@@ -180,6 +180,11 @@ collect_licences() {
 }
 : > "$TAURI/resources/baresip/licenses/MANIFEST.txt"
 collect_licences "$(cd "$PREFIX" && pwd -P)/bin/baresip"
+# Custom builds (scripts/build-baresip.sh) are not Homebrew kegs: they ship their own LICENSE file.
+if [[ -f "$PREFIX/LICENSE" ]]; then
+  cp "$PREFIX/LICENSE" "$TAURI/resources/baresip/licenses/baresip-LICENSE"
+  echo "baresip $(basename "$("$PREFIX/bin/baresip" -h 2>&1 | head -1 | awk '{print $2}')")" >> "$TAURI/resources/baresip/licenses/MANIFEST.txt"
+fi
 for l in "${BUNDLED_SRC[@]:-}"; do [[ -n "$l" ]] && collect_licences "$l"; done
 sort -u -o "$TAURI/resources/baresip/licenses/MANIFEST.txt" "$TAURI/resources/baresip/licenses/MANIFEST.txt"
 

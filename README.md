@@ -35,7 +35,7 @@ Aucun PBX n'est codé en dur : vous renseignez votre serveur, domaine, identifia
 | Comptes         | Plusieurs comptes, ajout/modification/suppression, compte par défaut, activation, connexion/déconnexion, proxy sortant, intervalle d'enregistrement, SRTP. Statut en temps réel **issu des événements SIP** (Non configuré · Connexion en cours · Enregistré · Déconnecté · Erreur) avec le code SIP (401, 403, 404, 408, 503…). Un challenge 401 suivi d'une authentification réussie n'est **pas** un échec. |
 | Appels sortants | Clavier, adresse SIP libre, appel depuis un contact ou l'historique, choix du compte, progression réelle (initialisation → composition → sonnerie distante → connecté), durée, micro coupé, attente/reprise, DTMF (RFC 4733), transfert aveugle (REFER), raccrochage.                                                                                                                                          |
 | Appels entrants | Sonnerie (Baresip), fenêtre d'appel entrant par-dessus n'importe quelle section, notification native, accepter/refuser (603), appel manqué, réception fenêtre fermée (icône dans la barre des menus).                                                                                                                                                                                                          |
-| Audio           | Sélection micro/sortie (noms CoreAudio), périphériques USB/Bluetooth, G.711 PCMA/PCMU, SRTP ; G.722/Opus chargés **si présents** dans la build Baresip (voir limites). Permission micro macOS (`NSMicrophoneUsageDescription`, entitlement `audio-input`).                                                                                                                                                     |
+| Audio           | Sélection micro/sortie (noms CoreAudio), périphériques USB/Bluetooth, G.711 PCMA/PCMU, **G.722 et Opus** (build Baresip personnalisée, `npm run sidecar:hd`), SRTP ; les codecs large bande sont préférés, G.711 reste le repli universel. Permission micro macOS (`NSMicrophoneUsageDescription`, entitlement `audio-input`).                                                                                 |
 | Historique      | Entrants/sortants/manqués/refusés/échoués, durée réelle mesurée, compte, résultat ; rappel en un clic, suppression, recherche, filtres, badge « manqués non lus ».                                                                                                                                                                                                                                             |
 | Contacts        | Prénom, nom, société, numéro/URI SIP, recherche, ajout/édition/suppression, appel direct ; le nom du contact s'affiche sur les appels entrants/sortants.                                                                                                                                                                                                                                                       |
 | Paramètres      | Comptes, audio, réseau (port SIP local, interface, CA TLS perso, trace SIP, redémarrage moteur, journal), notifications, général (thème clair/sombre/auto, démarrage à l'ouverture de session, démarrage réduit, icône barre des menus, rester actif à la fermeture), à propos.                                                                                                                                |
@@ -125,8 +125,15 @@ rustup target add x86_64-apple-darwin   # facultatif : build Intel / universelle
 npm install
 ```
 
-Homebrew n'est utilisé **que pour développer** : l'application packagée embarque Baresip, libre et
-OpenSSL, sans rien demander à l'utilisateur final.
+Pour embarquer **G.722 et Opus** (absents de la bouteille Homebrew de Baresip) :
+
+```bash
+brew install cmake pkgconf opus spandsp
+npm run sidecar:hd        # compile Baresip depuis les sources (tag = version de libre) puis prépare le sidecar
+```
+
+Homebrew n'est utilisé **que pour développer** : l'application packagée embarque Baresip, libre, OpenSSL
+(et Opus/spandsp avec la build HD) sans rien demander à l'utilisateur final.
 
 ## Lancer en développement
 
@@ -186,7 +193,10 @@ message clair).
 cd src-tauri && cargo test --lib
 
 # Rust : bout en bout contre le VRAI Baresip (nécessite `npm run sidecar` ; modules de test ausine/aufile du Baresip local)
-cargo test --test engine_integration --test manager_e2e -- --test-threads=1
+npm run test:e2e
+
+# Rust : interopérabilité contre un VRAI PBX (FreeSWITCH lancé à la volée, loopback, mot de passe aléatoire, nettoyé ensuite)
+brew install freeswitch && npm run test:pbx
 
 # Frontend
 npm run typecheck && npm run lint && npm test && npm run build
@@ -194,18 +204,23 @@ npm run typecheck && npm run lint && npm test && npm run build
 
 Ce que couvrent les tests d'intégration (aucun mock du moteur) :
 
-- démarrage du sidecar, version/codecs, port de contrôle **sur loopback uniquement**, aucun fichier `accounts` ;
+- démarrage du sidecar, version/codecs (dont Opus et G.722 s'ils sont embarqués), port de contrôle **sur loopback uniquement**,
+  aucun fichier `accounts` ;
 - arrêt sans processus orphelin ; redémarrage automatique après `SIGKILL` du moteur ;
 - enregistrement via un registrar de test avec **challenge Digest 401** (puis 200), mot de passe erroné → **401**,
   403, 503, connexion TCP refusée ; aucun mot de passe dans les journaux ;
 - **appel réel entre deux instances Baresip** avec RTP : un sinus 440 Hz et un sinus 880 Hz sont émis, reçus et écrits
-  en WAV des deux côtés (audio bidirectionnel mesuré), DTMF, attente/reprise, muet, raccrochage, refus 603 ;
+  en WAV des deux côtés (audio bidirectionnel mesuré, en Opus), DTMF, attente/reprise, muet, raccrochage, refus 603 ;
 - `SipManager` complet (moteur réel + SQLite) : statuts, appel sortant/entrant, manqué, refusé, historique, nom de contact,
   notifications ;
-- les noms de périphériques audio listés par l'UI sont acceptés par Baresip (CoreAudio).
+- **FreeSWITCH (PBX tiers réel)** : enregistrement Digest, mauvais mot de passe → `403 Forbidden`, appel sortant vers un poste par
+  son numéro, audio dans les deux sens relayé par le PBX, DTMF, attente/reprise, appel entrant avec nom du contact, **transfert aveugle (REFER)**
+  vers un 3e poste, appel manqué ;
+- les noms de périphériques audio listés par l'UI sont acceptés par Baresip (CoreAudio) et un nom inconnu est refusé.
 
-Vérifié à la main sur l'application packagée : démarrage, lancement du sidecar, connexion `127.0.0.1`, fichiers en
-`0600/0700`, quitter via ⌘Q / `SIGTERM` / `SIGKILL` **sans processus orphelin**.
+Vérifié à la main sur l'application packagée (debug et release) : démarrage, lancement du sidecar, connexion `127.0.0.1`, fichiers en
+`0600/0700`, quitter via ⌘Q (événement Apple) / `SIGTERM` / `SIGKILL` **sans processus orphelin** ; `.dmg` vérifié (`hdiutil verify`)
+et signature ad hoc valide après montage.
 
 ## Sécurité
 
@@ -248,8 +263,9 @@ Le code Rust est portable (pilote audio, extension des modules, chemins, trousse
   (les tests utilisent des sources/puits audio synthétiques ; la sélection des périphériques CoreAudio et la permission micro
   sont, elles, vérifiées) ; l'affichage de l'invite micro et l'attribution TCC au sous-processus Baresip sur un **premier lancement
   propre**, la notification native macOS, la sonnerie sur le haut-parleur, un opérateur VoIP réel, TLS avec un vrai certificat.
-- **Codecs** : la build Homebrew de Baresip ne fournit que G.711 (PCMA/PCMU). G.722 et Opus sont chargés automatiquement
-  s'ils sont présents dans `engine/modules` ; voir `scripts/prepare-baresip.sh` (`BARESIP_PREFIX` vers une build personnalisée).
+- **Codecs** : la bouteille Homebrew de Baresip ne fournit que G.711 ; Opus et G.722 viennent de `npm run sidecar:hd`. G.722 s'appuie
+  sur **spandsp (LGPL-2.1, liée dynamiquement, projet non maintenu)** : voir `THIRD_PARTY_NOTICES.md`. Sans ces modules l'application
+  retombe automatiquement sur G.711.
 - **Transfert** : transfert aveugle (REFER) ; pas de transfert supervisé dans l'interface. Un appel sortant à la fois en cours d'établissement.
 - **NAT** : pas de STUN/TURN/ICE configurable dans l'UI v1 (modules disponibles dans Baresip).
 - **Vidéo, messagerie instantanée, présence, BLF** : hors périmètre.
@@ -263,8 +279,9 @@ ZePhone embarque :
 
 - **Baresip** et **libre** — BSD-3-Clause ;
 - **OpenSSL** (`libssl`/`libcrypto`) — Apache-2.0 ;
-- G.711 est intégré à Baresip (domaine public / BSD) ; **Opus** (BSD-3-Clause) et **G.722** sont facultatifs.
+- **Opus** (BSD-3-Clause) et **spandsp** pour G.722 (LGPL-2.1, dynamique), plus leurs dépendances (libtiff, libjpeg-turbo, libwebp, xz, zstd) ;
+- G.711 est intégré à Baresip.
 
-Les textes de licence se trouvent dans `Contents/Resources/engine/licenses/` du bundle. Voir aussi
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). Les dépendances Rust/JS (Tauri, React, shadcn/ui, Radix, Tailwind, rusqlite,
+Les textes de licence se trouvent dans `Contents/Resources/engine/licenses/` du bundle (`MANIFEST.txt` liste les versions).
+Voir aussi [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). **Aucune licence n'est encore déclarée pour le code de ZePhone lui-même.** Les dépendances Rust/JS (Tauri, React, shadcn/ui, Radix, Tailwind, rusqlite,
 keyring, cpal…) sont sous licences MIT / Apache-2.0.

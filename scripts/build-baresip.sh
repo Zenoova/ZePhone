@@ -31,6 +31,7 @@ cmake -S "$SRC" -B "$WORK/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=
   -DCMAKE_INSTALL_PREFIX="$PREFIX" -DSTATIC=OFF
 cmake --build "$WORK/build" -j"$(sysctl -n hw.ncpu)"
 cmake --install "$WORK/build"
+cp "$SRC/LICENSE" "$PREFIX/LICENSE"   # BSD-3-Clause, shipped with the bundle
 
 echo "Built: $PREFIX"
 ls "$PREFIX/lib/baresip/modules" | grep -E '^(opus|g722)\.so$' || true
