@@ -1,3 +1,5 @@
+import { UserRound } from "lucide-react";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -17,10 +19,15 @@ function hash(s: string): number {
   return h;
 }
 
+/** A bare number or extension has no initials: show a generic person icon instead. */
+const isNumeric = (name: string) => /^[\d+*#().\s-]+$/.test(name.trim());
+
 export function ContactAvatar({ name, className }: { name: string; className?: string }) {
   return (
     <Avatar className={cn("size-10", className)}>
-      <AvatarFallback className={cn("font-medium", PALETTE[hash(name) % PALETTE.length])}>{initials(name)}</AvatarFallback>
+      <AvatarFallback className={cn("font-medium", PALETTE[hash(name) % PALETTE.length])}>
+        {isNumeric(name) ? <UserRound className="size-[45%]" aria-hidden /> : initials(name)}
+      </AvatarFallback>
     </Avatar>
   );
 }

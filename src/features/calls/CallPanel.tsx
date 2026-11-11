@@ -113,7 +113,7 @@ export function CallPanel({ call }: { call: Call }) {
           <Button
             variant="destructive"
             size="lg"
-            className="h-14 flex-1 rounded-2xl"
+            className="h-14 flex-1 rounded-2xl dark:bg-destructive dark:hover:bg-destructive/90"
             onClick={() => void reject(call.id)}
           >
             <PhoneOff className="size-5" aria-hidden /> Refuser
@@ -162,7 +162,7 @@ export function CallPanel({ call }: { call: Call }) {
           <Button
             variant="destructive"
             size="lg"
-            className="h-14 w-full max-w-64 rounded-2xl text-base font-semibold"
+            className="h-14 w-full max-w-64 rounded-2xl text-base font-semibold dark:bg-destructive dark:hover:bg-destructive/90"
             onClick={() => void hangup(call.id)}
           >
             <PhoneOff className="size-5" aria-hidden /> Raccrocher

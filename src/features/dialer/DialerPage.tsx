@@ -107,6 +107,7 @@ export function DialerPage() {
           aria-label="Numéro à appeler"
           className={cn(
             "bg-card h-16 w-full rounded-2xl border px-14 text-center font-medium tracking-wide shadow-xs outline-none",
+            "placeholder:text-muted-foreground placeholder:text-base placeholder:font-normal placeholder:tracking-normal",
             "focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:ring-[3px]",
             dialValue.length > 14 ? "text-lg" : "text-2xl",
           )}
