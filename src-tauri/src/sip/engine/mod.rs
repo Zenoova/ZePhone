@@ -169,6 +169,9 @@ pub trait SipEngine: Send + Sync + 'static {
     /// Selects audio devices for subsequent calls (`None` = system default).
     async fn set_audio_devices(&self, input: Option<&str>, output: Option<&str>) -> EngineResult<()>;
 
+    /// Silences the incoming-call ringtone (call stays ringing).
+    async fn silence_ringtone(&self) -> EngineResult<()>;
+
     /// Stores options used at the next (re)start.
     fn set_options(&self, options: EngineOptions);
     /// Recent engine output, secrets redacted (diagnostics).

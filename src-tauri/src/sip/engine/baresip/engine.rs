@@ -282,6 +282,10 @@ impl SipEngine for BaresipEngine {
         self.run("transfer", target_uri).await.map(|_| ())
     }
 
+    async fn silence_ringtone(&self) -> EngineResult<()> {
+        self.run("stopringing", "").await.map(|_| ())
+    }
+
     async fn set_audio_devices(&self, input: Option<&str>, output: Option<&str>) -> EngineResult<()> {
         {
             let mut s = self.inner.settings.lock().unwrap();
