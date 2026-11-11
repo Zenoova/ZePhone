@@ -9,6 +9,7 @@ import { ContactsPage } from "@/features/contacts/ContactsPage";
 import { DialerPage } from "@/features/dialer/DialerPage";
 import { HistoryPage } from "@/features/history/HistoryPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
+import { shouldReturnToDialer } from "@/lib/call-flow";
 import { useCallsStore } from "@/stores/calls-store";
 import { type Section, useUiStore } from "@/stores/ui-store";
 
@@ -25,7 +26,7 @@ const PAGES: Record<Section, () => React.JSX.Element> = {
   settings: SettingsPage,
 };
 
-/** ⌘1…⌘5 (Ctrl on Windows/Linux) switch sections; new outgoing/connected calls open the call screen. */
+/** ⌘1…⌘5 (Ctrl on Windows/Linux) switch sections; new calls open the call screen, the end of the last one returns to the keypad. */
 function useShellBehaviour() {
   const setSection = useUiStore((s) => s.setSection);
   const seen = useRef(new Set<string>());
@@ -45,12 +46,14 @@ function useShellBehaviour() {
 
   useEffect(
     () =>
-      useCallsStore.subscribe((state) => {
+      useCallsStore.subscribe((state, prev) => {
         for (const call of Object.values(state.calls)) {
           if (seen.current.has(call.id)) continue;
           seen.current.add(call.id);
           if (call.state !== "incoming") setSection("calls");
         }
+        // Back to the keypad once the last call is over.
+        if (shouldReturnToDialer(prev.calls, state.calls, useUiStore.getState().section)) setSection("dialer");
       }),
     [setSection],
   );
