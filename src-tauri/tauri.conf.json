@@ -53,13 +53,7 @@
     "macOS": {
       "minimumSystemVersion": "11.0",
       "entitlements": "Entitlements.plist",
-      "signingIdentity": "-",
-      "frameworks": [
-        "binaries/libs/libbaresip.30.dylib",
-        "binaries/libs/libre.46.dylib",
-        "binaries/libs/libssl.4.dylib",
-        "binaries/libs/libcrypto.4.dylib"
-      ]
+      "signingIdentity": "-"
     }
   }
 }

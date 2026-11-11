@@ -87,7 +87,7 @@ fn path_value(p: &Path) -> String {
 }
 
 /// Optional modules loaded when present in the module directory.
-pub const OPTIONAL_CODEC_MODULES: &[&str] = &["g722", "opus"];
+pub const OPTIONAL_CODEC_MODULES: &[&str] = &["opus", "g722"];
 
 pub fn render_config(input: &ConfigInput<'_>) -> String {
     let ext = module_ext();
@@ -139,12 +139,14 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
         "module_path\t\t{}\n",
         path_value(input.modules_dir)
     ));
-    c.push_str(&format!("module\t\t\tg711.{ext}\n"));
+    // Codec preference = module load order: wideband codecs (when shipped) before G.711,
+    // which stays as the universal fallback.
     for m in OPTIONAL_CODEC_MODULES {
         if (input.module_exists)(&format!("{m}.{ext}")) {
             c.push_str(&format!("module\t\t\t{m}.{ext}\n"));
         }
     }
+    c.push_str(&format!("module\t\t\tg711.{ext}\n"));
     c.push_str(&format!("module\t\t\tauconv.{ext}\n"));
     c.push_str(&format!("module\t\t\tauresamp.{ext}\n"));
     match ov {
@@ -279,6 +281,8 @@ mod tests {
         assert!(cfg.contains("g711.so"));
         assert!(cfg.contains("opus.so"));
         assert!(!cfg.contains("g722.so"));
+        // Opus is preferred over G.711 (earlier module = higher priority).
+        assert!(cfg.find("opus.so").unwrap() < cfg.find("g711.so").unwrap());
         // No console / http / accounts modules.
         for forbidden in ["cons.so", "httpd.so", "stdio.so", "account.so"] {
             assert!(!cfg.contains(forbidden), "{forbidden} must not be loaded");

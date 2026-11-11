@@ -88,6 +88,7 @@ resolve_dep() {
 }
 
 BUNDLED=()   # basenames already copied
+BUNDLED_SRC=()  # their real source paths (for licence collection)
 copy_lib_tree() {
   local owner="$1" dep real base
   while IFS= read -r dep; do
@@ -98,6 +99,7 @@ copy_lib_tree() {
     base="$(basename "$real")"
     if [[ " ${BUNDLED[*]:-} " != *" $base "* ]]; then
       BUNDLED+=("$base")
+      BUNDLED_SRC+=("$real")
       cp -L "$real" "$TAURI/binaries/libs/$base"
       chmod u+w "$TAURI/binaries/libs/$base"
       copy_lib_tree "$real"
@@ -129,6 +131,31 @@ install_name_tool -add_rpath "@executable_path/../Frameworks" "$EXE_OUT"
 install_name_tool -add_rpath "@executable_path/../../binaries/libs" "$EXE_OUT"
 install_name_tool -add_rpath "@executable_path/libs" "$EXE_OUT"   # running it straight from src-tauri/binaries
 
+
+# ---- modules -----------------------------------------------------------------
+COPIED_MODULES=()
+for m in "${MODULES[@]}"; do
+  src="$MODULES_SRC/$m.so"
+  if [[ -f "$src" ]]; then
+    cp -L "$src" "$TAURI/resources/baresip/modules/$m.so"
+    chmod u+w "$TAURI/resources/baresip/modules/$m.so"
+    COPIED_MODULES+=("$m")
+    copy_lib_tree "$src"          # e.g. opus.so -> libopus, g722.so -> libspandsp -> libtiff...
+  else
+    echo "note: optional module $m.so is not part of this Baresip build (skipped)"
+  fi
+done
+
+# Point every module at the bundled libraries: Contents/Frameworks in the app bundle,
+# src-tauri/binaries/libs while developing (modules live in target/<profile>/engine/modules).
+for m in "${COPIED_MODULES[@]}"; do
+  mod="$TAURI/resources/baresip/modules/$m.so"
+  fix_refs "$mod"
+  while IFS= read -r rp; do install_name_tool -delete_rpath "$rp" "$mod"; done < <(rpaths_of "$mod")
+  install_name_tool -add_rpath "@loader_path/../../../Frameworks" "$mod"
+  install_name_tool -add_rpath "@loader_path/../../../../binaries/libs" "$mod"
+done
+# Every bundled library (Baresip's own and those pulled in by modules) must be relocatable too.
 for lib in "$TAURI/binaries/libs/"*.dylib; do
   base="$(basename "$lib")"
   install_name_tool -id "@rpath/$base" "$lib"
@@ -137,30 +164,35 @@ for lib in "$TAURI/binaries/libs/"*.dylib; do
   install_name_tool -add_rpath "@loader_path" "$lib"
 done
 
-# ---- modules -----------------------------------------------------------------
-for m in "${MODULES[@]}"; do
-  src="$MODULES_SRC/$m.so"
-  if [[ -f "$src" ]]; then
-    cp -L "$src" "$TAURI/resources/baresip/modules/$m.so"
-    chmod u+w "$TAURI/resources/baresip/modules/$m.so"
-    if otool -L "$src" | tail -n +2 | awk '{print $1}' | grep -vqE '^(/usr/lib/|/System/)'; then
-      echo "warning: module $m.so links against non-system libraries:" >&2
-      otool -L "$src" | tail -n +2 | awk '{print "   " $1}' | grep -vE '(/usr/lib/|/System/)' >&2 || true
-    fi
-  else
-    echo "note: optional module $m.so is not part of this Baresip build (skipped)"
-  fi
-done
-
 for s in "${SOUNDS[@]}"; do cp "$SOUNDS_SRC/$s" "$TAURI/resources/baresip/sounds/$s"; done
 
-# ---- licences ------------------------------------------------------------------
-for pkg in baresip libre; do
-  p="$(brew --prefix "$pkg" 2>/dev/null || true)"
-  for f in LICENSE LICENSE.txt COPYING; do
-    [[ -n "$p" && -f "$p/$f" ]] && cp "$p/$f" "$TAURI/resources/baresip/licenses/$pkg-$f" || true
+# ---- licences --------------------------------------------------------------------
+collect_licences() {
+  # $1 = real path of a file inside a Homebrew keg: copy that formula's licence files.
+  local real="$1" formula dir f
+  formula="$(echo "$real" | sed -n 's#.*/Cellar/\([^/]*\)/.*#\1#p')"
+  [[ -n "$formula" ]] || return 0
+  dir="$(echo "$real" | sed -n 's#\(.*/Cellar/[^/]*/[^/]*\)/.*#\1#p')"
+  for f in LICENSE LICENSE.txt LICENSE.md COPYING COPYING.LESSER COPYRIGHT COPYRIGHT.txt LICENCE; do
+    [[ -f "$dir/$f" ]] && cp "$dir/$f" "$TAURI/resources/baresip/licenses/$formula-$f" || true
   done
-done
+  echo "$formula $(basename "$dir")" >> "$TAURI/resources/baresip/licenses/MANIFEST.txt"
+}
+: > "$TAURI/resources/baresip/licenses/MANIFEST.txt"
+collect_licences "$(cd "$PREFIX" && pwd -P)/bin/baresip"
+for l in "${BUNDLED_SRC[@]:-}"; do [[ -n "$l" ]] && collect_licences "$l"; done
+sort -u -o "$TAURI/resources/baresip/licenses/MANIFEST.txt" "$TAURI/resources/baresip/licenses/MANIFEST.txt"
+
+# Frameworks to bundle (dylibs -> Contents/Frameworks), merged by Tauri as a platform config.
+python3 -I - "$TAURI" <<'PY'
+import json, os, sys
+tauri = sys.argv[1]
+libs = sorted(f for f in os.listdir(os.path.join(tauri, "binaries", "libs")) if f.endswith(".dylib"))
+cfg = {"bundle": {"macOS": {"frameworks": [f"binaries/libs/{l}" for l in libs]}}}
+with open(os.path.join(tauri, "tauri.macos.conf.json"), "w") as f:
+    json.dump(cfg, f, indent=2)
+    f.write("\n")
+PY
 
 # ---- ad-hoc signature (mandatory on arm64 after editing load commands) -----------
 codesign --force --sign - "$TAURI/binaries/libs/"*.dylib

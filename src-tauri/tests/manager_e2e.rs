@@ -431,9 +431,19 @@ async fn full_call_cycle_through_the_manager_with_audio_and_history() {
     })
     .await
     .expect("B sees the hangup");
-    tokio::time::sleep(Duration::from_millis(300)).await;
     let sz = |p: &std::path::Path| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0);
-    let (heard_by_a, heard_by_b) = (sz(&a_rx), sz(&b_rx));
+    // The WAV writer buffers: wait until both files stop growing before measuring.
+    let (mut last, mut stable) = ((0, 0), 0);
+    for _ in 0..30 {
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        let now = (sz(&a_rx), sz(&b_rx));
+        stable = if now == last { stable + 1 } else { 0 };
+        last = now;
+        if stable >= 3 {
+            break;
+        }
+    }
+    let (heard_by_a, heard_by_b) = last;
     println!("audio received during call 1: A={heard_by_a} bytes, B={heard_by_b} bytes");
     assert!(
         heard_by_a > 16_000,

@@ -14,7 +14,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "sidecar": "bash scripts/prepare-baresip.sh",
     "test:pbx": "bash scripts/test-pbx-freeswitch.sh",
-    "test:e2e": "cd src-tauri && cargo test --test engine_integration --test manager_e2e -- --test-threads=1"
+    "test:e2e": "cd src-tauri && cargo test --test engine_integration --test manager_e2e -- --test-threads=1",
+    "sidecar:hd": "bash scripts/build-baresip.sh"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.5",
