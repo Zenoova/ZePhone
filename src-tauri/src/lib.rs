@@ -186,11 +186,15 @@ fn on_run_event(app: &AppHandle, event: RunEvent) {
         RunEvent::Exit => {
             if let Some(state) = app.try_state::<AppState>() {
                 let manager = state.manager.clone();
-                tauri::async_runtime::block_on(async move {
-                    let _ =
-                        tokio::time::timeout(std::time::Duration::from_secs(4), manager.shutdown())
-                            .await;
+                // Never park the main thread on the async runtime without a hard bound: a task that
+                // needs the main thread (menu/tray calls do) would deadlock it and the app could
+                // never quit. Run the shutdown on the runtime and wait for it with a timeout.
+                let (done_tx, done_rx) = std::sync::mpsc::channel::<()>();
+                tauri::async_runtime::spawn(async move {
+                    manager.shutdown().await;
+                    let _ = done_tx.send(());
                 });
+                let _ = done_rx.recv_timeout(std::time::Duration::from_secs(4));
             }
         }
         #[cfg(target_os = "macos")]

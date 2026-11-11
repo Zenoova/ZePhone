@@ -86,6 +86,8 @@ struct State {
 pub type OptionsHook = Arc<dyn Fn(EngineOptions) -> EngineOptions + Send + Sync>;
 
 pub struct SipManager {
+    /// Set when the application is quitting: engine events are no longer turned into UI work.
+    closing: std::sync::atomic::AtomicBool,
     options_hook: std::sync::Mutex<Option<OptionsHook>>,
     engine: Arc<dyn SipEngine>,
     db: Arc<Database>,
@@ -122,6 +124,7 @@ impl SipManager {
         sink: Arc<dyn UiSink>,
     ) -> Arc<Self> {
         Arc::new(Self {
+            closing: Default::default(),
             options_hook: Default::default(),
             engine,
             db,
@@ -193,6 +196,10 @@ impl SipManager {
 
     /// Clean shutdown: end calls, unregister, stop the engine process.
     pub async fn shutdown(&self) {
+        // From now on the engine's last events (unregistering, stopped...) must not touch the UI:
+        // at exit the main thread may be busy waiting for us.
+        self.closing
+            .store(true, std::sync::atomic::Ordering::SeqCst);
         let (call_ids, hosted): (Vec<String>, Vec<String>) = {
             let st = self.state.lock().unwrap();
             (
@@ -693,6 +700,9 @@ impl SipManager {
     }
 
     pub(crate) async fn handle_event(self: &Arc<Self>, ev: EngineEvent) {
+        if self.closing.load(std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
         let now = Utc::now();
         match ev {
             EngineEvent::State(st) => {

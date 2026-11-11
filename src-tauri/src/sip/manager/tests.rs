@@ -929,3 +929,22 @@ async fn shutdown_hangs_up_unregisters_then_stops_the_engine() {
     assert!(pos("hangup c1") < pos("remove"), "{cmds:?}");
     assert!(pos("remove") < pos("stop"), "{cmds:?}");
 }
+
+#[tokio::test]
+async fn engine_events_after_shutdown_do_not_reach_the_ui() {
+    let (r, _) = registered_rig().await;
+    r.mgr.shutdown().await;
+    let before = r.sink.all().len();
+    // What Baresip emits while it is being stopped.
+    r.engine.emit(EngineEvent::Registration {
+        aor: aor().into(),
+        event: RegistrationEvent::Unregistering,
+    });
+    r.engine.set_state(EngineState::Stopped);
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    assert_eq!(
+        r.sink.all().len(),
+        before,
+        "no UI work may be triggered while quitting"
+    );
+}

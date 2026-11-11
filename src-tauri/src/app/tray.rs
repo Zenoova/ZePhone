@@ -61,11 +61,19 @@ pub fn set_visible(app: &AppHandle, visible: bool) {
     }
 }
 
+/// Updates the tooltip and the status line of the tray menu.
+///
+/// The menu/tray calls need the main thread and *wait* for it: from an async worker that can
+/// deadlock the application while it is quitting. Dispatch to the main thread without waiting.
 pub fn set_status_text(app: &AppHandle, text: &str) {
-    if let Some(tray) = app.tray_by_id(TRAY_ID) {
-        let _ = tray.set_tooltip(Some(format!("ZePhone — {text}")));
-    }
-    if let Some(item) = STATUS_ITEM.get() {
-        let _ = item.set_text(text);
-    }
+    let handle = app.clone();
+    let text = text.to_owned();
+    let _ = app.run_on_main_thread(move || {
+        if let Some(tray) = handle.tray_by_id(TRAY_ID) {
+            let _ = tray.set_tooltip(Some(format!("ZePhone — {text}")));
+        }
+        if let Some(item) = STATUS_ITEM.get() {
+            let _ = item.set_text(&text);
+        }
+    });
 }
