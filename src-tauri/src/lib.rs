@@ -98,6 +98,8 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    watch_termination_signals(handle.clone());
+
     // Start the engine in the background. A failure is reported through engine/account
     // state in the UI; the app itself keeps running.
     tauri::async_runtime::spawn(async move {
@@ -112,6 +114,35 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     });
     Ok(())
+}
+
+/// SIGTERM / SIGINT / SIGHUP (kill, Ctrl-C in dev, terminal closed) go through the normal
+/// quit path so the SIP engine is stopped and nothing is left behind.
+fn watch_termination_signals(app: AppHandle) {
+    #[cfg(unix)]
+    tauri::async_runtime::spawn(async move {
+        use tokio::signal::unix::{SignalKind, signal};
+        let (Ok(mut term), Ok(mut int), Ok(mut hup)) = (
+            signal(SignalKind::terminate()),
+            signal(SignalKind::interrupt()),
+            signal(SignalKind::hangup()),
+        ) else {
+            return;
+        };
+        tokio::select! {
+            _ = term.recv() => {}
+            _ = int.recv() => {}
+            _ = hup.recv() => {}
+        }
+        log::info!("termination signal received, shutting down");
+        app.exit(0);
+    });
+    #[cfg(not(unix))]
+    tauri::async_runtime::spawn(async move {
+        if tokio::signal::ctrl_c().await.is_ok() {
+            app.exit(0);
+        }
+    });
 }
 
 fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
@@ -147,6 +178,18 @@ fn on_run_event(app: &AppHandle, event: RunEvent) {
                 tauri::async_runtime::spawn(async move {
                     manager.shutdown().await;
                     handle.exit(0);
+                });
+            }
+        }
+        // ⌘Q / Dock "Quit" on macOS terminate the process without going through
+        // `ExitRequested`: do the same cleanup synchronously here. `shutdown()` is idempotent.
+        RunEvent::Exit => {
+            if let Some(state) = app.try_state::<AppState>() {
+                let manager = state.manager.clone();
+                tauri::async_runtime::block_on(async move {
+                    let _ =
+                        tokio::time::timeout(std::time::Duration::from_secs(4), manager.shutdown())
+                            .await;
                 });
             }
         }

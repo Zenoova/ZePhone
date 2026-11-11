@@ -165,10 +165,36 @@ pub fn spawn(
     }
     let pid = child.id();
     if let Some(pid) = pid {
-        let _ = std::fs::write(paths.pid_file(), pid.to_string());
+        let _ = write_private_file(&paths.pid_file(), &pid.to_string());
+        spawn_watchdog(std::process::id(), pid);
     }
     Ok(Spawned { child, pid })
 }
+
+/// Last line of defence against orphans: if the app is killed without any chance to clean
+/// up (SIGKILL, crash), a tiny detached shell loop notices the death of its pid and
+/// terminates the engine. It exits by itself as soon as either process is gone.
+#[cfg(unix)]
+fn spawn_watchdog(app_pid: u32, engine_pid: u32) {
+    const SCRIPT: &str = r#"while kill -0 "$1" 2>/dev/null && kill -0 "$2" 2>/dev/null; do sleep 1; done
+kill -0 "$1" 2>/dev/null || kill -TERM "$2" 2>/dev/null; exit 0"#;
+    let _ = std::process::Command::new("/bin/sh")
+        .args([
+            "-c",
+            SCRIPT,
+            "zephone-watchdog",
+            &app_pid.to_string(),
+            &engine_pid.to_string(),
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+}
+
+/// Windows: the Job Object approach (kill-on-close) is still to be implemented, see README.
+#[cfg(not(unix))]
+fn spawn_watchdog(_app_pid: u32, _engine_pid: u32) {}
 
 pub fn remove_pid_file(paths: &BaresipPaths) {
     let _ = std::fs::remove_file(paths.pid_file());
