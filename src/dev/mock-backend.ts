@@ -166,6 +166,21 @@ export function installMockBackend(): void {
     };
   }
 
+  // Fake speech-like levels (dBFS) for connected calls, to review the voice animation.
+  let tick = 0;
+  setInterval(() => {
+    tick += 1;
+    for (const c of calls.values()) {
+      if (c.state !== "connected") continue;
+      const speaking = Math.sin(tick / 9) + Math.sin(tick / 4.3) * 0.6 > -0.2; // phrases and pauses
+      const rx = speaking ? -34 + Math.abs(Math.sin(tick / 1.7)) * 20 + Math.random() * 6 : -80 + Math.random() * 6;
+      const talkingBack = Math.sin(tick / 11 + 2) + Math.sin(tick / 5.1) * 0.5 > 0.5;
+      const tx = c.muted ? -96 : talkingBack ? -32 + Math.abs(Math.sin(tick / 1.3)) * 18 + Math.random() * 5 : -78;
+      emit("audio:level", { callId: c.id, tx: false, db: rx });
+      emit("audio:level", { callId: c.id, tx: true, db: tx });
+    }
+  }, 62);
+
   const engine = () => ({ name: "baresip", version: "4.13.0", codecs: ["PCMU", "PCMA"], state: "running" as const });
   const setCall = (c: Call) => {
     calls.set(c.id, c);
