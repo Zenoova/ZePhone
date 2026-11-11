@@ -1,3 +1,5 @@
+import { getAudioContext, resetAudioContext } from "./web-audio";
+
 /**
  * Local DTMF feedback: the standard dual-tone pairs (ITU-T Q.23) played with the Web Audio API,
  * so the dialpad sounds like a phone. This is only the sound the user hears; the digits sent to
@@ -28,29 +30,8 @@ export function dtmfFrequencies(key: string): readonly [number, number] | null {
   return DTMF_FREQUENCIES[key.toUpperCase()] ?? null;
 }
 
-type AudioContextCtor = new () => AudioContext;
-
-let context: AudioContext | null = null;
-
-function getContext(): AudioContext | null {
-  if (context) return context;
-  const Ctor: AudioContextCtor | undefined =
-    typeof window === "undefined"
-      ? undefined
-      : (window.AudioContext ?? (window as unknown as { webkitAudioContext?: AudioContextCtor }).webkitAudioContext);
-  if (!Ctor) return null;
-  try {
-    context = new Ctor();
-  } catch {
-    return null;
-  }
-  return context;
-}
-
 /** Forgets the shared AudioContext (tests). */
-export function resetDtmfAudio(): void {
-  context = null;
-}
+export const resetDtmfAudio = resetAudioContext;
 
 const PEAK_GAIN = 0.11; // per oscillator: two tones sum to a comfortable level
 const ATTACK_S = 0.006;
@@ -59,7 +40,7 @@ const RELEASE_S = 0.02;
 /** Plays the tone of a key (0-9, *, #, A-D). Silently does nothing for other keys or without audio support. */
 export function playDtmfTone(key: string, durationMs = 150): void {
   const freqs = dtmfFrequencies(key);
-  const ctx = getContext();
+  const ctx = getAudioContext();
   if (!freqs || !ctx) return;
   try {
     if (ctx.state === "suspended") void ctx.resume();
