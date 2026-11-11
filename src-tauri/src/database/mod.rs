@@ -98,14 +98,17 @@ impl Database {
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
-        let db = Self { conn: Mutex::new(conn) };
+        let db = Self {
+            conn: Mutex::new(conn),
+        };
         db.migrate()?;
         Ok(db)
     }
 
     fn migrate(&self) -> AppResult<()> {
         let mut conn = self.conn.lock().unwrap();
-        let current = conn.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))? as usize;
+        let current =
+            conn.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))? as usize;
         if current > MIGRATIONS.len() {
             return Err(AppError::Database(format!(
                 "la base de données est plus récente (v{current}) que cette version de l'application"
@@ -120,13 +123,17 @@ impl Database {
         Ok(())
     }
 
-    pub(crate) fn with<T>(&self, f: impl FnOnce(&mut Connection) -> rusqlite::Result<T>) -> AppResult<T> {
+    pub(crate) fn with<T>(
+        &self,
+        f: impl FnOnce(&mut Connection) -> rusqlite::Result<T>,
+    ) -> AppResult<T> {
         let mut conn = self.conn.lock().unwrap();
         f(&mut conn).map_err(AppError::from)
     }
 
     pub fn schema_version(&self) -> AppResult<usize> {
-        self.with(|c| c.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))).map(|v| v as usize)
+        self.with(|c| c.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0)))
+            .map(|v| v as usize)
     }
 }
 
@@ -181,6 +188,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("db.sqlite");
         drop(Database::open(&path).unwrap());
-        assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
+        assert_eq!(
+            std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
     }
 }

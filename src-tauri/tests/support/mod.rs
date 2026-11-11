@@ -87,7 +87,9 @@ impl FakeRegistrar {
             let mut buf = vec![0u8; 8192];
             let mut counter = 0u32;
             loop {
-                let Ok((n, peer)) = sock.recv_from(&mut buf).await else { return };
+                let Ok((n, peer)) = sock.recv_from(&mut buf).await else {
+                    return;
+                };
                 let text = String::from_utf8_lossy(&buf[..n]).into_owned();
                 let lines: Vec<&str> = text.split("\r\n").collect();
                 let first = lines[0];
@@ -106,7 +108,10 @@ impl FakeRegistrar {
                             let nonce = auth_param(a, "nonce").unwrap_or_default();
                             let resp = auth_param(a, "response").unwrap_or_default();
                             let ha1 = md5_hex(&format!("{user}:{realm}:{password}"));
-                            let ha2 = md5_hex(&format!("REGISTER:{}", auth_param(a, "uri").unwrap_or_default()));
+                            let ha2 = md5_hex(&format!(
+                                "REGISTER:{}",
+                                auth_param(a, "uri").unwrap_or_default()
+                            ));
                             let expected = match auth_param(a, "qop") {
                                 Some(qop) => md5_hex(&format!(
                                     "{ha1}:{nonce}:{}:{}:{qop}:{ha2}",
@@ -115,7 +120,8 @@ impl FakeRegistrar {
                                 )),
                                 None => md5_hex(&format!("{ha1}:{nonce}:{ha2}")),
                             };
-                            auth_param(a, "username").as_deref() == Some(user.as_str()) && resp == expected
+                            auth_param(a, "username").as_deref() == Some(user.as_str())
+                                && resp == expected
                         });
                         if valid {
                             (200, "OK", String::new())
@@ -167,7 +173,12 @@ impl FakeRegistrar {
                 let _ = sock.send_to(resp.as_bytes(), peer).await;
             }
         });
-        FakeRegistrar { port, log, seen_request_uris: uris, task }
+        FakeRegistrar {
+            port,
+            log,
+            seen_request_uris: uris,
+            task,
+        }
     }
 }
 
@@ -182,7 +193,12 @@ pub fn sidecar_paths(work_dir: PathBuf) -> Option<BaresipPaths> {
     if !exe.is_file() || !modules.is_dir() {
         return None;
     }
-    Some(BaresipPaths { exe, modules_dir: modules, sounds_dir: root.join("resources/baresip/sounds"), work_dir })
+    Some(BaresipPaths {
+        exe,
+        modules_dir: modules,
+        sounds_dir: root.join("resources/baresip/sounds"),
+        work_dir,
+    })
 }
 
 /// Directory with the extra test-only modules (`ausine`, `aufile`), taken from the
@@ -191,13 +207,20 @@ pub fn test_modules_dir() -> Option<PathBuf> {
     if let Ok(d) = std::env::var("ZEPHONE_TEST_MODULES_DIR") {
         return Some(PathBuf::from(d));
     }
-    let out = std::process::Command::new("brew").args(["--prefix", "baresip"]).output().ok()?;
+    let out = std::process::Command::new("brew")
+        .args(["--prefix", "baresip"])
+        .output()
+        .ok()?;
     let prefix = String::from_utf8(out.stdout).ok()?;
     let dir = PathBuf::from(prefix.trim()).join("lib/baresip/modules");
     dir.join("ausine.so").is_file().then_some(dir)
 }
 
-pub async fn wait_for<F>(rx: &mut broadcast::Receiver<EngineEvent>, secs: u64, mut pred: F) -> Option<EngineEvent>
+pub async fn wait_for<F>(
+    rx: &mut broadcast::Receiver<EngineEvent>,
+    secs: u64,
+    mut pred: F,
+) -> Option<EngineEvent>
 where
     F: FnMut(&EngineEvent) -> bool,
 {
@@ -215,7 +238,10 @@ where
     }
 }
 
-pub async fn started_engine(work: &std::path::Path, options: zephone_lib::sip::engine::EngineOptions) -> Option<BaresipEngine> {
+pub async fn started_engine(
+    work: &std::path::Path,
+    options: zephone_lib::sip::engine::EngineOptions,
+) -> Option<BaresipEngine> {
     let paths = sidecar_paths(work.to_path_buf())?;
     let engine = BaresipEngine::new(paths);
     engine.set_options(options);

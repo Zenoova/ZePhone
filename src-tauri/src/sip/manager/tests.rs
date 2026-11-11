@@ -101,14 +101,24 @@ impl SipEngine for FakeEngine {
     }
     async fn dial(&self, aor: &str, target: &str) -> EngineResult<String> {
         self.log(format!("dial {aor} {target}"));
-        Ok(format!("call{}", self.next_call.fetch_add(1, Ordering::SeqCst)))
+        Ok(format!(
+            "call{}",
+            self.next_call.fetch_add(1, Ordering::SeqCst)
+        ))
     }
     async fn accept(&self, id: &str) -> EngineResult<()> {
         self.log(format!("accept {id}"));
         Ok(())
     }
     async fn hangup(&self, id: &str, reject: Option<u16>) -> EngineResult<()> {
-        self.log(format!("hangup {id} {}", reject.map(|c| c.to_string()).unwrap_or_default()).trim().to_owned());
+        self.log(
+            format!(
+                "hangup {id} {}",
+                reject.map(|c| c.to_string()).unwrap_or_default()
+            )
+            .trim()
+            .to_owned(),
+        );
         Ok(())
     }
     async fn hold(&self, id: &str) -> EngineResult<()> {
@@ -135,7 +145,11 @@ impl SipEngine for FakeEngine {
         self.log("silence");
         Ok(())
     }
-    async fn set_audio_devices(&self, input: Option<&str>, output: Option<&str>) -> EngineResult<()> {
+    async fn set_audio_devices(
+        &self,
+        input: Option<&str>,
+        output: Option<&str>,
+    ) -> EngineResult<()> {
         self.log(format!("audio {input:?} {output:?}"));
         Ok(())
     }
@@ -165,10 +179,22 @@ impl RecordingSink {
         self.events.lock().unwrap().clone()
     }
     fn statuses(&self) -> Vec<AccountStatus> {
-        self.all().into_iter().filter_map(|e| if let Seen::Status(s) = e { Some(s) } else { None }).collect()
+        self.all()
+            .into_iter()
+            .filter_map(|e| {
+                if let Seen::Status(s) = e {
+                    Some(s)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
     fn calls(&self) -> Vec<Call> {
-        self.all().into_iter().filter_map(|e| if let Seen::Call(c) = e { Some(c) } else { None }).collect()
+        self.all()
+            .into_iter()
+            .filter_map(|e| if let Seen::Call(c) = e { Some(c) } else { None })
+            .collect()
     }
 }
 impl UiSink for RecordingSink {
@@ -185,13 +211,19 @@ impl UiSink for RecordingSink {
         self.events.lock().unwrap().push(Seen::History);
     }
     fn incoming_call(&self, c: &Call, notify: bool) {
-        self.events.lock().unwrap().push(Seen::Incoming { call: c.clone(), notify });
+        self.events.lock().unwrap().push(Seen::Incoming {
+            call: c.clone(),
+            notify,
+        });
     }
     fn missed_call(&self, _c: &Call, notify: bool) {
         self.events.lock().unwrap().push(Seen::Missed { notify });
     }
     fn audio_error(&self, m: &str) {
-        self.events.lock().unwrap().push(Seen::AudioError(m.to_owned()));
+        self.events
+            .lock()
+            .unwrap()
+            .push(Seen::AudioError(m.to_owned()));
     }
 }
 
@@ -228,7 +260,13 @@ async fn rig() -> Rig {
     let db = Arc::new(Database::open_in_memory().unwrap());
     let secrets = Arc::new(MemoryStore::default());
     let mgr = SipManager::new(engine.clone(), db.clone(), secrets.clone(), sink.clone());
-    Rig { engine, sink, db, secrets, mgr }
+    Rig {
+        engine,
+        sink,
+        db,
+        secrets,
+        mgr,
+    }
 }
 
 async fn until(what: &str, mut f: impl FnMut() -> bool) {
@@ -246,7 +284,10 @@ async fn until(what: &str, mut f: impl FnMut() -> bool) {
 async fn start(r: &Rig) {
     r.mgr.start().await.unwrap();
     let sink = r.sink.clone();
-    until("engine running event", move || sink.all().contains(&Seen::Engine)).await;
+    until("engine running event", move || {
+        sink.all().contains(&Seen::Engine)
+    })
+    .await;
 }
 
 fn aor() -> &'static str {
@@ -254,7 +295,13 @@ fn aor() -> &'static str {
 }
 
 fn cref(id: &str, dir: CallDirection, peer: &str) -> CallRef {
-    CallRef { id: id.into(), aor: aor().into(), direction: dir, peer_uri: peer.into(), peer_name: None }
+    CallRef {
+        id: id.into(),
+        aor: aor().into(),
+        direction: dir,
+        peer_uri: peer.into(),
+        peer_name: None,
+    }
 }
 
 async fn registered_rig() -> (Rig, String) {
@@ -263,10 +310,18 @@ async fn registered_rig() -> (Rig, String) {
     let view = r.mgr.save_account(input("1001", Some("pw"))).await.unwrap();
     r.engine.emit(EngineEvent::Registration {
         aor: aor().into(),
-        event: RegistrationEvent::Registered { code: Some(200), reason: "OK".into() },
+        event: RegistrationEvent::Registered {
+            code: Some(200),
+            reason: "OK".into(),
+        },
     });
     let sink = r.sink.clone();
-    until("registered", move || sink.statuses().last().is_some_and(|s| s.state == RegistrationState::Registered)).await;
+    until("registered", move || {
+        sink.statuses()
+            .last()
+            .is_some_and(|s| s.state == RegistrationState::Registered)
+    })
+    .await;
     (r, view.account.id)
 }
 
@@ -276,22 +331,35 @@ async fn registered_rig() -> (Rig, String) {
 async fn password_goes_to_the_secret_store_never_to_the_database() {
     let r = rig().await;
     start(&r).await;
-    let view = r.mgr.save_account(input("1001", Some("s3cret-pw"))).await.unwrap();
+    let view = r
+        .mgr
+        .save_account(input("1001", Some("s3cret-pw")))
+        .await
+        .unwrap();
     assert!(view.has_password);
     assert!(view.account.is_default, "first account becomes the default");
 
     // In the keychain...
-    assert_eq!(r.secrets.get(&view.account.id).unwrap().unwrap().expose_secret(), "s3cret-pw");
+    assert_eq!(
+        r.secrets
+            .get(&view.account.id)
+            .unwrap()
+            .unwrap()
+            .expose_secret(),
+        "s3cret-pw"
+    );
     // ...handed to the engine...
     let added = r.engine.added.lock().unwrap().clone();
     assert_eq!(added.len(), 1);
     assert_eq!(added[0].0, aor());
     assert_eq!(added[0].1, "s3cret-pw");
-    assert_eq!(added[0].3, "sip.example.com:5060", "next hop is the server, not the domain");
+    assert_eq!(
+        added[0].3, "sip.example.com:5060",
+        "next hop is the server, not the domain"
+    );
     // ...and nowhere else: not in the DB dump, not in anything serialised to the UI.
-    let dump = r
-        .db
-        .with(|c| {
+    let dump =
+        r.db.with(|c| {
             let mut out = String::new();
             for t in ["accounts", "contacts", "call_history", "settings"] {
                 let mut s = c.prepare(&format!("SELECT * FROM {t}"))?;
@@ -315,7 +383,11 @@ async fn password_goes_to_the_secret_store_never_to_the_database() {
 async fn editing_without_a_password_keeps_the_stored_one() {
     let r = rig().await;
     start(&r).await;
-    let view = r.mgr.save_account(input("1001", Some("keep-me"))).await.unwrap();
+    let view = r
+        .mgr
+        .save_account(input("1001", Some("keep-me")))
+        .await
+        .unwrap();
     let mut edit = input("1001", None);
     edit.id = Some(view.account.id.clone());
     edit.label = "Renamed".into();
@@ -323,8 +395,15 @@ async fn editing_without_a_password_keeps_the_stored_one() {
     assert_eq!(v2.account.label, "Renamed");
     assert!(v2.has_password);
     let added = r.engine.added.lock().unwrap().clone();
-    assert_eq!(added.last().unwrap().1, "keep-me", "reconnected with the existing secret");
-    assert!(r.engine.cmds().contains(&format!("remove {}", aor())), "old user agent dropped before reconnecting");
+    assert_eq!(
+        added.last().unwrap().1,
+        "keep-me",
+        "reconnected with the existing secret"
+    );
+    assert!(
+        r.engine.cmds().contains(&format!("remove {}", aor())),
+        "old user agent dropped before reconnecting"
+    );
 }
 
 #[tokio::test]
@@ -336,26 +415,51 @@ async fn registration_events_drive_the_status_including_failures_and_recovery() 
     let last = |sink: &RecordingSink| sink.statuses().last().cloned().unwrap();
 
     assert_eq!(last(&r.sink).state, RegistrationState::Connecting);
-    r.engine.emit(EngineEvent::Registration { aor: aor().into(), event: RegistrationEvent::Created });
-    r.engine.emit(EngineEvent::Registration { aor: aor().into(), event: RegistrationEvent::Registering });
     r.engine.emit(EngineEvent::Registration {
         aor: aor().into(),
-        event: RegistrationEvent::Failed { code: Some(403), reason: "Forbidden".into() },
+        event: RegistrationEvent::Created,
+    });
+    r.engine.emit(EngineEvent::Registration {
+        aor: aor().into(),
+        event: RegistrationEvent::Registering,
+    });
+    r.engine.emit(EngineEvent::Registration {
+        aor: aor().into(),
+        event: RegistrationEvent::Failed {
+            code: Some(403),
+            reason: "Forbidden".into(),
+        },
     });
     let sink = r.sink.clone();
-    until("error status", move || sink.statuses().last().is_some_and(|s| s.state == RegistrationState::Error)).await;
+    until("error status", move || {
+        sink.statuses()
+            .last()
+            .is_some_and(|s| s.state == RegistrationState::Error)
+    })
+    .await;
     let s = last(&r.sink);
     assert_eq!(s.account_id, id);
     assert_eq!(s.sip_code, Some(403));
     assert!(s.message.unwrap().contains("403"));
 
-    r.engine.emit(EngineEvent::Registration { aor: aor().into(), event: RegistrationEvent::Registering });
     r.engine.emit(EngineEvent::Registration {
         aor: aor().into(),
-        event: RegistrationEvent::Registered { code: Some(200), reason: "OK".into() },
+        event: RegistrationEvent::Registering,
+    });
+    r.engine.emit(EngineEvent::Registration {
+        aor: aor().into(),
+        event: RegistrationEvent::Registered {
+            code: Some(200),
+            reason: "OK".into(),
+        },
     });
     let sink = r.sink.clone();
-    until("recovered", move || sink.statuses().last().is_some_and(|s| s.state == RegistrationState::Registered)).await;
+    until("recovered", move || {
+        sink.statuses()
+            .last()
+            .is_some_and(|s| s.state == RegistrationState::Registered)
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -364,11 +468,20 @@ async fn events_for_unknown_accounts_are_ignored() {
     let before = r.sink.all().len();
     r.engine.emit(EngineEvent::Registration {
         aor: "sip:stranger@elsewhere".into(),
-        event: RegistrationEvent::Failed { code: Some(500), reason: "x".into() },
+        event: RegistrationEvent::Failed {
+            code: Some(500),
+            reason: "x".into(),
+        },
     });
     r.engine.emit(EngineEvent::Call {
-        call: CallRef { aor: "sip:stranger@elsewhere".into(), ..cref("zz", CallDirection::Incoming, "sip:9@x") },
-        event: CallEvent::Closed { code: None, reason: String::new() },
+        call: CallRef {
+            aor: "sip:stranger@elsewhere".into(),
+            ..cref("zz", CallDirection::Incoming, "sip:9@x")
+        },
+        event: CallEvent::Closed {
+            code: None,
+            reason: String::new(),
+        },
     });
     tokio::time::sleep(Duration::from_millis(60)).await;
     assert_eq!(r.sink.all().len(), before);
@@ -382,7 +495,10 @@ async fn account_without_password_is_unconfigured_not_an_error() {
     assert!(!view.has_password);
     let s = r.sink.statuses().last().cloned().unwrap();
     assert_eq!(s.state, RegistrationState::Unconfigured);
-    assert!(r.engine.added.lock().unwrap().is_empty(), "nothing is sent to the engine without credentials");
+    assert!(
+        r.engine.added.lock().unwrap().is_empty(),
+        "nothing is sent to the engine without credentials"
+    );
 }
 
 #[tokio::test]
@@ -409,7 +525,10 @@ async fn disabled_accounts_are_not_connected() {
     assert_eq!(s.state, RegistrationState::Disconnected);
     assert_eq!(s.message.as_deref(), Some("Compte désactivé"));
     assert!(r.mgr.connect_account(&view.account.id).await.is_err());
-    r.mgr.set_account_enabled(&view.account.id, true).await.unwrap();
+    r.mgr
+        .set_account_enabled(&view.account.id, true)
+        .await
+        .unwrap();
     assert_eq!(r.engine.added.lock().unwrap().len(), 1);
 }
 
@@ -426,36 +545,78 @@ async fn outgoing_call_lifecycle_ends_in_history() {
     .unwrap();
 
     let call = r.mgr.dial("1002", None).await.unwrap();
-    assert!(r.engine.cmds().contains(&format!("dial {} sip:1002@example.com", aor())));
+    assert!(
+        r.engine
+            .cmds()
+            .contains(&format!("dial {} sip:1002@example.com", aor()))
+    );
     assert_eq!(call.direction, CallDirection::Outgoing);
-    assert_eq!(call.remote_name.as_deref(), Some("Bob Martin"), "contact name resolved");
+    assert_eq!(
+        call.remote_name.as_deref(),
+        Some("Bob Martin"),
+        "contact name resolved"
+    );
     assert_eq!(call.account_id.as_deref(), Some(acc_id.as_str()));
 
     // Only one outgoing call may be in progress at once.
     assert!(r.mgr.dial("1003", None).await.is_err());
 
     let rf = cref(&call.id, CallDirection::Outgoing, "sip:1002@example.com");
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Outgoing });
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Ringing });
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Established });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Outgoing,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Ringing,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Established,
+    });
     let sink = r.sink.clone();
-    until("connected", move || sink.calls().last().is_some_and(|c| c.state == CallState::Connected)).await;
+    until("connected", move || {
+        sink.calls()
+            .last()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
     let states: Vec<_> = r.sink.calls().iter().map(|c| c.state).collect();
-    assert!(states.contains(&CallState::Dialing) && states.contains(&CallState::Ringing), "{states:?}");
+    assert!(
+        states.contains(&CallState::Dialing) && states.contains(&CallState::Ringing),
+        "{states:?}"
+    );
 
     r.mgr.set_mute(&call.id, true).await.unwrap();
     assert!(r.mgr.calls()[0].muted);
     r.mgr.send_dtmf(&call.id, "12#").await.unwrap();
     r.mgr.hold(&call.id).await.unwrap();
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Hold });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Hold,
+    });
     let m = r.mgr.clone();
-    until("on hold", move || m.calls().first().is_some_and(|c| c.state == CallState::OnHold)).await;
+    until("on hold", move || {
+        m.calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::OnHold)
+    })
+    .await;
     assert!(r.mgr.hold(&call.id).await.is_err(), "cannot hold twice");
     r.mgr.resume(&call.id).await.unwrap();
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Resume });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Resume,
+    });
     r.mgr.transfer(&call.id, "1005").await.unwrap();
     r.mgr.hangup(&call.id).await.unwrap();
-    r.engine.emit(EngineEvent::Call { call: rf, event: CallEvent::Closed { code: None, reason: String::new() } });
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Closed {
+            code: None,
+            reason: String::new(),
+        },
+    });
 
     let sink = r.sink.clone();
     until("history", move || sink.all().contains(&Seen::History)).await;
@@ -483,13 +644,32 @@ async fn outgoing_call_lifecycle_ends_in_history() {
 #[tokio::test]
 async fn incoming_call_is_announced_once_and_a_missed_one_is_recorded() {
     let (r, _) = registered_rig().await;
-    let rf = CallRef { peer_name: Some("Alice".into()), ..cref("in1", CallDirection::Incoming, "sip:2000@example.com") };
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Incoming });
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Incoming }); // duplicate
+    let rf = CallRef {
+        peer_name: Some("Alice".into()),
+        ..cref("in1", CallDirection::Incoming, "sip:2000@example.com")
+    };
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Incoming,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Incoming,
+    }); // duplicate
     let sink = r.sink.clone();
-    until("incoming", move || sink.all().iter().any(|e| matches!(e, Seen::Incoming { .. }))).await;
+    until("incoming", move || {
+        sink.all()
+            .iter()
+            .any(|e| matches!(e, Seen::Incoming { .. }))
+    })
+    .await;
     tokio::time::sleep(Duration::from_millis(40)).await;
-    let incoming: Vec<_> = r.sink.all().into_iter().filter(|e| matches!(e, Seen::Incoming { .. })).collect();
+    let incoming: Vec<_> = r
+        .sink
+        .all()
+        .into_iter()
+        .filter(|e| matches!(e, Seen::Incoming { .. }))
+        .collect();
     assert_eq!(incoming.len(), 1, "announced exactly once");
     match &incoming[0] {
         Seen::Incoming { call, notify } => {
@@ -503,10 +683,16 @@ async fn incoming_call_is_announced_once_and_a_missed_one_is_recorded() {
     // The caller gives up.
     r.engine.emit(EngineEvent::Call {
         call: rf,
-        event: CallEvent::Closed { code: Some(487), reason: "Request Terminated".into() },
+        event: CallEvent::Closed {
+            code: Some(487),
+            reason: "Request Terminated".into(),
+        },
     });
     let sink = r.sink.clone();
-    until("missed", move || sink.all().iter().any(|e| matches!(e, Seen::Missed { .. }))).await;
+    until("missed", move || {
+        sink.all().iter().any(|e| matches!(e, Seen::Missed { .. }))
+    })
+    .await;
     let h = r.db.list_history(&Default::default()).unwrap();
     assert_eq!(h[0].result, CallResult::Missed);
     assert_eq!(h[0].direction, CallDirection::Incoming);
@@ -518,17 +704,37 @@ async fn answering_and_rejecting_incoming_calls() {
     let (r, _) = registered_rig().await;
     let a = cref("a", CallDirection::Incoming, "sip:2000@example.com");
     let b = cref("b", CallDirection::Incoming, "sip:3000@example.com");
-    r.engine.emit(EngineEvent::Call { call: a.clone(), event: CallEvent::Incoming });
-    r.engine.emit(EngineEvent::Call { call: b.clone(), event: CallEvent::Incoming });
+    r.engine.emit(EngineEvent::Call {
+        call: a.clone(),
+        event: CallEvent::Incoming,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: b.clone(),
+        event: CallEvent::Incoming,
+    });
     let m = r.mgr.clone();
     until("two incoming", move || m.calls().len() == 2).await;
 
     r.mgr.answer("a").await.unwrap();
-    r.engine.emit(EngineEvent::Call { call: a.clone(), event: CallEvent::Established });
+    r.engine.emit(EngineEvent::Call {
+        call: a.clone(),
+        event: CallEvent::Established,
+    });
     let m = r.mgr.clone();
-    until("a connected", move || m.calls().iter().any(|c| c.id == "a" && c.state == CallState::Connected)).await;
+    until("a connected", move || {
+        m.calls()
+            .iter()
+            .any(|c| c.id == "a" && c.state == CallState::Connected)
+    })
+    .await;
     r.mgr.reject("b").await.unwrap();
-    r.engine.emit(EngineEvent::Call { call: b, event: CallEvent::Closed { code: None, reason: "Rejected by user".into() } });
+    r.engine.emit(EngineEvent::Call {
+        call: b,
+        event: CallEvent::Closed {
+            code: None,
+            reason: "Rejected by user".into(),
+        },
+    });
     assert!(r.mgr.answer("a").await.is_err(), "already connected");
     assert!(r.mgr.answer("ghost").await.is_err());
     let cmds = r.engine.cmds();
@@ -536,9 +742,21 @@ async fn answering_and_rejecting_incoming_calls() {
     assert!(cmds.contains(&"hangup b 603".to_string()));
 
     let db = r.db.clone();
-    until("rejected entry", move || !db.list_history(&Default::default()).unwrap().is_empty()).await;
-    assert_eq!(r.db.list_history(&Default::default()).unwrap()[0].result, CallResult::Rejected);
-    assert!(!r.sink.all().iter().any(|e| matches!(e, Seen::Missed { .. })), "a declined call is not a missed call");
+    until("rejected entry", move || {
+        !db.list_history(&Default::default()).unwrap().is_empty()
+    })
+    .await;
+    assert_eq!(
+        r.db.list_history(&Default::default()).unwrap()[0].result,
+        CallResult::Rejected
+    );
+    assert!(
+        !r.sink
+            .all()
+            .iter()
+            .any(|e| matches!(e, Seen::Missed { .. })),
+        "a declined call is not a missed call"
+    );
 }
 
 #[tokio::test]
@@ -553,10 +771,23 @@ async fn notification_settings_are_respected() {
         event: CallEvent::Incoming,
     });
     let sink = r.sink.clone();
-    until("incoming", move || sink.all().iter().any(|e| matches!(e, Seen::Incoming { .. }))).await;
-    assert!(r.sink.all().iter().any(|e| matches!(e, Seen::Incoming { notify: false, .. })));
+    until("incoming", move || {
+        sink.all()
+            .iter()
+            .any(|e| matches!(e, Seen::Incoming { .. }))
+    })
+    .await;
+    assert!(
+        r.sink
+            .all()
+            .iter()
+            .any(|e| matches!(e, Seen::Incoming { notify: false, .. }))
+    );
     let e = r.engine.clone();
-    until("ringtone silenced", move || e.cmds().contains(&"silence".to_string())).await;
+    until("ringtone silenced", move || {
+        e.cmds().contains(&"silence".to_string())
+    })
+    .await;
 }
 
 #[tokio::test]
@@ -565,10 +796,19 @@ async fn dial_validation() {
     start(&r).await;
     assert!(r.mgr.dial("1002", None).await.is_err(), "no account at all");
     let view = r.mgr.save_account(input("1001", Some("pw"))).await.unwrap();
-    assert!(r.mgr.dial("1002;x=y", Some(&view.account.id)).await.is_err(), "bad target rejected before the engine sees it");
+    assert!(
+        r.mgr
+            .dial("1002;x=y", Some(&view.account.id))
+            .await
+            .is_err(),
+        "bad target rejected before the engine sees it"
+    );
     assert!(r.mgr.dial("", None).await.is_err());
     r.mgr.disconnect_account(&view.account.id).await.unwrap();
-    assert!(r.mgr.dial("1002", Some(&view.account.id)).await.is_err(), "disconnected account cannot place calls");
+    assert!(
+        r.mgr.dial("1002", Some(&view.account.id)).await.is_err(),
+        "disconnected account cannot place calls"
+    );
     assert!(!r.engine.cmds().iter().any(|c| c.starts_with("dial")));
 }
 
@@ -576,29 +816,62 @@ async fn dial_validation() {
 async fn engine_crash_ends_calls_and_restart_reconnects_accounts() {
     let (r, acc_id) = registered_rig().await;
     let rf = cref("c1", CallDirection::Incoming, "sip:2000@example.com");
-    r.engine.emit(EngineEvent::Call { call: rf.clone(), event: CallEvent::Incoming });
-    r.engine.emit(EngineEvent::Call { call: rf, event: CallEvent::Established });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Incoming,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Established,
+    });
     let m = r.mgr.clone();
-    until("connected", move || m.calls().first().is_some_and(|c| c.state == CallState::Connected)).await;
+    until("connected", move || {
+        m.calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
 
-    r.engine.set_state(EngineState::Restarting { attempt: 1, reason: "crash".into() });
+    r.engine.set_state(EngineState::Restarting {
+        attempt: 1,
+        reason: "crash".into(),
+    });
     let m = r.mgr.clone();
     until("calls aborted", move || m.calls().is_empty()).await;
-    let s = r.sink.statuses().into_iter().rev().find(|s| s.account_id == acc_id).unwrap();
+    let s = r
+        .sink
+        .statuses()
+        .into_iter()
+        .rev()
+        .find(|s| s.account_id == acc_id)
+        .unwrap();
     assert_eq!(s.state, RegistrationState::Connecting);
     assert!(s.message.unwrap().contains("redémarrage"));
-    assert_eq!(r.db.list_history(&Default::default()).unwrap()[0].result, CallResult::Answered);
+    assert_eq!(
+        r.db.list_history(&Default::default()).unwrap()[0].result,
+        CallResult::Answered
+    );
 
     let before = r.engine.added.lock().unwrap().len();
     r.engine.set_state(EngineState::Running);
     let e = r.engine.clone();
-    until("reconnected", move || e.added.lock().unwrap().len() == before + 1).await;
+    until("reconnected", move || {
+        e.added.lock().unwrap().len() == before + 1
+    })
+    .await;
 
     // A permanent failure shows up on the account instead of hiding behind a spinner.
-    r.engine.set_state(EngineState::Failed { reason: "binaire manquant".into() });
+    r.engine.set_state(EngineState::Failed {
+        reason: "binaire manquant".into(),
+    });
     let sink = r.sink.clone();
     until("failed", move || {
-        sink.statuses().last().is_some_and(|s| s.state == RegistrationState::Error && s.message.as_deref().is_some_and(|m| m.contains("binaire manquant")))
+        sink.statuses().last().is_some_and(|s| {
+            s.state == RegistrationState::Error
+                && s.message
+                    .as_deref()
+                    .is_some_and(|m| m.contains("binaire manquant"))
+        })
     })
     .await;
 }
@@ -622,8 +895,15 @@ async fn audio_settings_are_applied_live_and_network_changes_flag_a_restart() {
     s.audio.output_device = Some("AirPods".into());
     let applied = r.mgr.update_settings(s.clone()).await.unwrap();
     assert!(!applied.restart_required);
-    assert!(r.engine.cmds().contains(&"audio Some(\"USB Mic\") Some(\"AirPods\")".to_string()));
-    assert_eq!(r.mgr.settings().unwrap().audio.input_device.as_deref(), Some("USB Mic"));
+    assert!(
+        r.engine
+            .cmds()
+            .contains(&"audio Some(\"USB Mic\") Some(\"AirPods\")".to_string())
+    );
+    assert_eq!(
+        r.mgr.settings().unwrap().audio.input_device.as_deref(),
+        Some("USB Mic")
+    );
 
     s.network.local_sip_port = Some(5070);
     assert!(r.mgr.update_settings(s).await.unwrap().restart_required);
@@ -633,12 +913,19 @@ async fn audio_settings_are_applied_live_and_network_changes_flag_a_restart() {
 async fn shutdown_hangs_up_unregisters_then_stops_the_engine() {
     let (r, _) = registered_rig().await;
     let rf = cref("c1", CallDirection::Incoming, "sip:2000@example.com");
-    r.engine.emit(EngineEvent::Call { call: rf, event: CallEvent::Incoming });
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Incoming,
+    });
     let m = r.mgr.clone();
     until("call", move || !m.calls().is_empty()).await;
     r.mgr.shutdown().await;
     let cmds = r.engine.cmds();
-    let pos = |needle: &str| cmds.iter().position(|c| c.starts_with(needle)).unwrap_or_else(|| panic!("{needle} missing in {cmds:?}"));
+    let pos = |needle: &str| {
+        cmds.iter()
+            .position(|c| c.starts_with(needle))
+            .unwrap_or_else(|| panic!("{needle} missing in {cmds:?}"))
+    };
     assert!(pos("hangup c1") < pos("remove"), "{cmds:?}");
     assert!(pos("remove") < pos("stop"), "{cmds:?}");
 }

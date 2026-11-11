@@ -25,7 +25,8 @@ pub struct KeyringStore;
 
 impl KeyringStore {
     fn entry(account_id: &str) -> AppResult<keyring::Entry> {
-        keyring::Entry::new(KEYCHAIN_SERVICE, &entry_name(account_id)).map_err(|e| AppError::Secret(e.to_string()))
+        keyring::Entry::new(KEYCHAIN_SERVICE, &entry_name(account_id))
+            .map_err(|e| AppError::Secret(e.to_string()))
     }
 }
 
@@ -60,12 +61,21 @@ pub struct MemoryStore {
 
 impl SecretStore for MemoryStore {
     fn set(&self, account_id: &str, secret: &SecretString) -> AppResult<()> {
-        self.inner.lock().unwrap().insert(account_id.to_owned(), secret.expose_secret().to_owned());
+        self.inner
+            .lock()
+            .unwrap()
+            .insert(account_id.to_owned(), secret.expose_secret().to_owned());
         Ok(())
     }
 
     fn get(&self, account_id: &str) -> AppResult<Option<SecretString>> {
-        Ok(self.inner.lock().unwrap().get(account_id).cloned().map(SecretString::from))
+        Ok(self
+            .inner
+            .lock()
+            .unwrap()
+            .get(account_id)
+            .cloned()
+            .map(SecretString::from))
     }
 
     fn delete(&self, account_id: &str) -> AppResult<()> {

@@ -21,7 +21,10 @@ pub fn redact(input: &str) -> String {
                     let value_part_trim = value_part.trim_start();
                     let value_start = input.len() - value_part_trim.len();
                     let value_len = if let Some(quoted) = value_part_trim.strip_prefix('"') {
-                        quoted.find('"').map(|p| p + 2).unwrap_or(value_part_trim.len())
+                        quoted
+                            .find('"')
+                            .map(|p| p + 2)
+                            .unwrap_or(value_part_trim.len())
                     } else {
                         value_part_trim
                             .find(|c: char| c == ';' || c == '>' || c == ',' || c.is_whitespace())
@@ -34,7 +37,10 @@ pub fn redact(input: &str) -> String {
                 }
             }
         }
-        let ch = input[i..].chars().next().expect("index is on a char boundary");
+        let ch = input[i..]
+            .chars()
+            .next()
+            .expect("index is on a char boundary");
         out.push(ch);
         i += ch.len_utf8();
     }
@@ -47,7 +53,8 @@ mod tests {
 
     #[test]
     fn redacts_quoted_password_with_separators() {
-        let s = r#"Creating UA for <sip:1001@pbx>;auth_user="1001";auth_pass="p;ss >word";regint=300"#;
+        let s =
+            r#"Creating UA for <sip:1001@pbx>;auth_user="1001";auth_pass="p;ss >word";regint=300"#;
         let r = redact(s);
         assert!(!r.contains("p;ss"), "{r}");
         assert!(!r.contains("word"), "{r}");

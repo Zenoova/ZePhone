@@ -14,7 +14,8 @@ use secrecy::SecretString;
 use support::*;
 use zephone_lib::sip::{
     engine::{
-        AccountSpec, AudioOverride, CallEvent, EngineEvent, EngineOptions, EngineState, RegistrationEvent, SipEngine,
+        AccountSpec, AudioOverride, CallEvent, EngineEvent, EngineOptions, EngineState,
+        RegistrationEvent, SipEngine,
     },
     types::{CallDirection, MediaEncryption, Transport},
 };
@@ -56,11 +57,19 @@ macro_rules! engine_or_skip {
 }
 
 fn pid_alive(pid: u32) -> bool {
-    Command::new("kill").args(["-0", &pid.to_string()]).status().map(|s| s.success()).unwrap_or(false)
+    Command::new("kill")
+        .args(["-0", &pid.to_string()])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
 }
 
 fn read_pid(work: &Path) -> u32 {
-    std::fs::read_to_string(work.join("baresip.pid")).unwrap().trim().parse().unwrap()
+    std::fs::read_to_string(work.join("baresip.pid"))
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap()
 }
 
 #[tokio::test]
@@ -70,15 +79,26 @@ async fn engine_starts_reports_version_codecs_and_listens_on_loopback_only() {
     assert_eq!(engine.state(), EngineState::Running);
     assert_eq!(engine.version().as_deref(), Some("4.13.0"));
     let codecs = engine.codecs();
-    assert!(codecs.iter().any(|c| c == "PCMU") && codecs.iter().any(|c| c == "PCMA"), "{codecs:?}");
+    assert!(
+        codecs.iter().any(|c| c == "PCMU") && codecs.iter().any(|c| c == "PCMA"),
+        "{codecs:?}"
+    );
 
     // The control port must be bound to 127.0.0.1 only (never 0.0.0.0 / *).
     let pid = read_pid(&dir.path().join("w"));
-    let lsof = Command::new("lsof").args(["-nP", "-a", "-iTCP", "-sTCP:LISTEN", "-p", &pid.to_string()]).output();
+    let lsof = Command::new("lsof")
+        .args(["-nP", "-a", "-iTCP", "-sTCP:LISTEN", "-p", &pid.to_string()])
+        .output();
     if let Ok(out) = lsof {
         let text = String::from_utf8_lossy(&out.stdout);
-        assert!(text.contains("127.0.0.1:"), "control port not on loopback:\n{text}");
-        assert!(!text.contains("*:") && !text.contains("0.0.0.0:"), "control port exposed:\n{text}");
+        assert!(
+            text.contains("127.0.0.1:"),
+            "control port not on loopback:\n{text}"
+        );
+        assert!(
+            !text.contains("*:") && !text.contains("0.0.0.0:"),
+            "control port exposed:\n{text}"
+        );
     }
 
     // No credentials file is ever written.
@@ -107,11 +127,20 @@ async fn engine_is_restarted_after_a_crash() {
     let engine = engine_or_skip!(&work, EngineOptions::default());
     let mut rx = engine.subscribe();
     let old = read_pid(&work);
-    Command::new("kill").args(["-9", &old.to_string()]).status().unwrap();
+    Command::new("kill")
+        .args(["-9", &old.to_string()])
+        .status()
+        .unwrap();
 
-    let restarting = wait_for(&mut rx, 10, |e| matches!(e, EngineEvent::State(EngineState::Restarting { .. }))).await;
+    let restarting = wait_for(&mut rx, 10, |e| {
+        matches!(e, EngineEvent::State(EngineState::Restarting { .. }))
+    })
+    .await;
     assert!(restarting.is_some(), "no Restarting state after SIGKILL");
-    let running = wait_for(&mut rx, 20, |e| matches!(e, EngineEvent::State(EngineState::Running))).await;
+    let running = wait_for(&mut rx, 20, |e| {
+        matches!(e, EngineEvent::State(EngineState::Running))
+    })
+    .await;
     assert!(running.is_some(), "engine did not come back");
     assert_ne!(read_pid(&work), old);
     // The new process answers commands.
@@ -127,13 +156,19 @@ async fn registration_with_a_valid_password_survives_the_401_challenge() {
     let dir = tempfile::tempdir().unwrap();
     let engine = engine_or_skip!(&dir.path().join("w"), EngineOptions::default());
     let mut rx = engine.subscribe();
-    engine.add_account(&spec("1001", "p;ss w0rd?>x", reg.port, 300)).await.unwrap();
+    engine
+        .add_account(&spec("1001", "p;ss w0rd?>x", reg.port, 300))
+        .await
+        .unwrap();
 
     let mut seen = vec![];
     let deadline = tokio::time::Instant::now() + Duration::from_secs(12);
     while let Ok(Ok(ev)) = tokio::time::timeout_at(deadline, rx.recv()).await {
         if let EngineEvent::Registration { event, .. } = ev {
-            let done = matches!(event, RegistrationEvent::Registered { .. } | RegistrationEvent::Failed { .. });
+            let done = matches!(
+                event,
+                RegistrationEvent::Registered { .. } | RegistrationEvent::Failed { .. }
+            );
             seen.push(event);
             if done {
                 break;
@@ -143,20 +178,35 @@ async fn registration_with_a_valid_password_survives_the_401_challenge() {
     println!("events: {seen:?}");
     println!("registrar saw: {:?}", reg.log.lock().unwrap());
     assert!(
-        matches!(seen.last(), Some(RegistrationEvent::Registered { code: Some(200), .. })),
+        matches!(
+            seen.last(),
+            Some(RegistrationEvent::Registered {
+                code: Some(200),
+                ..
+            })
+        ),
         "expected final 200 OK, got {seen:?}"
     );
     assert!(
-        !seen.iter().any(|e| matches!(e, RegistrationEvent::Failed { .. })),
+        !seen
+            .iter()
+            .any(|e| matches!(e, RegistrationEvent::Failed { .. })),
         "a 401 challenge followed by a successful authentication must not surface as a failure: {seen:?}"
     );
     let log = reg.log.lock().unwrap().clone();
-    assert_eq!(log, vec![(false, 401), (true, 200)], "expected challenge then authenticated REGISTER");
+    assert_eq!(
+        log,
+        vec![(false, 401), (true, 200)],
+        "expected challenge then authenticated REGISTER"
+    );
     // The request URI is the domain, routed through the outbound proxy (our registrar).
     assert_eq!(reg.seen_request_uris.lock().unwrap()[0], "sip:127.0.0.1");
 
     let logs = engine.log_tail(500).join("\n");
-    assert!(!logs.contains("p;ss w0rd"), "password leaked into engine logs:\n{logs}");
+    assert!(
+        !logs.contains("p;ss w0rd"),
+        "password leaked into engine logs:\n{logs}"
+    );
     engine.stop().await;
 }
 
@@ -166,14 +216,26 @@ async fn wrong_password_ends_in_a_401_failure() {
     let dir = tempfile::tempdir().unwrap();
     let engine = engine_or_skip!(&dir.path().join("w"), EngineOptions::default());
     let mut rx = engine.subscribe();
-    engine.add_account(&spec("1001", "WRONG", reg.port, 300)).await.unwrap();
+    engine
+        .add_account(&spec("1001", "WRONG", reg.port, 300))
+        .await
+        .unwrap();
     let ev = wait_for(&mut rx, 15, |e| {
-        matches!(e, EngineEvent::Registration { event: RegistrationEvent::Failed { .. } | RegistrationEvent::Registered { .. }, .. })
+        matches!(
+            e,
+            EngineEvent::Registration {
+                event: RegistrationEvent::Failed { .. } | RegistrationEvent::Registered { .. },
+                ..
+            }
+        )
     })
     .await
     .expect("no terminal registration event");
     match ev {
-        EngineEvent::Registration { event: RegistrationEvent::Failed { code, reason }, .. } => {
+        EngineEvent::Registration {
+            event: RegistrationEvent::Failed { code, reason },
+            ..
+        } => {
             assert_eq!(code, Some(401), "reason: {reason}");
         }
         other => panic!("expected failure, got {other:?}"),
@@ -183,19 +245,34 @@ async fn wrong_password_ends_in_a_401_failure() {
 
 #[tokio::test]
 async fn forbidden_and_unavailable_registrars_report_their_sip_codes() {
-    for (mode, expected) in [(RegistrarMode::Forbidden, 403u16), (RegistrarMode::Unavailable, 503)] {
+    for (mode, expected) in [
+        (RegistrarMode::Forbidden, 403u16),
+        (RegistrarMode::Unavailable, 503),
+    ] {
         let reg = FakeRegistrar::start(mode, "1001", "x").await;
         let dir = tempfile::tempdir().unwrap();
         let engine = engine_or_skip!(&dir.path().join("w"), EngineOptions::default());
         let mut rx = engine.subscribe();
-        engine.add_account(&spec("1001", "x", reg.port, 300)).await.unwrap();
+        engine
+            .add_account(&spec("1001", "x", reg.port, 300))
+            .await
+            .unwrap();
         let ev = wait_for(&mut rx, 15, |e| {
-            matches!(e, EngineEvent::Registration { event: RegistrationEvent::Failed { .. }, .. })
+            matches!(
+                e,
+                EngineEvent::Registration {
+                    event: RegistrationEvent::Failed { .. },
+                    ..
+                }
+            )
         })
         .await
         .unwrap_or_else(|| panic!("no failure for {mode:?}"));
         match ev {
-            EngineEvent::Registration { event: RegistrationEvent::Failed { code, .. }, .. } => {
+            EngineEvent::Registration {
+                event: RegistrationEvent::Failed { code, .. },
+                ..
+            } => {
                 assert_eq!(code, Some(expected), "{mode:?}")
             }
             _ => unreachable!(),
@@ -217,7 +294,13 @@ async fn unreachable_server_over_tcp_fails_fast_without_crashing_the_engine() {
     s.transport = Transport::Tcp;
     engine.add_account(&s).await.unwrap();
     let ev = wait_for(&mut rx, 20, |e| {
-        matches!(e, EngineEvent::Registration { event: RegistrationEvent::Failed { .. }, .. })
+        matches!(
+            e,
+            EngineEvent::Registration {
+                event: RegistrationEvent::Failed { .. },
+                ..
+            }
+        )
     })
     .await
     .expect("expected a registration failure for a closed port");
@@ -235,13 +318,26 @@ fn wav_peak(path: &Path) -> (usize, i16) {
     if bytes.len() <= 44 {
         return (0, 0);
     }
-    let samples: Vec<i16> = bytes[44..].chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]])).collect();
-    (samples.len(), samples.iter().map(|s| s.saturating_abs()).max().unwrap_or(0))
+    let samples: Vec<i16> = bytes[44..]
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|c| i16::from_le_bytes([c[0], c[1]]))
+        .collect();
+    (
+        samples.len(),
+        samples
+            .iter()
+            .map(|s| s.saturating_abs())
+            .max()
+            .unwrap_or(0),
+    )
 }
 
 fn combined_modules(tmp: &Path) -> Option<std::path::PathBuf> {
     let extra = test_modules_dir()?;
-    let bundle = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/baresip/modules");
+    let bundle =
+        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/baresip/modules");
     let dir = tmp.join("modules");
     std::fs::create_dir_all(&dir).ok()?;
     for entry in std::fs::read_dir(&bundle).ok()? {
@@ -258,13 +354,21 @@ fn combined_modules(tmp: &Path) -> Option<std::path::PathBuf> {
 async fn call_between_two_engines_carries_audio_both_ways_and_supports_dtmf_hold_mute_hangup() {
     let tmp = tempfile::tempdir().unwrap();
     let Some(modules) = combined_modules(tmp.path()) else {
-        eprintln!("SKIPPED: need ausine/aufile modules (brew install baresip or ZEPHONE_TEST_MODULES_DIR)");
+        eprintln!(
+            "SKIPPED: need ausine/aufile modules (brew install baresip or ZEPHONE_TEST_MODULES_DIR)"
+        );
         return;
     };
     let ip = LOOPBACK.to_string();
     let a_rx = tmp.path().join("a_rx.wav");
     let b_rx = tmp.path().join("b_rx.wav");
-    let port_b = { std::net::UdpSocket::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port() };
+    let port_b = {
+        std::net::UdpSocket::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port()
+    };
 
     let mk = |name: &str, freq: u32, rx: &Path, local_port: Option<u16>| {
         let work = tmp.path().join(name);
@@ -293,32 +397,54 @@ async fn call_between_two_engines_carries_audio_both_ways_and_supports_dtmf_hold
     let (mut ea, mut eb) = (a.subscribe(), b.subscribe());
 
     // A routes everything to B (outbound proxy = B), no registration (direct call).
-    a.add_account(&spec_at("alice", "pw", &ip, port_b, 0)).await.unwrap();
-    b.add_account(&spec_at("bob", "pw", &ip, 9, 0)).await.unwrap();
+    a.add_account(&spec_at("alice", "pw", &ip, port_b, 0))
+        .await
+        .unwrap();
+    b.add_account(&spec_at("bob", "pw", &ip, 9, 0))
+        .await
+        .unwrap();
 
     let call_a = a
-        .dial(&format!("sip:alice@{ip}"), &format!("sip:bob@{ip}:{port_b}"))
+        .dial(
+            &format!("sip:alice@{ip}"),
+            &format!("sip:bob@{ip}:{port_b}"),
+        )
         .await
         .unwrap_or_else(|e| panic!("dial: {e}\n{}", a.log_tail(30).join("\n")));
     println!("A dialled, call id {call_a}");
 
     // B sees the incoming call.
-    let incoming = wait_for(&mut eb, 10, |e| matches!(e, EngineEvent::Call { event: CallEvent::Incoming, .. }))
-        .await
-        .unwrap_or_else(|| {
-            let pid = read_pid(&tmp.path().join("B"));
-            let lsof = Command::new("lsof").args(["-nP", "-a", "-iUDP", "-p", &pid.to_string()]).output();
-            panic!(
-                "B never saw CALL_INCOMING\n--- B config ---\n{}\n--- B sockets ---\n{}\n--- B ---\n{}",
-                std::fs::read_to_string(tmp.path().join("B/config")).unwrap_or_default(),
-                lsof.map(|o| String::from_utf8_lossy(&o.stdout).into_owned()).unwrap_or_default(),
-                b.log_tail(80).join("\n")
-            )
-        });
+    let incoming = wait_for(&mut eb, 10, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Incoming,
+                ..
+            }
+        )
+    })
+    .await
+    .unwrap_or_else(|| {
+        let pid = read_pid(&tmp.path().join("B"));
+        let lsof = Command::new("lsof")
+            .args(["-nP", "-a", "-iUDP", "-p", &pid.to_string()])
+            .output();
+        panic!(
+            "B never saw CALL_INCOMING\n--- B config ---\n{}\n--- B sockets ---\n{}\n--- B ---\n{}",
+            std::fs::read_to_string(tmp.path().join("B/config")).unwrap_or_default(),
+            lsof.map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+                .unwrap_or_default(),
+            b.log_tail(80).join("\n")
+        )
+    });
     let call_b = match incoming {
         EngineEvent::Call { call, .. } => {
             assert_eq!(call.direction, CallDirection::Incoming);
-            assert!(call.peer_uri.contains(&format!("alice@{ip}")), "peer uri: {}", call.peer_uri);
+            assert!(
+                call.peer_uri.contains(&format!("alice@{ip}")),
+                "peer uri: {}",
+                call.peer_uri
+            );
             assert_eq!(call.aor, format!("sip:bob@{ip}"));
             call.id
         }
@@ -326,22 +452,62 @@ async fn call_between_two_engines_carries_audio_both_ways_and_supports_dtmf_hold
     };
     // A sees remote ringing.
     assert!(
-        wait_for(&mut ea, 10, |e| matches!(e, EngineEvent::Call { event: CallEvent::Ringing, .. })).await.is_some(),
+        wait_for(&mut ea, 10, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Ringing,
+                ..
+            }
+        ))
+        .await
+        .is_some(),
         "A never saw ringing"
     );
 
     b.accept(&call_b).await.expect("accept");
-    assert!(wait_for(&mut ea, 10, |e| matches!(e, EngineEvent::Call { event: CallEvent::Established, .. })).await.is_some());
-    assert!(wait_for(&mut eb, 10, |e| matches!(e, EngineEvent::Call { event: CallEvent::Established, .. })).await.is_some());
+    assert!(
+        wait_for(&mut ea, 10, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Established,
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
+    assert!(
+        wait_for(&mut eb, 10, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Established,
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
 
     // Let RTP flow in both directions.
     tokio::time::sleep(Duration::from_millis(2500)).await;
 
     // DTMF from A reaches B (RFC 4733 telephone-event).
     a.send_dtmf(&call_a, "5").await.expect("dtmf");
-    let dtmf = wait_for(&mut eb, 5, |e| matches!(e, EngineEvent::Call { event: CallEvent::Dtmf { .. }, .. })).await;
+    let dtmf = wait_for(&mut eb, 5, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Dtmf { .. },
+                ..
+            }
+        )
+    })
+    .await;
     match dtmf {
-        Some(EngineEvent::Call { event: CallEvent::Dtmf { key }, .. }) => assert_eq!(key, "5"),
+        Some(EngineEvent::Call {
+            event: CallEvent::Dtmf { key },
+            ..
+        }) => assert_eq!(key, "5"),
         other => panic!("B did not receive the DTMF digit: {other:?}"),
     }
 
@@ -350,20 +516,56 @@ async fn call_between_two_engines_carries_audio_both_ways_and_supports_dtmf_hold
     a.set_mute(&call_a, false).await.expect("unmute");
     a.hold(&call_a).await.expect("hold");
     assert!(
-        wait_for(&mut eb, 8, |e| matches!(e, EngineEvent::Call { event: CallEvent::Hold, .. })).await.is_some(),
+        wait_for(&mut eb, 8, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Hold,
+                ..
+            }
+        ))
+        .await
+        .is_some(),
         "B was not told about the hold"
     );
     a.resume(&call_a).await.expect("resume");
     assert!(
-        wait_for(&mut eb, 8, |e| matches!(e, EngineEvent::Call { event: CallEvent::Resume, .. })).await.is_some(),
+        wait_for(&mut eb, 8, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Resume,
+                ..
+            }
+        ))
+        .await
+        .is_some(),
         "B was not told about the resume"
     );
     tokio::time::sleep(Duration::from_millis(1500)).await;
 
     // A hangs up; both sides close.
     a.hangup(&call_a, None).await.expect("hangup");
-    assert!(wait_for(&mut ea, 8, |e| matches!(e, EngineEvent::Call { event: CallEvent::Closed { .. }, .. })).await.is_some());
-    assert!(wait_for(&mut eb, 8, |e| matches!(e, EngineEvent::Call { event: CallEvent::Closed { .. }, .. })).await.is_some());
+    assert!(
+        wait_for(&mut ea, 8, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Closed { .. },
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
+    assert!(
+        wait_for(&mut eb, 8, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Closed { .. },
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
 
     a.stop().await;
     b.stop().await;
@@ -372,8 +574,14 @@ async fn call_between_two_engines_carries_audio_both_ways_and_supports_dtmf_hold
     let (na, pa) = wav_peak(&a_rx);
     let (nb, pb) = wav_peak(&b_rx);
     println!("A received {na} samples (peak {pa}); B received {nb} samples (peak {pb})");
-    assert!(na > 8000 && pa > 1000, "A heard nothing from B (samples={na}, peak={pa})");
-    assert!(nb > 8000 && pb > 1000, "B heard nothing from A (samples={nb}, peak={pb})");
+    assert!(
+        na > 8000 && pa > 1000,
+        "A heard nothing from B (samples={na}, peak={pa})"
+    );
+    assert!(
+        nb > 8000 && pb > 1000,
+        "B heard nothing from A (samples={nb}, peak={pb})"
+    );
 }
 
 #[tokio::test]
@@ -384,7 +592,13 @@ async fn rejecting_an_incoming_call_closes_it_on_both_sides_with_the_sip_status(
         return;
     };
     let ip = LOOPBACK.to_string();
-    let port_b = { std::net::UdpSocket::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port() };
+    let port_b = {
+        std::net::UdpSocket::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port()
+    };
     let mk = |name: &str, local_port: Option<u16>| {
         let mut paths = sidecar_paths(tmp.path().join(name))?;
         paths.modules_dir = modules.clone();
@@ -395,36 +609,87 @@ async fn rejecting_an_incoming_call_closes_it_on_both_sides_with_the_sip_status(
             audio_override: Some(AudioOverride {
                 modules: vec!["ausine".into(), "aufile".into()],
                 source: "ausine,440".into(),
-                player: format!("aufile,{}", tmp.path().join(format!("{name}.wav")).display()),
+                player: format!(
+                    "aufile,{}",
+                    tmp.path().join(format!("{name}.wav")).display()
+                ),
             }),
             ..Default::default()
         });
         Some(e)
     };
-    let (Some(a), Some(b)) = (mk("A", None), mk("B", Some(port_b))) else { return };
+    let (Some(a), Some(b)) = (mk("A", None), mk("B", Some(port_b))) else {
+        return;
+    };
     a.start().await.unwrap();
     b.start().await.unwrap();
     let (mut ea, mut eb) = (a.subscribe(), b.subscribe());
-    a.add_account(&spec_at("alice", "pw", &ip, port_b, 0)).await.unwrap();
-    b.add_account(&spec_at("bob", "pw", &ip, 9, 0)).await.unwrap();
+    a.add_account(&spec_at("alice", "pw", &ip, port_b, 0))
+        .await
+        .unwrap();
+    b.add_account(&spec_at("bob", "pw", &ip, 9, 0))
+        .await
+        .unwrap();
 
-    if let Err(e) = a.dial(&format!("sip:alice@{ip}"), &format!("sip:bob@{ip}:{port_b}")).await {
-        panic!("dial failed: {e}\n--- engine A log ---\n{}", a.log_tail(60).join("\n"));
+    if let Err(e) = a
+        .dial(
+            &format!("sip:alice@{ip}"),
+            &format!("sip:bob@{ip}:{port_b}"),
+        )
+        .await
+    {
+        panic!(
+            "dial failed: {e}\n--- engine A log ---\n{}",
+            a.log_tail(60).join("\n")
+        );
     }
-    let call_b = match wait_for(&mut eb, 10, |e| matches!(e, EngineEvent::Call { event: CallEvent::Incoming, .. })).await {
+    let call_b = match wait_for(&mut eb, 10, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Incoming,
+                ..
+            }
+        )
+    })
+    .await
+    {
         Some(EngineEvent::Call { call, .. }) => call.id,
         _ => panic!("no incoming call"),
     };
     b.hangup(&call_b, Some(603)).await.expect("reject");
 
-    match wait_for(&mut ea, 10, |e| matches!(e, EngineEvent::Call { event: CallEvent::Closed { .. }, .. })).await {
-        Some(EngineEvent::Call { event: CallEvent::Closed { code, reason }, .. }) => {
+    match wait_for(&mut ea, 10, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Closed { .. },
+                ..
+            }
+        )
+    })
+    .await
+    {
+        Some(EngineEvent::Call {
+            event: CallEvent::Closed { code, reason },
+            ..
+        }) => {
             println!("caller saw: {code:?} {reason}");
             assert_eq!(code, Some(603), "{reason}");
         }
         other => panic!("caller was not told: {other:?}"),
     }
-    assert!(wait_for(&mut eb, 5, |e| matches!(e, EngineEvent::Call { event: CallEvent::Closed { .. }, .. })).await.is_some());
+    assert!(
+        wait_for(&mut eb, 5, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Closed { .. },
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
     a.stop().await;
     b.stop().await;
 }

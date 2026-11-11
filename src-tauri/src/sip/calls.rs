@@ -67,7 +67,13 @@ impl CallTracker {
         v
     }
 
-    fn ensure(&mut self, r: &CallRef, ctx: &CallContext, now: DateTime<Utc>, initial: CallState) -> &mut Tracked {
+    fn ensure(
+        &mut self,
+        r: &CallRef,
+        ctx: &CallContext,
+        now: DateTime<Utc>,
+        initial: CallState,
+    ) -> &mut Tracked {
         self.calls.entry(r.id.clone()).or_insert_with(|| {
             let number = uri::user_part(&r.peer_uri);
             let remote_name = ctx
@@ -103,8 +109,15 @@ impl CallTracker {
 
     /// The user asked to place a call and the engine returned its id. The
     /// engine's own `Outgoing` event may already have created it.
-    pub fn register_outgoing(&mut self, r: &CallRef, ctx: &CallContext, now: DateTime<Utc>) -> Call {
-        self.ensure(r, ctx, now, CallState::Initializing).call.clone()
+    pub fn register_outgoing(
+        &mut self,
+        r: &CallRef,
+        ctx: &CallContext,
+        now: DateTime<Utc>,
+    ) -> Call {
+        self.ensure(r, ctx, now, CallState::Initializing)
+            .call
+            .clone()
     }
 
     pub fn mark_user_hangup(&mut self, id: &str) {
@@ -127,12 +140,22 @@ impl CallTracker {
     }
 
     /// Applies an engine call event. Returns `None` for events that change nothing visible.
-    pub fn apply(&mut self, r: &CallRef, event: &CallEvent, ctx: &CallContext, now: DateTime<Utc>) -> Option<CallUpdate> {
+    pub fn apply(
+        &mut self,
+        r: &CallRef,
+        event: &CallEvent,
+        ctx: &CallContext,
+        now: DateTime<Utc>,
+    ) -> Option<CallUpdate> {
         match event {
             CallEvent::Incoming => {
                 let is_new = !self.calls.contains_key(&r.id);
                 let t = self.ensure(r, ctx, now, CallState::Incoming);
-                Some(CallUpdate { call: t.call.clone(), is_new_incoming: is_new, history: None })
+                Some(CallUpdate {
+                    call: t.call.clone(),
+                    is_new_incoming: is_new,
+                    history: None,
+                })
             }
             CallEvent::Outgoing => {
                 let t = self.ensure(r, ctx, now, CallState::Dialing);
@@ -143,7 +166,10 @@ impl CallTracker {
             }
             CallEvent::Ringing => {
                 let t = self.calls.get_mut(&r.id)?;
-                if matches!(t.call.state, CallState::Initializing | CallState::Dialing | CallState::Ringing) {
+                if matches!(
+                    t.call.state,
+                    CallState::Initializing | CallState::Dialing | CallState::Ringing
+                ) {
                     t.call.state = CallState::Ringing;
                     Some(plain(t))
                 } else {
@@ -182,18 +208,31 @@ impl CallTracker {
         }
     }
 
-    fn close(&mut self, r: &CallRef, code: Option<u16>, reason: &str, now: DateTime<Utc>) -> Option<CallUpdate> {
+    fn close(
+        &mut self,
+        r: &CallRef,
+        code: Option<u16>,
+        reason: &str,
+        now: DateTime<Utc>,
+    ) -> Option<CallUpdate> {
         let mut t = self.calls.remove(&r.id)?;
         let connected = t.answered_at.is_some();
-        let duration = t.answered_at.map(|a| (now - a).num_seconds().max(0) as u64).unwrap_or(0);
+        let duration = t
+            .answered_at
+            .map(|a| (now - a).num_seconds().max(0) as u64)
+            .unwrap_or(0);
 
         let (result, state) = if connected {
             (CallResult::Answered, CallState::Ended)
         } else {
             match t.call.direction {
-                CallDirection::Incoming if t.user_reject => (CallResult::Rejected, CallState::Ended),
+                CallDirection::Incoming if t.user_reject => {
+                    (CallResult::Rejected, CallState::Ended)
+                }
                 CallDirection::Incoming => (CallResult::Missed, CallState::Ended),
-                CallDirection::Outgoing if t.user_hangup => (CallResult::Cancelled, CallState::Ended),
+                CallDirection::Outgoing if t.user_hangup => {
+                    (CallResult::Cancelled, CallState::Ended)
+                }
                 CallDirection::Outgoing => (CallResult::Failed, CallState::Failed),
             }
         };
@@ -201,7 +240,9 @@ impl CallTracker {
         // Human-friendly reason for failures; keep the raw text otherwise.
         let friendly = match (result, code) {
             (CallResult::Failed, Some(c)) => Some(describe_sip_code(c).to_owned()),
-            (CallResult::Failed, None) if !reason.is_empty() => Some(describe_engine_reason(reason)),
+            (CallResult::Failed, None) if !reason.is_empty() => {
+                Some(describe_engine_reason(reason))
+            }
             (CallResult::Failed, None) => Some("Appel non abouti".to_owned()),
             _ => (!reason.is_empty()).then(|| reason.to_owned()),
         };
@@ -218,7 +259,10 @@ impl CallTracker {
             account_label: t.call.account_label.clone(),
             remote_uri: t.call.remote_uri.clone(),
             remote_number: t.call.remote_number.clone(),
-            contact_name: t.contact_name.clone().or_else(|| t.call.remote_name.clone()),
+            contact_name: t
+                .contact_name
+                .clone()
+                .or_else(|| t.call.remote_name.clone()),
             direction: t.call.direction,
             result,
             started_at: rfc(t.created_at),
@@ -228,7 +272,11 @@ impl CallTracker {
             sip_code: code,
             reason: friendly,
         };
-        Some(CallUpdate { call: t.call, is_new_incoming: false, history: Some(history) })
+        Some(CallUpdate {
+            call: t.call,
+            is_new_incoming: false,
+            history: Some(history),
+        })
     }
 
     /// The engine died: every live call is over. Returns their final updates.
@@ -259,7 +307,11 @@ impl CallTracker {
 }
 
 fn plain(t: &Tracked) -> CallUpdate {
-    CallUpdate { call: t.call.clone(), is_new_incoming: false, history: None }
+    CallUpdate {
+        call: t.call.clone(),
+        is_new_incoming: false,
+        history: None,
+    }
 }
 
 #[cfg(test)]
@@ -268,7 +320,9 @@ mod tests {
     use chrono::Duration;
 
     fn t0() -> DateTime<Utc> {
-        DateTime::parse_from_rfc3339("2026-01-01T10:00:00Z").unwrap().with_timezone(&Utc)
+        DateTime::parse_from_rfc3339("2026-01-01T10:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc)
     }
 
     fn cref(id: &str, dir: CallDirection) -> CallRef {
@@ -282,7 +336,11 @@ mod tests {
     }
 
     fn ctx() -> CallContext {
-        CallContext { account_id: Some("acc1".into()), account_label: Some("Bureau".into()), contact_name: None }
+        CallContext {
+            account_id: Some("acc1".into()),
+            account_label: Some("Bureau".into()),
+            contact_name: None,
+        }
     }
 
     #[test]
@@ -291,13 +349,41 @@ mod tests {
         let r = cref("c1", CallDirection::Outgoing);
         let u = tr.register_outgoing(&r, &ctx(), t0());
         assert_eq!(u.state, CallState::Initializing);
-        assert_eq!(tr.apply(&r, &CallEvent::Outgoing, &ctx(), t0()).unwrap().call.state, CallState::Dialing);
-        assert_eq!(tr.apply(&r, &CallEvent::Ringing, &ctx(), t0()).unwrap().call.state, CallState::Ringing);
-        let c = tr.apply(&r, &CallEvent::Established, &ctx(), t0() + Duration::seconds(3)).unwrap().call;
+        assert_eq!(
+            tr.apply(&r, &CallEvent::Outgoing, &ctx(), t0())
+                .unwrap()
+                .call
+                .state,
+            CallState::Dialing
+        );
+        assert_eq!(
+            tr.apply(&r, &CallEvent::Ringing, &ctx(), t0())
+                .unwrap()
+                .call
+                .state,
+            CallState::Ringing
+        );
+        let c = tr
+            .apply(
+                &r,
+                &CallEvent::Established,
+                &ctx(),
+                t0() + Duration::seconds(3),
+            )
+            .unwrap()
+            .call;
         assert_eq!(c.state, CallState::Connected);
         assert!(c.connected_at.is_some());
         let end = tr
-            .apply(&r, &CallEvent::Closed { code: None, reason: String::new() }, &ctx(), t0() + Duration::seconds(65))
+            .apply(
+                &r,
+                &CallEvent::Closed {
+                    code: None,
+                    reason: String::new(),
+                },
+                &ctx(),
+                t0() + Duration::seconds(65),
+            )
             .unwrap();
         assert_eq!(end.call.state, CallState::Ended);
         assert_eq!(end.call.duration_secs, 62);
@@ -328,11 +414,26 @@ mod tests {
         let mut tr = CallTracker::new();
         let r = cref("c1", CallDirection::Outgoing);
         tr.apply(&r, &CallEvent::Outgoing, &ctx(), t0());
-        assert!(tr.apply(&r, &CallEvent::Hold, &ctx(), t0()).is_none(), "cannot hold before connect");
+        assert!(
+            tr.apply(&r, &CallEvent::Hold, &ctx(), t0()).is_none(),
+            "cannot hold before connect"
+        );
         tr.apply(&r, &CallEvent::Established, &ctx(), t0());
-        assert_eq!(tr.apply(&r, &CallEvent::Hold, &ctx(), t0()).unwrap().call.state, CallState::OnHold);
+        assert_eq!(
+            tr.apply(&r, &CallEvent::Hold, &ctx(), t0())
+                .unwrap()
+                .call
+                .state,
+            CallState::OnHold
+        );
         assert!(tr.apply(&r, &CallEvent::Hold, &ctx(), t0()).is_none());
-        assert_eq!(tr.apply(&r, &CallEvent::Resume, &ctx(), t0()).unwrap().call.state, CallState::Connected);
+        assert_eq!(
+            tr.apply(&r, &CallEvent::Resume, &ctx(), t0())
+                .unwrap()
+                .call
+                .state,
+            CallState::Connected
+        );
     }
 
     #[test]
@@ -342,7 +443,17 @@ mod tests {
         tr.apply(&r, &CallEvent::Incoming, &ctx(), t0());
         tr.apply(&r, &CallEvent::Established, &ctx(), t0());
         tr.apply(&r, &CallEvent::Hold, &ctx(), t0());
-        let end = tr.apply(&r, &CallEvent::Closed { code: None, reason: String::new() }, &ctx(), t0() + Duration::seconds(10)).unwrap();
+        let end = tr
+            .apply(
+                &r,
+                &CallEvent::Closed {
+                    code: None,
+                    reason: String::new(),
+                },
+                &ctx(),
+                t0() + Duration::seconds(10),
+            )
+            .unwrap();
         assert_eq!(end.history.unwrap().result, CallResult::Answered);
     }
 
@@ -350,8 +461,16 @@ mod tests {
     fn incoming_flag_is_set_only_once() {
         let mut tr = CallTracker::new();
         let r = cref("c1", CallDirection::Incoming);
-        assert!(tr.apply(&r, &CallEvent::Incoming, &ctx(), t0()).unwrap().is_new_incoming);
-        assert!(!tr.apply(&r, &CallEvent::Incoming, &ctx(), t0()).unwrap().is_new_incoming);
+        assert!(
+            tr.apply(&r, &CallEvent::Incoming, &ctx(), t0())
+                .unwrap()
+                .is_new_incoming
+        );
+        assert!(
+            !tr.apply(&r, &CallEvent::Incoming, &ctx(), t0())
+                .unwrap()
+                .is_new_incoming
+        );
     }
 
     #[test]
@@ -360,7 +479,15 @@ mod tests {
         let r = cref("c1", CallDirection::Incoming);
         tr.apply(&r, &CallEvent::Incoming, &ctx(), t0());
         let end = tr
-            .apply(&r, &CallEvent::Closed { code: Some(487), reason: "Request Terminated".into() }, &ctx(), t0() + Duration::seconds(8))
+            .apply(
+                &r,
+                &CallEvent::Closed {
+                    code: Some(487),
+                    reason: "Request Terminated".into(),
+                },
+                &ctx(),
+                t0() + Duration::seconds(8),
+            )
             .unwrap();
         let h = end.history.unwrap();
         assert_eq!(h.result, CallResult::Missed);
@@ -374,7 +501,17 @@ mod tests {
         let r = cref("c1", CallDirection::Incoming);
         tr.apply(&r, &CallEvent::Incoming, &ctx(), t0());
         tr.mark_user_reject("c1");
-        let end = tr.apply(&r, &CallEvent::Closed { code: None, reason: "Rejected by user".into() }, &ctx(), t0()).unwrap();
+        let end = tr
+            .apply(
+                &r,
+                &CallEvent::Closed {
+                    code: None,
+                    reason: "Rejected by user".into(),
+                },
+                &ctx(),
+                t0(),
+            )
+            .unwrap();
         assert_eq!(end.history.unwrap().result, CallResult::Rejected);
     }
 
@@ -384,7 +521,17 @@ mod tests {
         let r = cref("c1", CallDirection::Outgoing);
         tr.apply(&r, &CallEvent::Outgoing, &ctx(), t0());
         tr.mark_user_hangup("c1");
-        let end = tr.apply(&r, &CallEvent::Closed { code: Some(487), reason: "Request Terminated".into() }, &ctx(), t0()).unwrap();
+        let end = tr
+            .apply(
+                &r,
+                &CallEvent::Closed {
+                    code: Some(487),
+                    reason: "Request Terminated".into(),
+                },
+                &ctx(),
+                t0(),
+            )
+            .unwrap();
         assert_eq!(end.history.unwrap().result, CallResult::Cancelled);
         assert_eq!(end.call.state, CallState::Ended);
     }
@@ -395,7 +542,17 @@ mod tests {
         let r = cref("c1", CallDirection::Outgoing);
         tr.apply(&r, &CallEvent::Outgoing, &ctx(), t0());
         tr.apply(&r, &CallEvent::Ringing, &ctx(), t0());
-        let end = tr.apply(&r, &CallEvent::Closed { code: Some(486), reason: "Busy Here".into() }, &ctx(), t0()).unwrap();
+        let end = tr
+            .apply(
+                &r,
+                &CallEvent::Closed {
+                    code: Some(486),
+                    reason: "Busy Here".into(),
+                },
+                &ctx(),
+                t0(),
+            )
+            .unwrap();
         assert_eq!(end.call.state, CallState::Failed);
         assert_eq!(end.call.sip_code, Some(486));
         let h = end.history.unwrap();
@@ -408,7 +565,17 @@ mod tests {
         let mut tr = CallTracker::new();
         let r = cref("c1", CallDirection::Outgoing);
         tr.apply(&r, &CallEvent::Outgoing, &ctx(), t0());
-        let end = tr.apply(&r, &CallEvent::Closed { code: None, reason: "Connection timed out".into() }, &ctx(), t0()).unwrap();
+        let end = tr
+            .apply(
+                &r,
+                &CallEvent::Closed {
+                    code: None,
+                    reason: "Connection timed out".into(),
+                },
+                &ctx(),
+                t0(),
+            )
+            .unwrap();
         assert_eq!(end.history.unwrap().result, CallResult::Failed);
         assert!(end.call.reason.unwrap().contains("délai dépassé"));
     }
@@ -417,7 +584,10 @@ mod tests {
     fn contact_name_takes_priority_over_the_display_name_sent_by_the_peer() {
         let mut tr = CallTracker::new();
         let r = cref("c1", CallDirection::Incoming);
-        let c = CallContext { contact_name: Some("Robert Dupont".into()), ..ctx() };
+        let c = CallContext {
+            contact_name: Some("Robert Dupont".into()),
+            ..ctx()
+        };
         let u = tr.apply(&r, &CallEvent::Incoming, &c, t0()).unwrap();
         assert_eq!(u.call.remote_name.as_deref(), Some("Robert Dupont"));
     }
@@ -436,7 +606,18 @@ mod tests {
     fn closing_an_unknown_call_is_ignored() {
         let mut tr = CallTracker::new();
         let r = cref("ghost", CallDirection::Outgoing);
-        assert!(tr.apply(&r, &CallEvent::Closed { code: None, reason: String::new() }, &ctx(), t0()).is_none());
+        assert!(
+            tr.apply(
+                &r,
+                &CallEvent::Closed {
+                    code: None,
+                    reason: String::new()
+                },
+                &ctx(),
+                t0()
+            )
+            .is_none()
+        );
     }
 
     #[test]
@@ -449,8 +630,14 @@ mod tests {
         let mut ended = tr.abort_all("engine died", t0() + Duration::seconds(5));
         ended.sort_by(|x, y| x.call.id.cmp(&y.call.id));
         assert_eq!(ended.len(), 2);
-        assert_eq!(ended[0].history.as_ref().unwrap().result, CallResult::Answered);
-        assert_eq!(ended[1].history.as_ref().unwrap().result, CallResult::Missed);
+        assert_eq!(
+            ended[0].history.as_ref().unwrap().result,
+            CallResult::Answered
+        );
+        assert_eq!(
+            ended[1].history.as_ref().unwrap().result,
+            CallResult::Missed
+        );
         assert!(tr.active().is_empty());
     }
 }

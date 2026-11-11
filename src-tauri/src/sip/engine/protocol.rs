@@ -52,7 +52,10 @@ fn truthy(v: Option<&Value>) -> bool {
 }
 
 fn str_field(v: &Value, key: &str) -> Option<String> {
-    v.get(key).and_then(Value::as_str).map(str::to_owned).filter(|s| !s.is_empty())
+    v.get(key)
+        .and_then(Value::as_str)
+        .map(str::to_owned)
+        .filter(|s| !s.is_empty())
 }
 
 pub fn parse_message(json: &[u8]) -> Result<Message, ProtocolError> {
@@ -63,7 +66,11 @@ pub fn parse_message(json: &[u8]) -> Result<Message, ProtocolError> {
     if truthy(v.get("response")) {
         return Ok(Message::Response(Response {
             ok: truthy(v.get("ok")),
-            data: v.get("data").and_then(Value::as_str).unwrap_or_default().to_owned(),
+            data: v
+                .get("data")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_owned(),
             token: str_field(&v, "token"),
         }));
     }
@@ -105,7 +112,11 @@ pub fn parse_status_param(param: &str) -> (Option<u16>, String) {
     };
     if let Ok(code) = first.parse::<u16>() {
         let reason = rest.split(',').next().unwrap_or("").trim().to_owned();
-        return if (100..=699).contains(&code) { (Some(code), reason) } else { (None, reason) };
+        return if (100..=699).contains(&code) {
+            (Some(code), reason)
+        } else {
+            (None, reason)
+        };
     }
     let lower = p.to_ascii_lowercase();
     if lower.contains("timed out") || lower.contains("timeout") {
@@ -129,9 +140,17 @@ fn call_ref(raw: &RawEvent) -> Option<CallRef> {
 pub fn to_engine_event(raw: &RawEvent) -> Option<EngineEvent> {
     let param = raw.param.as_deref().unwrap_or("");
     let reg = |event| -> Option<EngineEvent> {
-        Some(EngineEvent::Registration { aor: raw.account_aor.clone()?, event })
+        Some(EngineEvent::Registration {
+            aor: raw.account_aor.clone()?,
+            event,
+        })
     };
-    let call = |event| -> Option<EngineEvent> { Some(EngineEvent::Call { call: call_ref(raw)?, event }) };
+    let call = |event| -> Option<EngineEvent> {
+        Some(EngineEvent::Call {
+            call: call_ref(raw)?,
+            event,
+        })
+    };
 
     match raw.kind.as_str() {
         "CREATE" => reg(RegistrationEvent::Created),
@@ -159,8 +178,13 @@ pub fn to_engine_event(raw: &RawEvent) -> Option<EngineEvent> {
             let (code, reason) = parse_status_param(param);
             call(CallEvent::TransferFailed { code, reason })
         }
-        "CALL_DTMF_START" => call(CallEvent::Dtmf { key: param.to_owned() }),
-        "AUDIO_ERROR" => Some(EngineEvent::AudioError { call_id: raw.call_id.clone(), message: param.to_owned() }),
+        "CALL_DTMF_START" => call(CallEvent::Dtmf {
+            key: param.to_owned(),
+        }),
+        "AUDIO_ERROR" => Some(EngineEvent::AudioError {
+            call_id: raw.call_id.clone(),
+            message: param.to_owned(),
+        }),
         _ => None,
     }
 }
@@ -178,13 +202,22 @@ mod tests {
 
     #[test]
     fn parses_response_with_token() {
-        let m = parse_message(br#"{"response":true,"ok":true,"data":"hi\nthere","token":"t1"}"#).unwrap();
-        assert_eq!(m, Message::Response(Response { ok: true, data: "hi\nthere".into(), token: Some("t1".into()) }));
+        let m = parse_message(br#"{"response":true,"ok":true,"data":"hi\nthere","token":"t1"}"#)
+            .unwrap();
+        assert_eq!(
+            m,
+            Message::Response(Response {
+                ok: true,
+                data: "hi\nthere".into(),
+                token: Some("t1".into())
+            })
+        );
     }
 
     #[test]
     fn parses_failed_response() {
-        let m = parse_message(br#"{"response":true,"ok":false,"data":"nope","token":"7"}"#).unwrap();
+        let m =
+            parse_message(br#"{"response":true,"ok":false,"data":"nope","token":"7"}"#).unwrap();
         match m {
             Message::Response(r) => assert!(!r.ok),
             _ => panic!(),
@@ -201,16 +234,24 @@ mod tests {
         assert_eq!(e.class, "ua");
         assert_eq!(
             to_engine_event(&e),
-            Some(EngineEvent::Registration { aor: "sip:1001@127.0.0.1".into(), event: RegistrationEvent::Created })
+            Some(EngineEvent::Registration {
+                aor: "sip:1001@127.0.0.1".into(),
+                event: RegistrationEvent::Created
+            })
         );
     }
 
     #[test]
     fn accepts_event_flag_as_string() {
-        let e = event(r#"{"event":"true","class":"call","type":"CALL_CLOSED","param":"Connection reset by peer","accountaor":"sip:alice@atlanta.com","direction":"incoming","peeruri":"sip:bob@biloxy.com","id":"73a12546589651f8"}"#);
+        let e = event(
+            r#"{"event":"true","class":"call","type":"CALL_CLOSED","param":"Connection reset by peer","accountaor":"sip:alice@atlanta.com","direction":"incoming","peeruri":"sip:bob@biloxy.com","id":"73a12546589651f8"}"#,
+        );
         assert_eq!(e.direction, Some(CallDirection::Incoming));
         match to_engine_event(&e).unwrap() {
-            EngineEvent::Call { call, event: CallEvent::Closed { code, reason } } => {
+            EngineEvent::Call {
+                call,
+                event: CallEvent::Closed { code, reason },
+            } => {
                 assert_eq!(call.id, "73a12546589651f8");
                 assert_eq!(call.peer_uri, "sip:bob@biloxy.com");
                 assert_eq!(code, None);
@@ -222,12 +263,17 @@ mod tests {
 
     #[test]
     fn maps_registration_outcomes_with_sip_codes() {
-        let ok = event(r#"{"event":true,"class":"ua","type":"REGISTER_OK","accountaor":"sip:1001@pbx","param":"200 OK"}"#);
+        let ok = event(
+            r#"{"event":true,"class":"ua","type":"REGISTER_OK","accountaor":"sip:1001@pbx","param":"200 OK"}"#,
+        );
         assert_eq!(
             to_engine_event(&ok),
             Some(EngineEvent::Registration {
                 aor: "sip:1001@pbx".into(),
-                event: RegistrationEvent::Registered { code: Some(200), reason: "OK".into() }
+                event: RegistrationEvent::Registered {
+                    code: Some(200),
+                    reason: "OK".into()
+                }
             })
         );
         let fail = event(
@@ -237,7 +283,10 @@ mod tests {
             to_engine_event(&fail),
             Some(EngineEvent::Registration {
                 aor: "sip:1001@pbx".into(),
-                event: RegistrationEvent::Failed { code: Some(403), reason: "Forbidden".into() }
+                event: RegistrationEvent::Failed {
+                    code: Some(403),
+                    reason: "Forbidden".into()
+                }
             })
         );
     }
@@ -248,7 +297,10 @@ mod tests {
             r#"{"event":true,"class":"call","type":"CALL_INCOMING","accountaor":"sip:1001@pbx","direction":"incoming","peeruri":"sip:1002@pbx","peerdisplayname":"Bob","id":"abc","param":"sip:1002@pbx"}"#,
         );
         match to_engine_event(&e).unwrap() {
-            EngineEvent::Call { call, event: CallEvent::Incoming } => {
+            EngineEvent::Call {
+                call,
+                event: CallEvent::Incoming,
+            } => {
                 assert_eq!(call.peer_name.as_deref(), Some("Bob"));
                 assert_eq!(call.direction, CallDirection::Incoming);
             }
@@ -258,25 +310,42 @@ mod tests {
 
     #[test]
     fn call_events_without_id_are_dropped() {
-        let e = event(r#"{"event":true,"class":"call","type":"CALL_RINGING","accountaor":"sip:a@b"}"#);
+        let e =
+            event(r#"{"event":true,"class":"call","type":"CALL_RINGING","accountaor":"sip:a@b"}"#);
         assert_eq!(to_engine_event(&e), None);
     }
 
     #[test]
     fn irrelevant_events_are_ignored() {
-        let e = event(r#"{"event":true,"class":"call","type":"CALL_RTCP","id":"x","param":"audio"}"#);
+        let e =
+            event(r#"{"event":true,"class":"call","type":"CALL_RTCP","id":"x","param":"audio"}"#);
         assert_eq!(to_engine_event(&e), None);
     }
 
     #[test]
     fn status_param_parsing() {
-        assert_eq!(parse_status_param("401 Unauthorized"), (Some(401), "Unauthorized".into()));
-        assert_eq!(parse_status_param("486 Busy Here"), (Some(486), "Busy Here".into()));
-        assert_eq!(parse_status_param("503 Service Unavailable,SIP;cause=503"), (Some(503), "Service Unavailable".into()));
+        assert_eq!(
+            parse_status_param("401 Unauthorized"),
+            (Some(401), "Unauthorized".into())
+        );
+        assert_eq!(
+            parse_status_param("486 Busy Here"),
+            (Some(486), "Busy Here".into())
+        );
+        assert_eq!(
+            parse_status_param("503 Service Unavailable,SIP;cause=503"),
+            (Some(503), "Service Unavailable".into())
+        );
         assert_eq!(parse_status_param("0 "), (None, String::new()));
         assert_eq!(parse_status_param(""), (None, String::new()));
-        assert_eq!(parse_status_param("Connection timed out"), (Some(408), "Connection timed out".into()));
-        assert_eq!(parse_status_param("Connection refused"), (None, "Connection refused".into()));
+        assert_eq!(
+            parse_status_param("Connection timed out"),
+            (Some(408), "Connection timed out".into())
+        );
+        assert_eq!(
+            parse_status_param("Connection refused"),
+            (None, "Connection refused".into())
+        );
         assert_eq!(parse_status_param("999 weird"), (None, "weird".into()));
     }
 
@@ -284,6 +353,9 @@ mod tests {
     fn non_object_json_is_rejected_and_garbage_errors() {
         assert!(parse_message(b"[1,2]").is_err());
         assert!(parse_message(b"not json").is_err());
-        assert_eq!(parse_message(br#"{"message":true,"from":"x"}"#).unwrap(), Message::Other);
+        assert_eq!(
+            parse_message(br#"{"message":true,"from":"x"}"#).unwrap(),
+            Message::Other
+        );
     }
 }

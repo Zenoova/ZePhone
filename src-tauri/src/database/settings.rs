@@ -11,11 +11,14 @@ impl Database {
             let mut rows = stmt.query_map([KEY], |r| r.get::<_, String>(0))?;
             rows.next().transpose()
         })?;
-        Ok(raw.and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default())
+        Ok(raw
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default())
     }
 
     pub fn save_settings(&self, s: &Settings) -> AppResult<()> {
-        let json = serde_json::to_string(s).map_err(|e| crate::error::AppError::Database(e.to_string()))?;
+        let json = serde_json::to_string(s)
+            .map_err(|e| crate::error::AppError::Database(e.to_string()))?;
         self.with(|c| {
             c.execute(
                 "INSERT INTO settings (key, value) VALUES (?1, ?2)
@@ -47,7 +50,14 @@ mod tests {
     #[test]
     fn corrupt_settings_fall_back_to_defaults() {
         let db = Database::open_in_memory().unwrap();
-        db.with(|c| c.execute("INSERT INTO settings (key, value) VALUES ('app', '{not json')", []).map(|_| ())).unwrap();
+        db.with(|c| {
+            c.execute(
+                "INSERT INTO settings (key, value) VALUES ('app', '{not json')",
+                [],
+            )
+            .map(|_| ())
+        })
+        .unwrap();
         assert_eq!(db.get_settings().unwrap(), Settings::default());
     }
 }

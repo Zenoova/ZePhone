@@ -21,11 +21,17 @@ pub fn status(account_id: &str, state: RegistrationState, now: DateTime<Utc>) ->
 }
 
 pub fn unconfigured(account_id: &str, message: &str, now: DateTime<Utc>) -> AccountStatus {
-    AccountStatus { message: Some(message.to_owned()), ..status(account_id, RegistrationState::Unconfigured, now) }
+    AccountStatus {
+        message: Some(message.to_owned()),
+        ..status(account_id, RegistrationState::Unconfigured, now)
+    }
 }
 
 pub fn disconnected(account_id: &str, message: Option<&str>, now: DateTime<Utc>) -> AccountStatus {
-    AccountStatus { message: message.map(str::to_owned), ..status(account_id, RegistrationState::Disconnected, now) }
+    AccountStatus {
+        message: message.map(str::to_owned),
+        ..status(account_id, RegistrationState::Disconnected, now)
+    }
 }
 
 pub fn connecting(account_id: &str, now: DateTime<Utc>) -> AccountStatus {
@@ -47,7 +53,11 @@ pub fn apply_registration_event(
     match event {
         RegistrationEvent::Created => {
             if register_interval == 0 {
-                disconnected(id, Some("Enregistrement désactivé : appels directs uniquement"), now)
+                disconnected(
+                    id,
+                    Some("Enregistrement désactivé : appels directs uniquement"),
+                    now,
+                )
             } else {
                 connecting(id, now)
             }
@@ -77,7 +87,11 @@ pub fn apply_registration_event(
 
 /// Status of an account that the engine is not hosting right now, derived from
 /// the engine state.
-pub fn status_for_engine_state(account_id: &str, engine: &EngineState, now: DateTime<Utc>) -> Option<AccountStatus> {
+pub fn status_for_engine_state(
+    account_id: &str,
+    engine: &EngineState,
+    now: DateTime<Utc>,
+) -> Option<AccountStatus> {
     match engine {
         EngineState::Running => None,
         EngineState::Starting => Some(connecting(account_id, now)),
@@ -98,7 +112,9 @@ mod tests {
     use super::*;
 
     fn now() -> DateTime<Utc> {
-        DateTime::parse_from_rfc3339("2026-01-01T10:00:00Z").unwrap().with_timezone(&Utc)
+        DateTime::parse_from_rfc3339("2026-01-01T10:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc)
     }
 
     fn apply(prev: &AccountStatus, ev: RegistrationEvent) -> AccountStatus {
@@ -112,7 +128,13 @@ mod tests {
         assert_eq!(s.state, RegistrationState::Connecting);
         let s = apply(&s, RegistrationEvent::Registering);
         assert_eq!(s.state, RegistrationState::Connecting);
-        let s = apply(&s, RegistrationEvent::Registered { code: Some(200), reason: "OK".into() });
+        let s = apply(
+            &s,
+            RegistrationEvent::Registered {
+                code: Some(200),
+                reason: "OK".into(),
+            },
+        );
         assert_eq!(s.state, RegistrationState::Registered);
         assert_eq!(s.sip_code, Some(200));
         assert_eq!(s.message, None);
@@ -120,7 +142,13 @@ mod tests {
 
     #[test]
     fn refresh_does_not_flicker_a_registered_account() {
-        let s = apply(&connecting("a", now()), RegistrationEvent::Registered { code: Some(200), reason: "OK".into() });
+        let s = apply(
+            &connecting("a", now()),
+            RegistrationEvent::Registered {
+                code: Some(200),
+                reason: "OK".into(),
+            },
+        );
         let again = apply(&s, RegistrationEvent::Registering);
         assert_eq!(again.state, RegistrationState::Registered);
     }
@@ -129,7 +157,10 @@ mod tests {
     fn failure_carries_code_reason_and_message() {
         let s = apply(
             &connecting("a", now()),
-            RegistrationEvent::Failed { code: Some(403), reason: "Forbidden".into() },
+            RegistrationEvent::Failed {
+                code: Some(403),
+                reason: "Forbidden".into(),
+            },
         );
         assert_eq!(s.state, RegistrationState::Error);
         assert_eq!(s.sip_code, Some(403));
@@ -141,7 +172,10 @@ mod tests {
     fn network_failure_has_no_sip_code_but_a_message() {
         let s = apply(
             &connecting("a", now()),
-            RegistrationEvent::Failed { code: None, reason: "Connection refused [61]".into() },
+            RegistrationEvent::Failed {
+                code: None,
+                reason: "Connection refused [61]".into(),
+            },
         );
         assert_eq!(s.state, RegistrationState::Error);
         assert_eq!(s.sip_code, None);
@@ -150,35 +184,81 @@ mod tests {
 
     #[test]
     fn recovery_after_error() {
-        let failed = apply(&connecting("a", now()), RegistrationEvent::Failed { code: Some(503), reason: "x".into() });
+        let failed = apply(
+            &connecting("a", now()),
+            RegistrationEvent::Failed {
+                code: Some(503),
+                reason: "x".into(),
+            },
+        );
         let s = apply(&failed, RegistrationEvent::Registering);
         assert_eq!(s.state, RegistrationState::Connecting);
         assert_eq!(s.message, None);
-        let s = apply(&s, RegistrationEvent::Registered { code: Some(200), reason: String::new() });
+        let s = apply(
+            &s,
+            RegistrationEvent::Registered {
+                code: Some(200),
+                reason: String::new(),
+            },
+        );
         assert_eq!(s.state, RegistrationState::Registered);
     }
 
     #[test]
     fn registration_disabled_account_is_not_stuck_connecting() {
-        let s = apply_registration_event(&disconnected("a", None, now()), &RegistrationEvent::Created, 0, now());
+        let s = apply_registration_event(
+            &disconnected("a", None, now()),
+            &RegistrationEvent::Created,
+            0,
+            now(),
+        );
         assert_eq!(s.state, RegistrationState::Disconnected);
         assert!(s.message.is_some());
     }
 
     #[test]
     fn unregistering_disconnects() {
-        let s = apply(&connecting("a", now()), RegistrationEvent::Registered { code: Some(200), reason: "OK".into() });
-        assert_eq!(apply(&s, RegistrationEvent::Unregistering).state, RegistrationState::Disconnected);
+        let s = apply(
+            &connecting("a", now()),
+            RegistrationEvent::Registered {
+                code: Some(200),
+                reason: "OK".into(),
+            },
+        );
+        assert_eq!(
+            apply(&s, RegistrationEvent::Unregistering).state,
+            RegistrationState::Disconnected
+        );
     }
 
     #[test]
     fn engine_state_mapping() {
         assert!(status_for_engine_state("a", &EngineState::Running, now()).is_none());
-        let s = status_for_engine_state("a", &EngineState::Failed { reason: "boom".into() }, now()).unwrap();
+        let s = status_for_engine_state(
+            "a",
+            &EngineState::Failed {
+                reason: "boom".into(),
+            },
+            now(),
+        )
+        .unwrap();
         assert_eq!(s.state, RegistrationState::Error);
         assert!(s.message.unwrap().contains("boom"));
-        let s = status_for_engine_state("a", &EngineState::Restarting { attempt: 1, reason: "crash".into() }, now()).unwrap();
+        let s = status_for_engine_state(
+            "a",
+            &EngineState::Restarting {
+                attempt: 1,
+                reason: "crash".into(),
+            },
+            now(),
+        )
+        .unwrap();
         assert_eq!(s.state, RegistrationState::Connecting);
-        assert_eq!(status_for_engine_state("a", &EngineState::Stopped, now()).unwrap().state, RegistrationState::Disconnected);
+        assert_eq!(
+            status_for_engine_state("a", &EngineState::Stopped, now())
+                .unwrap()
+                .state,
+            RegistrationState::Disconnected
+        );
     }
 }

@@ -122,19 +122,36 @@ impl Database {
     pub fn set_default_account(&self, id: &str) -> AppResult<()> {
         let changed = self.with(|c| {
             let tx = c.transaction()?;
-            let exists: bool = tx.query_row("SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?1)", [id], |r| r.get(0))?;
+            let exists: bool = tx.query_row(
+                "SELECT EXISTS(SELECT 1 FROM accounts WHERE id = ?1)",
+                [id],
+                |r| r.get(0),
+            )?;
             if exists {
                 tx.execute("UPDATE accounts SET is_default = (id = ?1)", [id])?;
             }
             tx.commit()?;
             Ok(exists)
         })?;
-        if changed { Ok(()) } else { Err(AppError::NotFound("compte".into())) }
+        if changed {
+            Ok(())
+        } else {
+            Err(AppError::NotFound("compte".into()))
+        }
     }
 
     pub fn set_account_enabled(&self, id: &str, enabled: bool) -> AppResult<()> {
-        let n = self.with(|c| c.execute("UPDATE accounts SET enabled = ?2 WHERE id = ?1", params![id, enabled as i64]))?;
-        if n == 0 { Err(AppError::NotFound("compte".into())) } else { Ok(()) }
+        let n = self.with(|c| {
+            c.execute(
+                "UPDATE accounts SET enabled = ?2 WHERE id = ?1",
+                params![id, enabled as i64],
+            )
+        })?;
+        if n == 0 {
+            Err(AppError::NotFound("compte".into()))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn default_account(&self) -> AppResult<Option<Account>> {
@@ -186,7 +203,13 @@ mod tests {
         db.upsert_account(&acc("a", false)).unwrap();
         db.upsert_account(&acc("b", false)).unwrap();
         db.upsert_account(&acc("c", true)).unwrap();
-        let defaults: Vec<_> = db.list_accounts().unwrap().into_iter().filter(|a| a.is_default).map(|a| a.id).collect();
+        let defaults: Vec<_> = db
+            .list_accounts()
+            .unwrap()
+            .into_iter()
+            .filter(|a| a.is_default)
+            .map(|a| a.id)
+            .collect();
         assert_eq!(defaults, vec!["c"]);
         db.set_default_account("b").unwrap();
         assert_eq!(db.default_account().unwrap().unwrap().id, "b");
@@ -202,9 +225,15 @@ mod tests {
         edited.label = "Renommé".into();
         db.upsert_account(&edited).unwrap();
         let list = db.list_accounts().unwrap();
-        assert_eq!(list.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(), vec!["a", "b"]);
+        assert_eq!(
+            list.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(),
+            vec!["a", "b"]
+        );
         assert_eq!(list[0].label, "Renommé");
-        assert!(list[0].is_default, "an edit without the default flag must not demote the default account");
+        assert!(
+            list[0].is_default,
+            "an edit without the default flag must not demote the default account"
+        );
     }
 
     #[test]
@@ -238,6 +267,11 @@ mod tests {
                 r.collect()
             })
             .unwrap();
-        assert!(!cols.iter().any(|c| c.contains("pass") || c.contains("secret")), "{cols:?}");
+        assert!(
+            !cols
+                .iter()
+                .any(|c| c.contains("pass") || c.contains("secret")),
+            "{cols:?}"
+        );
     }
 }

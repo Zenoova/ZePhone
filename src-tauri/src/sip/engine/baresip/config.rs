@@ -36,7 +36,11 @@ pub use crate::sip::engine::EngineOptions as EngineSettings;
 /// break out of it and fall back to the system default.
 pub fn sanitize_device(name: Option<&str>) -> String {
     match name.map(str::trim) {
-        Some(n) if !n.is_empty() && n.len() < 120 && !n.chars().any(|c| c.is_control() || c == '#') => n.to_owned(),
+        Some(n)
+            if !n.is_empty() && n.len() < 120 && !n.chars().any(|c| c.is_control() || c == '#') =>
+        {
+            n.to_owned()
+        }
         _ => "default".to_owned(),
     }
 }
@@ -46,17 +50,18 @@ pub fn sanitize_interface(v: &str) -> Option<String> {
     let v = v.trim();
     let ok = !v.is_empty()
         && v.len() <= 64
-        && v.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | ':' | '_' | '-' | ' '));
+        && v.chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | ':' | '_' | '-' | ' '));
     ok.then(|| v.to_owned())
 }
 
 /// Default CA bundle for the platform, if one exists on disk.
 pub fn system_ca_file() -> Option<PathBuf> {
     [
-        "/etc/ssl/cert.pem",                   // macOS, *BSD
-        "/etc/ssl/certs/ca-certificates.crt",  // Debian/Ubuntu
-        "/etc/pki/tls/certs/ca-bundle.crt",    // Fedora/RHEL
-        "/etc/ssl/ca-bundle.pem",              // openSUSE
+        "/etc/ssl/cert.pem",                  // macOS, *BSD
+        "/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu
+        "/etc/pki/tls/certs/ca-bundle.crt",   // Fedora/RHEL
+        "/etc/ssl/ca-bundle.pem",             // openSUSE
     ]
     .iter()
     .map(PathBuf::from)
@@ -116,7 +121,12 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     c.push_str("audio_jitter_buffer_type\tadaptive\n");
     c.push_str("audio_jitter_buffer_ms\t20-300\n");
     c.push_str("sip_verify_server\tyes\n");
-    if let Some(iface) = input.settings.net_interface.as_deref().and_then(sanitize_interface) {
+    if let Some(iface) = input
+        .settings
+        .net_interface
+        .as_deref()
+        .and_then(sanitize_interface)
+    {
         c.push_str(&format!("net_interface\t\t{iface}\n"));
     }
     if let Some(port) = input.settings.local_sip_port {
@@ -125,7 +135,10 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     if let Some(ca) = ca {
         c.push_str(&format!("sip_cafile\t\t{}\n", path_value(&ca)));
     }
-    c.push_str(&format!("module_path\t\t{}\n", path_value(input.modules_dir)));
+    c.push_str(&format!(
+        "module_path\t\t{}\n",
+        path_value(input.modules_dir)
+    ));
     c.push_str(&format!("module\t\t\tg711.{ext}\n"));
     for m in OPTIONAL_CODEC_MODULES {
         if (input.module_exists)(&format!("{m}.{ext}")) {
@@ -145,7 +158,10 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     c.push_str(&format!("module\t\t\tsrtp.{ext}\n"));
     c.push_str(&format!("module_app\t\tmenu.{ext}\n"));
     c.push_str(&format!("module_app\t\tctrl_tcp.{ext}\n"));
-    c.push_str(&format!("ctrl_tcp_listen\t\t127.0.0.1:{}\n", input.ctrl_port));
+    c.push_str(&format!(
+        "ctrl_tcp_listen\t\t127.0.0.1:{}\n",
+        input.ctrl_port
+    ));
     c
 }
 
@@ -165,7 +181,12 @@ pub fn account_line(spec: &AccountSpec) -> String {
     if let Some(name) = spec.display_name.as_deref().filter(|n| !n.is_empty()) {
         line.push_str(&format!("\"{name}\" "));
     }
-    line.push_str(&format!("<sip:{}@{}{}>", spec.username, host_for_uri(&spec.domain), transport));
+    line.push_str(&format!(
+        "<sip:{}@{}{}>",
+        spec.username,
+        host_for_uri(&spec.domain),
+        transport
+    ));
 
     let auth_user = spec.auth_username.as_deref().unwrap_or(&spec.username);
     line.push_str(&format!(";auth_user=\"{auth_user}\""));
@@ -267,10 +288,16 @@ mod tests {
     #[test]
     fn network_interface_is_sanitised_and_rendered() {
         assert_eq!(sanitize_interface("en0").as_deref(), Some("en0"));
-        assert_eq!(sanitize_interface("127.0.0.1").as_deref(), Some("127.0.0.1"));
+        assert_eq!(
+            sanitize_interface("127.0.0.1").as_deref(),
+            Some("127.0.0.1")
+        );
         assert_eq!(sanitize_interface("en0\nmodule x.so"), None);
         assert_eq!(sanitize_interface(""), None);
-        let settings = EngineSettings { net_interface: Some("192.168.1.10".into()), ..Default::default() };
+        let settings = EngineSettings {
+            net_interface: Some("192.168.1.10".into()),
+            ..Default::default()
+        };
         let cfg = render_config(&ConfigInput {
             modules_dir: Path::new("/m"),
             sounds_dir: Path::new("/s"),
@@ -285,7 +312,10 @@ mod tests {
     fn device_names_are_sanitised() {
         assert_eq!(sanitize_device(None), "default");
         assert_eq!(sanitize_device(Some("")), "default");
-        assert_eq!(sanitize_device(Some("MacBook Pro Microphone")), "MacBook Pro Microphone");
+        assert_eq!(
+            sanitize_device(Some("MacBook Pro Microphone")),
+            "MacBook Pro Microphone"
+        );
         assert_eq!(sanitize_device(Some("evil\nmodule foo.so")), "default");
         assert_eq!(sanitize_device(Some("x # y")), "default");
     }

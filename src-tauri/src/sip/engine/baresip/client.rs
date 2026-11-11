@@ -41,7 +41,9 @@ pub struct ControlClient {
 
 fn reject_control_chars(s: &str) -> EngineResult<()> {
     if s.chars().any(char::is_control) {
-        return Err(EngineError::Invalid("caractères de contrôle interdits dans une commande".into()));
+        return Err(EngineError::Invalid(
+            "caractères de contrôle interdits dans une commande".into(),
+        ));
     }
     Ok(())
 }
@@ -75,10 +77,16 @@ impl ControlClient {
 
     /// Sends one command and waits for its response.
     pub async fn request(&self, command: &str, params: &str) -> EngineResult<Response> {
-        self.request_with_timeout(command, params, REQUEST_TIMEOUT).await
+        self.request_with_timeout(command, params, REQUEST_TIMEOUT)
+            .await
     }
 
-    pub async fn request_with_timeout(&self, command: &str, params: &str, timeout: Duration) -> EngineResult<Response> {
+    pub async fn request_with_timeout(
+        &self,
+        command: &str,
+        params: &str,
+        timeout: Duration,
+    ) -> EngineResult<Response> {
         reject_control_chars(command)?;
         reject_control_chars(params)?;
         if self.is_closed() {
@@ -127,10 +135,10 @@ async fn read_loop(
             match decoder.next_frame() {
                 Ok(Some(frame)) => match protocol::parse_message(&frame) {
                     Ok(Message::Response(resp)) => {
-                        if let Some(token) = &resp.token {
-                            if let Some(tx) = pending.lock().unwrap().remove(token) {
-                                let _ = tx.send(resp);
-                            }
+                        if let Some(token) = &resp.token
+                            && let Some(tx) = pending.lock().unwrap().remove(token)
+                        {
+                            let _ = tx.send(resp);
                         }
                     }
                     Ok(Message::Event(ev)) => {
@@ -187,12 +195,20 @@ mod tests {
                     "data": format!("echo:{} {}", cmd, req["params"].as_str().unwrap()),
                     "token": req["token"],
                 });
-                sock.write_all(&netstring::encode(resp.to_string().as_bytes())).await.unwrap();
+                sock.write_all(&netstring::encode(resp.to_string().as_bytes()))
+                    .await
+                    .unwrap();
             }
         }
     }
 
-    async fn setup(hang_on: Option<&'static str>) -> (Arc<ControlClient>, mpsc::UnboundedReceiver<RawEvent>, oneshot::Receiver<String>) {
+    async fn setup(
+        hang_on: Option<&'static str>,
+    ) -> (
+        Arc<ControlClient>,
+        mpsc::UnboundedReceiver<RawEvent>,
+        oneshot::Receiver<String>,
+    ) {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
         tokio::spawn(fake_server(listener, hang_on));
@@ -239,7 +255,10 @@ mod tests {
     #[tokio::test]
     async fn times_out_when_engine_does_not_answer() {
         let (client, _e, _c) = setup(Some("hang")).await;
-        let err = client.request_with_timeout("hang", "", Duration::from_millis(150)).await.unwrap_err();
+        let err = client
+            .request_with_timeout("hang", "", Duration::from_millis(150))
+            .await
+            .unwrap_err();
         assert!(matches!(err, EngineError::Timeout));
         // The client is still usable afterwards.
         assert!(client.request("reginfo", "").await.unwrap().ok);
@@ -252,13 +271,19 @@ mod tests {
         assert!(matches!(err, EngineError::NotRunning), "{err:?}");
         assert!(close.await.is_ok());
         assert!(client.is_closed());
-        assert!(matches!(client.request("x", "").await.unwrap_err(), EngineError::NotRunning));
+        assert!(matches!(
+            client.request("x", "").await.unwrap_err(),
+            EngineError::NotRunning
+        ));
     }
 
     #[tokio::test]
     async fn refuses_control_characters() {
         let (client, _e, _c) = setup(None).await;
-        assert!(matches!(client.request("dial", "sip:a@b\nquit").await.unwrap_err(), EngineError::Invalid(_)));
+        assert!(matches!(
+            client.request("dial", "sip:a@b\nquit").await.unwrap_err(),
+            EngineError::Invalid(_)
+        ));
     }
 
     #[tokio::test]

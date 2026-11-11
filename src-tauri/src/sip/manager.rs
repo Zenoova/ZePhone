@@ -17,7 +17,8 @@ use super::{
     engine::{AccountSpec, EngineEvent, EngineOptions, EngineState, SipEngine},
     registration,
     types::{
-        Account, AccountInput, AccountStatus, AccountView, Call, CallResult, CallState, RegistrationState, Settings,
+        Account, AccountInput, AccountStatus, AccountView, Call, CallResult, CallState,
+        RegistrationState, Settings,
     },
     uri,
 };
@@ -117,7 +118,13 @@ impl SipManager {
         secrets: Arc<dyn SecretStore>,
         sink: Arc<dyn UiSink>,
     ) -> Arc<Self> {
-        Arc::new(Self { engine, db, secrets, sink, state: Default::default() })
+        Arc::new(Self {
+            engine,
+            db,
+            secrets,
+            sink,
+            state: Default::default(),
+        })
     }
 
     // ------------------------------------------------------------ lifecycle
@@ -132,7 +139,11 @@ impl SipManager {
             } else {
                 registration::disconnected(&acc.id, Some("Compte désactivé"), now)
             };
-            self.state.lock().unwrap().statuses.insert(acc.id.clone(), st);
+            self.state
+                .lock()
+                .unwrap()
+                .statuses
+                .insert(acc.id.clone(), st);
         }
 
         let settings = self.db.get_settings()?;
@@ -144,7 +155,9 @@ impl SipManager {
             loop {
                 match rx.recv().await {
                     Ok(ev) => me.handle_event(ev).await,
-                    Err(RecvError::Lagged(n)) => log::warn!("manager lagged behind the engine by {n} events"),
+                    Err(RecvError::Lagged(n)) => {
+                        log::warn!("manager lagged behind the engine by {n} events")
+                    }
                     Err(RecvError::Closed) => break,
                 }
             }
@@ -198,7 +211,12 @@ impl SipManager {
         statuses.sort_by(|a, b| a.account_id.cmp(&b.account_id));
         let calls = st.tracker.active();
         drop(st);
-        Ok(Snapshot { engine: self.engine_info(), accounts: self.list_accounts()?, statuses, calls })
+        Ok(Snapshot {
+            engine: self.engine_info(),
+            accounts: self.list_accounts()?,
+            statuses,
+            calls,
+        })
     }
 
     // ------------------------------------------------------------- accounts
@@ -209,18 +227,29 @@ impl SipManager {
             .into_iter()
             .map(|account| {
                 let has_password = self.secrets.get(&account.id)?.is_some();
-                Ok(AccountView { account, has_password })
+                Ok(AccountView {
+                    account,
+                    has_password,
+                })
             })
             .collect()
     }
 
     pub async fn save_account(self: &Arc<Self>, input: AccountInput) -> AppResult<AccountView> {
         let existing = match &input.id {
-            Some(id) => Some(self.db.get_account(id)?.ok_or_else(|| AppError::NotFound("compte".into()))?),
+            Some(id) => Some(
+                self.db
+                    .get_account(id)?
+                    .ok_or_else(|| AppError::NotFound("compte".into()))?,
+            ),
             None => None,
         };
-        let id = existing.as_ref().map(|a| a.id.clone()).unwrap_or_else(|| Uuid::new_v4().to_string());
-        let account = input.into_account(id.clone(), existing.as_ref().is_some_and(|a| a.is_default))?;
+        let id = existing
+            .as_ref()
+            .map(|a| a.id.clone())
+            .unwrap_or_else(|| Uuid::new_v4().to_string());
+        let account =
+            input.into_account(id.clone(), existing.as_ref().is_some_and(|a| a.is_default))?;
         let old_aor = existing.as_ref().map(|a| a.aor());
 
         if let Some(pw) = input.password.as_deref().filter(|p| !p.is_empty()) {
@@ -239,10 +268,17 @@ impl SipManager {
                 log::warn!("account {id} saved but not connected: {e}");
             }
         } else {
-            self.set_status(registration::disconnected(&id, Some("Compte désactivé"), now));
+            self.set_status(registration::disconnected(
+                &id,
+                Some("Compte désactivé"),
+                now,
+            ));
         }
         let has_password = self.secrets.get(&id)?.is_some();
-        Ok(AccountView { account: stored, has_password })
+        Ok(AccountView {
+            account: stored,
+            has_password,
+        })
     }
 
     pub async fn delete_account(&self, id: &str) -> AppResult<()> {
@@ -265,7 +301,11 @@ impl SipManager {
             self.connect_account(id).await
         } else {
             self.disconnect_account(id).await?;
-            self.set_status(registration::disconnected(id, Some("Compte désactivé"), Utc::now()));
+            self.set_status(registration::disconnected(
+                id,
+                Some("Compte désactivé"),
+                Utc::now(),
+            ));
             Ok(())
         }
     }
@@ -279,19 +319,31 @@ impl SipManager {
     }
 
     pub async fn connect_account(&self, id: &str) -> AppResult<()> {
-        let acc = self.db.get_account(id)?.ok_or_else(|| AppError::NotFound("compte".into()))?;
+        let acc = self
+            .db
+            .get_account(id)?
+            .ok_or_else(|| AppError::NotFound("compte".into()))?;
         if !acc.enabled {
-            return Err(AppError::validation("Le compte est désactivé : activez-le d'abord"));
+            return Err(AppError::validation(
+                "Le compte est désactivé : activez-le d'abord",
+            ));
         }
         let now = Utc::now();
         self.drop_hosted(&acc.aor()).await;
 
         let password = self.secrets.get(id)?;
         if password.is_none() && acc.register_interval > 0 {
-            self.set_status(registration::unconfigured(id, "Mot de passe manquant : renseignez-le dans les paramètres du compte", now));
+            self.set_status(registration::unconfigured(
+                id,
+                "Mot de passe manquant : renseignez-le dans les paramètres du compte",
+                now,
+            ));
             return Ok(());
         }
-        let spec = build_spec(&acc, password.unwrap_or_else(|| SecretString::from(String::new())));
+        let spec = build_spec(
+            &acc,
+            password.unwrap_or_else(|| SecretString::from(String::new())),
+        );
 
         // Register the account as hosted *before* talking to the engine: its first
         // events can arrive before `add_account` returns.
@@ -309,7 +361,11 @@ impl SipManager {
         self.set_status(registration::connecting(id, now));
 
         if let Err(e) = self.engine.add_account(&spec).await {
-            self.state.lock().unwrap().hosted.remove(&uri::normalize_aor(&acc.aor()));
+            self.state
+                .lock()
+                .unwrap()
+                .hosted
+                .remove(&uri::normalize_aor(&acc.aor()));
             let msg = e.to_string();
             self.set_status(AccountStatus {
                 message: Some(msg.clone()),
@@ -321,7 +377,10 @@ impl SipManager {
     }
 
     pub async fn disconnect_account(&self, id: &str) -> AppResult<()> {
-        let acc = self.db.get_account(id)?.ok_or_else(|| AppError::NotFound("compte".into()))?;
+        let acc = self
+            .db
+            .get_account(id)?
+            .ok_or_else(|| AppError::NotFound("compte".into()))?;
         self.drop_hosted(&acc.aor()).await;
         self.set_status(registration::disconnected(id, None, Utc::now()));
         Ok(())
@@ -350,21 +409,42 @@ impl SipManager {
 
     fn pick_account(&self, account_id: Option<&str>) -> AppResult<Account> {
         let acc = match account_id {
-            Some(id) => self.db.get_account(id)?.ok_or_else(|| AppError::NotFound("compte".into()))?,
+            Some(id) => self
+                .db
+                .get_account(id)?
+                .ok_or_else(|| AppError::NotFound("compte".into()))?,
             None => {
-                let hosted: Vec<String> =
-                    self.state.lock().unwrap().hosted.values().map(|h| h.account_id.clone()).collect();
+                let hosted: Vec<String> = self
+                    .state
+                    .lock()
+                    .unwrap()
+                    .hosted
+                    .values()
+                    .map(|h| h.account_id.clone())
+                    .collect();
                 let default = self.db.default_account()?;
                 match default {
                     Some(d) if hosted.contains(&d.id) => d,
                     _ => {
-                        let first = self.db.list_accounts()?.into_iter().find(|a| hosted.contains(&a.id));
-                        first.ok_or_else(|| AppError::validation("Aucun compte SIP n'est connecté"))?
+                        let first = self
+                            .db
+                            .list_accounts()?
+                            .into_iter()
+                            .find(|a| hosted.contains(&a.id));
+                        first.ok_or_else(|| {
+                            AppError::validation("Aucun compte SIP n'est connecté")
+                        })?
                     }
                 }
             }
         };
-        if !self.state.lock().unwrap().hosted.contains_key(&uri::normalize_aor(&acc.aor())) {
+        if !self
+            .state
+            .lock()
+            .unwrap()
+            .hosted
+            .contains_key(&uri::normalize_aor(&acc.aor()))
+        {
             return Err(AppError::validation(format!(
                 "Le compte « {} » n'est pas connecté : connectez-le dans les paramètres",
                 acc.label
@@ -375,12 +455,23 @@ impl SipManager {
 
     pub async fn dial(&self, target: &str, account_id: Option<&str>) -> AppResult<Call> {
         let acc = self.pick_account(account_id)?;
-        let target_uri =
-            uri::normalize_target(target, &acc.domain).map_err(|e| AppError::validation(format!("Destinataire invalide : {e}")))?;
-        if self.calls().iter().any(|c| matches!(c.state, CallState::Initializing | CallState::Dialing | CallState::Ringing) && c.direction == super::types::CallDirection::Outgoing) {
-            return Err(AppError::validation("Un appel sortant est déjà en cours d'établissement"));
+        let target_uri = uri::normalize_target(target, &acc.domain)
+            .map_err(|e| AppError::validation(format!("Destinataire invalide : {e}")))?;
+        if self.calls().iter().any(|c| {
+            matches!(
+                c.state,
+                CallState::Initializing | CallState::Dialing | CallState::Ringing
+            ) && c.direction == super::types::CallDirection::Outgoing
+        }) {
+            return Err(AppError::validation(
+                "Un appel sortant est déjà en cours d'établissement",
+            ));
         }
-        let id = self.engine.dial(&acc.aor(), &target_uri).await.map_err(engine_err)?;
+        let id = self
+            .engine
+            .dial(&acc.aor(), &target_uri)
+            .await
+            .map_err(engine_err)?;
 
         let ctx = self.context_for(&acc.id, Some(&acc.label), &target_uri);
         let r = super::engine::CallRef {
@@ -390,7 +481,12 @@ impl SipManager {
             peer_uri: target_uri,
             peer_name: None,
         };
-        let call = self.state.lock().unwrap().tracker.register_outgoing(&r, &ctx, Utc::now());
+        let call = self
+            .state
+            .lock()
+            .unwrap()
+            .tracker
+            .register_outgoing(&r, &ctx, Utc::now());
         self.sink.call_update(&call);
         Ok(call)
     }
@@ -408,7 +504,9 @@ impl SipManager {
     pub async fn answer(&self, id: &str) -> AppResult<()> {
         let call = self.known(id)?;
         if call.state != CallState::Incoming {
-            return Err(AppError::validation("Cet appel n'est pas un appel entrant en attente"));
+            return Err(AppError::validation(
+                "Cet appel n'est pas un appel entrant en attente",
+            ));
         }
         self.engine.accept(id).await.map_err(engine_err)
     }
@@ -417,7 +515,9 @@ impl SipManager {
     pub async fn reject(&self, id: &str) -> AppResult<()> {
         let call = self.known(id)?;
         if call.state != CallState::Incoming {
-            return Err(AppError::validation("Cet appel n'est pas un appel entrant en attente"));
+            return Err(AppError::validation(
+                "Cet appel n'est pas un appel entrant en attente",
+            ));
         }
         self.state.lock().unwrap().tracker.mark_user_reject(id);
         self.engine.hangup(id, Some(603)).await.map_err(engine_err)
@@ -432,7 +532,9 @@ impl SipManager {
     pub async fn hold(&self, id: &str) -> AppResult<()> {
         let c = self.known(id)?;
         if c.state != CallState::Connected {
-            return Err(AppError::validation("Seul un appel connecté peut être mis en attente"));
+            return Err(AppError::validation(
+                "Seul un appel connecté peut être mis en attente",
+            ));
         }
         self.engine.hold(id).await.map_err(engine_err)
     }
@@ -458,7 +560,9 @@ impl SipManager {
     pub async fn send_dtmf(&self, id: &str, digits: &str) -> AppResult<()> {
         let c = self.known(id)?;
         if !matches!(c.state, CallState::Connected | CallState::OnHold) {
-            return Err(AppError::validation("Les tonalités ne peuvent être envoyées que pendant un appel établi"));
+            return Err(AppError::validation(
+                "Les tonalités ne peuvent être envoyées que pendant un appel établi",
+            ));
         }
         self.engine.send_dtmf(id, digits).await.map_err(engine_err)
     }
@@ -466,7 +570,9 @@ impl SipManager {
     pub async fn transfer(&self, id: &str, target: &str) -> AppResult<()> {
         let c = self.known(id)?;
         if !matches!(c.state, CallState::Connected | CallState::OnHold) {
-            return Err(AppError::validation("Seul un appel établi peut être transféré"));
+            return Err(AppError::validation(
+                "Seul un appel établi peut être transféré",
+            ));
         }
         let domain = c
             .account_id
@@ -474,8 +580,9 @@ impl SipManager {
             .and_then(|a| self.db.get_account(a).ok().flatten())
             .map(|a| a.domain)
             .unwrap_or_else(|| "invalid".into());
-        let uri = uri::normalize_target(target, &domain)
-            .map_err(|e| AppError::validation(format!("Destinataire du transfert invalide : {e}")))?;
+        let uri = uri::normalize_target(target, &domain).map_err(|e| {
+            AppError::validation(format!("Destinataire du transfert invalide : {e}"))
+        })?;
         self.engine.transfer(id, &uri).await.map_err(engine_err)
     }
 
@@ -490,30 +597,50 @@ impl SipManager {
         self.db.save_settings(&new)?;
         let mut restart_required = false;
         self.engine.set_options(engine_options(&new));
-        if old.audio != new.audio {
-            if let Err(e) =
-                self.engine.set_audio_devices(new.audio.input_device.as_deref(), new.audio.output_device.as_deref()).await
-            {
-                // Unknown device: keep the choice stored (it may be unplugged now) but tell the UI.
-                self.sink.audio_error(&e.to_string());
-            }
+        if old.audio != new.audio
+            && let Err(e) = self
+                .engine
+                .set_audio_devices(
+                    new.audio.input_device.as_deref(),
+                    new.audio.output_device.as_deref(),
+                )
+                .await
+        {
+            // Unknown device: keep the choice stored (it may be unplugged now) but tell the UI.
+            self.sink.audio_error(&e.to_string());
         }
         if restart_needed(&old, &new) {
             restart_required = true;
         }
-        Ok(SettingsApplied { settings: new, restart_required })
+        Ok(SettingsApplied {
+            settings: new,
+            restart_required,
+        })
     }
 
     // --------------------------------------------------------------- events
 
     fn set_status(&self, status: AccountStatus) {
-        self.state.lock().unwrap().statuses.insert(status.account_id.clone(), status.clone());
+        self.state
+            .lock()
+            .unwrap()
+            .statuses
+            .insert(status.account_id.clone(), status.clone());
         self.sink.account_status(&status);
     }
 
     fn context_for(&self, account_id: &str, label: Option<&str>, remote: &str) -> CallContext {
-        let contact_name = self.db.find_contact_by_number(remote).ok().flatten().map(|c| c.display_name());
-        CallContext { account_id: Some(account_id.to_owned()), account_label: label.map(str::to_owned), contact_name }
+        let contact_name = self
+            .db
+            .find_contact_by_number(remote)
+            .ok()
+            .flatten()
+            .map(|c| c.display_name());
+        CallContext {
+            account_id: Some(account_id.to_owned()),
+            account_label: label.map(str::to_owned),
+            contact_name,
+        }
     }
 
     fn finish(&self, update: CallUpdate) {
@@ -526,7 +653,11 @@ impl SipManager {
                 self.sink.history_changed();
             }
             if h.result == CallResult::Missed {
-                let notify = self.db.get_settings().map(|s| s.notifications.missed_call).unwrap_or(true);
+                let notify = self
+                    .db
+                    .get_settings()
+                    .map(|s| s.notifications.missed_call)
+                    .unwrap_or(true);
                 self.sink.missed_call(&call, notify);
             }
         }
@@ -551,11 +682,18 @@ impl SipManager {
                             self.finish(u);
                         }
                         for id in ids {
-                            let enabled = self.db.get_account(&id).ok().flatten().map(|a| a.enabled).unwrap_or(false);
+                            let enabled = self
+                                .db
+                                .get_account(&id)
+                                .ok()
+                                .flatten()
+                                .map(|a| a.enabled)
+                                .unwrap_or(false);
                             if !enabled {
                                 continue;
                             }
-                            if let Some(s) = registration::status_for_engine_state(&id, other, now) {
+                            if let Some(s) = registration::status_for_engine_state(&id, other, now)
+                            {
                                 self.set_status(s);
                             }
                         }
@@ -564,7 +702,9 @@ impl SipManager {
             }
             EngineEvent::Registration { aor, event } => {
                 let key = uri::normalize_aor(&aor);
-                let Some(h) = self.state.lock().unwrap().hosted.get(&key).cloned() else { return };
+                let Some(h) = self.state.lock().unwrap().hosted.get(&key).cloned() else {
+                    return;
+                };
                 let prev = self
                     .state
                     .lock()
@@ -573,18 +713,34 @@ impl SipManager {
                     .get(&h.account_id)
                     .cloned()
                     .unwrap_or_else(|| registration::connecting(&h.account_id, now));
-                let next = registration::apply_registration_event(&prev, &event, h.register_interval, now);
-                if next.state != prev.state || next.sip_code != prev.sip_code || next.message != prev.message || next.reason != prev.reason {
+                let next =
+                    registration::apply_registration_event(&prev, &event, h.register_interval, now);
+                if next.state != prev.state
+                    || next.sip_code != prev.sip_code
+                    || next.message != prev.message
+                    || next.reason != prev.reason
+                {
                     self.set_status(next);
                 }
             }
             EngineEvent::Call { call: r, event } => {
-                let hosted = self.state.lock().unwrap().hosted.get(&uri::normalize_aor(&r.aor)).cloned();
+                let hosted = self
+                    .state
+                    .lock()
+                    .unwrap()
+                    .hosted
+                    .get(&uri::normalize_aor(&r.aor))
+                    .cloned();
                 let ctx = match &hosted {
                     Some(h) => self.context_for(&h.account_id, Some(&h.label), &r.peer_uri),
                     None => CallContext::default(),
                 };
-                let update = self.state.lock().unwrap().tracker.apply(&r, &event, &ctx, now);
+                let update = self
+                    .state
+                    .lock()
+                    .unwrap()
+                    .tracker
+                    .apply(&r, &event, &ctx, now);
                 let Some(update) = update else { return };
                 if update.history.is_some() {
                     self.finish(update);
@@ -593,7 +749,8 @@ impl SipManager {
                 self.sink.call_update(&update.call);
                 if update.is_new_incoming {
                     let s = self.db.get_settings().unwrap_or_default();
-                    self.sink.incoming_call(&update.call, s.notifications.incoming_call);
+                    self.sink
+                        .incoming_call(&update.call, s.notifications.incoming_call);
                     if !s.notifications.ringtone {
                         let _ = self.engine.silence_ringtone().await;
                     }

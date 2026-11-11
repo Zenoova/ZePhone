@@ -142,7 +142,9 @@ fn default_true() -> bool {
 pub const DEFAULT_REGISTER_INTERVAL: u32 = 300;
 
 fn clean_opt(v: &Option<String>) -> Option<String> {
-    v.as_ref().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+    v.as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
 impl AccountInput {
@@ -150,10 +152,12 @@ impl AccountInput {
     /// being final: the caller assigns them).
     pub fn into_account(&self, id: String, is_default: bool) -> AppResult<Account> {
         let server = self.server.trim().to_string();
-        crate::sip::uri::validate_host(&server).map_err(|e| AppError::validation(format!("Serveur SIP : {e}")))?;
+        crate::sip::uri::validate_host(&server)
+            .map_err(|e| AppError::validation(format!("Serveur SIP : {e}")))?;
 
         let domain = clean_opt(&self.domain).unwrap_or_else(|| server.clone());
-        crate::sip::uri::validate_host(&domain).map_err(|e| AppError::validation(format!("Domaine SIP : {e}")))?;
+        crate::sip::uri::validate_host(&domain)
+            .map_err(|e| AppError::validation(format!("Domaine SIP : {e}")))?;
 
         let username = self.username.trim().to_string();
         crate::sip::uri::validate_user(&username)
@@ -161,8 +165,9 @@ impl AccountInput {
 
         let auth_username = clean_opt(&self.auth_username);
         if let Some(a) = &auth_username {
-            crate::sip::uri::validate_quoted_value(a)
-                .map_err(|e| AppError::validation(format!("Identifiant d'authentification : {e}")))?;
+            crate::sip::uri::validate_quoted_value(a).map_err(|e| {
+                AppError::validation(format!("Identifiant d'authentification : {e}"))
+            })?;
         }
 
         let display_name = clean_opt(&self.display_name);
@@ -190,9 +195,15 @@ impl AccountInput {
         }
 
         let label = self.label.trim();
-        let label = if label.is_empty() { format!("{username}@{domain}") } else { label.to_string() };
+        let label = if label.is_empty() {
+            format!("{username}@{domain}")
+        } else {
+            label.to_string()
+        };
         if label.chars().count() > 80 || label.chars().any(char::is_control) {
-            return Err(AppError::validation("Libellé invalide (80 caractères max.)"));
+            return Err(AppError::validation(
+                "Libellé invalide (80 caractères max.)",
+            ));
         }
 
         if let Some(pw) = &self.password {
@@ -409,12 +420,19 @@ pub struct ContactInput {
 
 impl ContactInput {
     pub fn validate(&self) -> AppResult<()> {
-        if self.first_name.trim().is_empty() && self.last_name.trim().is_empty() && clean_opt(&self.company).is_none() {
-            return Err(AppError::validation("Renseignez au moins un nom, un prénom ou une société"));
+        if self.first_name.trim().is_empty()
+            && self.last_name.trim().is_empty()
+            && clean_opt(&self.company).is_none()
+        {
+            return Err(AppError::validation(
+                "Renseignez au moins un nom, un prénom ou une société",
+            ));
         }
         let number = self.number.trim();
         if number.is_empty() {
-            return Err(AppError::validation("Le numéro ou l'URI SIP est obligatoire"));
+            return Err(AppError::validation(
+                "Le numéro ou l'URI SIP est obligatoire",
+            ));
         }
         // Must be dialable.
         crate::sip::uri::normalize_target(number, "example.invalid")
@@ -432,17 +450,12 @@ impl ContactInput {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
+#[derive(Default)]
 pub struct AudioSettings {
     /// Microphone device name as reported by the system. `None` = system default.
     pub input_device: Option<String>,
     /// Speaker device name. `None` = system default.
     pub output_device: Option<String>,
-}
-
-impl Default for AudioSettings {
-    fn default() -> Self {
-        Self { input_device: None, output_device: None }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -455,7 +468,11 @@ pub struct NotificationSettings {
 
 impl Default for NotificationSettings {
     fn default() -> Self {
-        Self { incoming_call: true, missed_call: true, ringtone: true }
+        Self {
+            incoming_call: true,
+            missed_call: true,
+            ringtone: true,
+        }
     }
 }
 
@@ -584,7 +601,11 @@ mod tests {
     #[test]
     fn account_view_flattens_camel_case() {
         let acc = input().into_account("a1".into(), false).unwrap();
-        let v = serde_json::to_value(AccountView { account: acc, has_password: true }).unwrap();
+        let v = serde_json::to_value(AccountView {
+            account: acc,
+            has_password: true,
+        })
+        .unwrap();
         assert_eq!(v["hasPassword"], true);
         assert_eq!(v["registerInterval"], 300);
         assert_eq!(v["mediaEncryption"], "none");

@@ -21,9 +21,14 @@ pub enum EngineState {
     Starting,
     Running,
     /// The engine died or lost its control channel and is being restarted.
-    Restarting { attempt: u32, reason: String },
+    Restarting {
+        attempt: u32,
+        reason: String,
+    },
     /// Gave up (binary missing, repeated crashes...). Needs a manual restart.
-    Failed { reason: String },
+    Failed {
+        reason: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,8 +46,14 @@ pub enum RegistrationEvent {
     /// The user agent exists in the engine (before any REGISTER is sent).
     Created,
     Registering,
-    Registered { code: Option<u16>, reason: String },
-    Failed { code: Option<u16>, reason: String },
+    Registered {
+        code: Option<u16>,
+        reason: String,
+    },
+    Failed {
+        code: Option<u16>,
+        reason: String,
+    },
     Unregistering,
 }
 
@@ -54,19 +65,36 @@ pub enum CallEvent {
     /// 180 Ringing / 183 Session Progress.
     Ringing,
     Established,
-    Closed { code: Option<u16>, reason: String },
+    Closed {
+        code: Option<u16>,
+        reason: String,
+    },
     Hold,
     Resume,
-    TransferFailed { code: Option<u16>, reason: String },
-    Dtmf { key: String },
+    TransferFailed {
+        code: Option<u16>,
+        reason: String,
+    },
+    Dtmf {
+        key: String,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum EngineEvent {
     State(EngineState),
-    Registration { aor: String, event: RegistrationEvent },
-    Call { call: CallRef, event: CallEvent },
-    AudioError { call_id: Option<String>, message: String },
+    Registration {
+        aor: String,
+        event: RegistrationEvent,
+    },
+    Call {
+        call: CallRef,
+        event: CallEvent,
+    },
+    AudioError {
+        call_id: Option<String>,
+        message: String,
+    },
 }
 
 /// Everything needed to create a user agent. The password is a [`SecretString`]
@@ -167,7 +195,11 @@ pub trait SipEngine: Send + Sync + 'static {
     async fn transfer(&self, call_id: &str, target_uri: &str) -> EngineResult<()>;
 
     /// Selects audio devices for subsequent calls (`None` = system default).
-    async fn set_audio_devices(&self, input: Option<&str>, output: Option<&str>) -> EngineResult<()>;
+    async fn set_audio_devices(
+        &self,
+        input: Option<&str>,
+        output: Option<&str>,
+    ) -> EngineResult<()>;
 
     /// Silences the incoming-call ringtone (call stays ringing).
     async fn silence_ringtone(&self) -> EngineResult<()>;

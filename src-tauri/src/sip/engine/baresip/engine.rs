@@ -22,7 +22,8 @@ use super::{
 use crate::{
     security::redact::redact,
     sip::engine::{
-        AccountSpec, EngineError, EngineEvent, EngineOptions, EngineResult, EngineState, SipEngine, protocol,
+        AccountSpec, EngineError, EngineEvent, EngineOptions, EngineResult, EngineState, SipEngine,
+        protocol,
     },
 };
 
@@ -104,18 +105,30 @@ impl BaresipEngine {
                 .filter(|l| !l.is_empty())
                 .collect::<Vec<_>>()
                 .join(" | ");
-            return Err(EngineError::CommandFailed(if text.is_empty() { command.to_owned() } else { text }));
+            return Err(EngineError::CommandFailed(if text.is_empty() {
+                command.to_owned()
+            } else {
+                text
+            }));
         }
         Ok(resp)
     }
 }
 
 fn is_call_id(id: &str) -> bool {
-    !id.is_empty() && id.len() <= 64 && id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+    !id.is_empty()
+        && id.len() <= 64
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
 }
 
 fn check_call_id(id: &str) -> EngineResult<()> {
-    if is_call_id(id) { Ok(()) } else { Err(EngineError::Invalid("identifiant d'appel invalide".into())) }
+    if is_call_id(id) {
+        Ok(())
+    } else {
+        Err(EngineError::Invalid("identifiant d'appel invalide".into()))
+    }
 }
 
 fn check_no_space(label: &str, v: &str) -> EngineResult<()> {
@@ -157,10 +170,10 @@ impl SipEngine for BaresipEngine {
 
     async fn start(&self) -> EngineResult<()> {
         let mut slot = self.inner.supervisor.lock().await;
-        if let Some(s) = slot.as_ref() {
-            if !s.handle.is_finished() {
-                return Ok(());
-            }
+        if let Some(s) = slot.as_ref()
+            && !s.handle.is_finished()
+        {
+            return Ok(());
         }
         *slot = None;
 
@@ -168,12 +181,17 @@ impl SipEngine for BaresipEngine {
         let (ready_tx, ready_rx) = oneshot::channel();
         let inner = self.inner.clone();
         let handle = tokio::spawn(supervise(inner, stop_rx, ready_tx));
-        *slot = Some(Supervisor { stop: Some(stop_tx), handle });
+        *slot = Some(Supervisor {
+            stop: Some(stop_tx),
+            handle,
+        });
         drop(slot);
 
         match tokio::time::timeout(Duration::from_secs(20), ready_rx).await {
             Ok(Ok(result)) => result,
-            Ok(Err(_)) => Err(EngineError::Io("le superviseur du moteur s'est arrêté".into())),
+            Ok(Err(_)) => Err(EngineError::Io(
+                "le superviseur du moteur s'est arrêté".into(),
+            )),
             Err(_) => Err(EngineError::Timeout),
         }
     }
@@ -184,7 +202,10 @@ impl SipEngine for BaresipEngine {
             if let Some(tx) = sup.stop.take() {
                 let _ = tx.send(());
             }
-            if tokio::time::timeout(Duration::from_secs(8), &mut sup.handle).await.is_err() {
+            if tokio::time::timeout(Duration::from_secs(8), &mut sup.handle)
+                .await
+                .is_err()
+            {
                 sup.handle.abort();
             }
         }
@@ -260,14 +281,22 @@ impl SipEngine for BaresipEngine {
         check_call_id(call_id)?;
         let _seq = self.inner.seq_lock.lock().await;
         self.run("callfind", call_id).await?;
-        self.run("mute", if muted { "yes" } else { "no" }).await.map(|_| ())
+        self.run("mute", if muted { "yes" } else { "no" })
+            .await
+            .map(|_| ())
     }
 
     async fn send_dtmf(&self, call_id: &str, digits: &str) -> EngineResult<()> {
         check_call_id(call_id)?;
-        if digits.is_empty() || digits.len() > 32 || !digits.chars().all(|c| matches!(c, '0'..='9' | '*' | '#' | 'A'..='D' | 'a'..='d'))
+        if digits.is_empty()
+            || digits.len() > 32
+            || !digits
+                .chars()
+                .all(|c| matches!(c, '0'..='9' | '*' | '#' | 'A'..='D' | 'a'..='d'))
         {
-            return Err(EngineError::Invalid("tonalités DTMF invalides (0-9, *, #, A-D)".into()));
+            return Err(EngineError::Invalid(
+                "tonalités DTMF invalides (0-9, *, #, A-D)".into(),
+            ));
         }
         let _seq = self.inner.seq_lock.lock().await;
         self.run("callfind", call_id).await?;
@@ -286,7 +315,11 @@ impl SipEngine for BaresipEngine {
         self.run("stopringing", "").await.map(|_| ())
     }
 
-    async fn set_audio_devices(&self, input: Option<&str>, output: Option<&str>) -> EngineResult<()> {
+    async fn set_audio_devices(
+        &self,
+        input: Option<&str>,
+        output: Option<&str>,
+    ) -> EngineResult<()> {
         {
             let mut s = self.inner.settings.lock().unwrap();
             s.input_device = input.map(str::to_owned);
@@ -302,7 +335,12 @@ impl SipEngine for BaresipEngine {
             let resp = self.run(cmd, &format!("{driver},{dev}")).await?;
             // Baresip answers "ok" even when the device is unknown, with a message.
             if resp.data.contains("no such") || resp.data.contains("Format should be") {
-                let msg = resp.data.lines().next().unwrap_or("périphérique audio inconnu").to_owned();
+                let msg = resp
+                    .data
+                    .lines()
+                    .next()
+                    .unwrap_or("périphérique audio inconnu")
+                    .to_owned();
                 return Err(EngineError::CommandFailed(msg));
             }
         }
@@ -359,7 +397,10 @@ async fn supervise(
             inner.set_state(EngineState::Failed { reason });
             return;
         }
-        inner.set_state(EngineState::Restarting { attempt: failures, reason });
+        inner.set_state(EngineState::Restarting {
+            attempt: failures,
+            reason,
+        });
         let delay = BACKOFF[(failures as usize - 1).min(BACKOFF.len() - 1)];
         tokio::select! {
             _ = tokio::time::sleep(delay) => {}
@@ -380,7 +421,10 @@ async fn run_once(
     let settings = inner.settings.lock().unwrap().clone();
 
     if !paths.exe.is_file() {
-        return Outcome::StartFailed(format!("exécutable Baresip introuvable : {}", paths.exe.display()));
+        return Outcome::StartFailed(format!(
+            "exécutable Baresip introuvable : {}",
+            paths.exe.display()
+        ));
     }
     if let Err(e) = process::ensure_private_dir(&paths.work_dir) {
         return Outcome::StartFailed(format!("impossible de préparer le dossier du moteur : {e}"));
@@ -413,7 +457,10 @@ async fn run_once(
         Ok(s) => s,
         Err(e) => return Outcome::StartFailed(format!("démarrage de Baresip impossible : {e}")),
     };
-    log::info!("baresip started (pid {:?}, control on 127.0.0.1:{port})", spawned.pid);
+    log::info!(
+        "baresip started (pid {:?}, control on 127.0.0.1:{port})",
+        spawned.pid
+    );
 
     // Connect to the control socket, watching for an early exit.
     let (ev_tx, mut ev_rx) = mpsc::unbounded_channel();
@@ -446,11 +493,16 @@ async fn run_once(
     };
 
     // Handshake: a harmless command proves the module is up and talking JSON.
-    match client.request_with_timeout("reginfo", "", Duration::from_secs(4)).await {
+    match client
+        .request_with_timeout("reginfo", "", Duration::from_secs(4))
+        .await
+    {
         Ok(r) if r.ok => {}
         Ok(_) | Err(_) => {
             shutdown_child(&mut spawned.child, Some(&client)).await;
-            return Outcome::StartFailed("handshake avec Baresip impossible (réponse invalide)".into());
+            return Outcome::StartFailed(
+                "handshake avec Baresip impossible (réponse invalide)".into(),
+            );
         }
     }
 
@@ -486,7 +538,9 @@ async fn run_once(
 /// Graceful stop: ask Baresip to quit, wait a little, then kill.
 async fn shutdown_child(child: &mut tokio::process::Child, client: Option<&Arc<ControlClient>>) {
     if let Some(c) = client {
-        let _ = c.request_with_timeout("quit", "", Duration::from_millis(800)).await;
+        let _ = c
+            .request_with_timeout("quit", "", Duration::from_millis(800))
+            .await;
     }
     match tokio::time::timeout(Duration::from_secs(2), child.wait()).await {
         Ok(_) => {}
@@ -520,10 +574,22 @@ mod tests {
             sounds_dir: dir.path().into(),
             work_dir: dir.path().join("w"),
         });
-        assert!(matches!(engine.hold("abc").await, Err(EngineError::NotRunning)));
-        assert!(matches!(engine.hold("a b").await, Err(EngineError::Invalid(_))));
-        assert!(matches!(engine.send_dtmf("abc", "12x").await, Err(EngineError::Invalid(_))));
-        assert!(matches!(engine.hangup("abc", Some(200)).await, Err(EngineError::Invalid(_))));
+        assert!(matches!(
+            engine.hold("abc").await,
+            Err(EngineError::NotRunning)
+        ));
+        assert!(matches!(
+            engine.hold("a b").await,
+            Err(EngineError::Invalid(_))
+        ));
+        assert!(matches!(
+            engine.send_dtmf("abc", "12x").await,
+            Err(EngineError::Invalid(_))
+        ));
+        assert!(matches!(
+            engine.hangup("abc", Some(200)).await,
+            Err(EngineError::Invalid(_))
+        ));
         assert_eq!(engine.state(), EngineState::Stopped);
     }
 

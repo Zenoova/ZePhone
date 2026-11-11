@@ -116,7 +116,10 @@ mod tests {
             assert_eq!(d.next_frame().unwrap(), None);
             d.push(chunk);
         }
-        assert_eq!(d.next_frame().unwrap().unwrap(), br#"{"event":true,"type":"CREATE"}"#);
+        assert_eq!(
+            d.next_frame().unwrap().unwrap(),
+            br#"{"event":true,"type":"CREATE"}"#
+        );
     }
 
     #[test]
@@ -142,10 +145,21 @@ mod tests {
 
     #[test]
     fn rejects_corrupt_streams() {
-        for bad in [&b"x:abc,"[..], b":,", b"03:abc,", b"3:abcX", b"12345678901:", b"-1:a,"] {
+        for bad in [
+            &b"x:abc,"[..],
+            b":,",
+            b"03:abc,",
+            b"3:abcX",
+            b"12345678901:",
+            b"-1:a,",
+        ] {
             let mut d = Decoder::new();
             d.push(bad);
-            assert!(d.next_frame().is_err(), "should reject {:?}", String::from_utf8_lossy(bad));
+            assert!(
+                d.next_frame().is_err(),
+                "should reject {:?}",
+                String::from_utf8_lossy(bad)
+            );
         }
     }
 

@@ -60,7 +60,11 @@ impl Database {
     pub fn save_contact(&self, input: &ContactInput) -> AppResult<Contact> {
         input.validate()?;
         let now = Utc::now().to_rfc3339();
-        let company = input.company.as_ref().map(|c| c.trim().to_owned()).filter(|c| !c.is_empty());
+        let company = input
+            .company
+            .as_ref()
+            .map(|c| c.trim().to_owned())
+            .filter(|c| !c.is_empty());
         match &input.id {
             Some(id) => {
                 let n = self.with(|c| {
@@ -72,7 +76,8 @@ impl Database {
                 if n == 0 {
                     return Err(AppError::NotFound("contact".into()));
                 }
-                self.get_contact(id)?.ok_or_else(|| AppError::NotFound("contact".into()))
+                self.get_contact(id)?
+                    .ok_or_else(|| AppError::NotFound("contact".into()))
             }
             None => {
                 let id = Uuid::new_v4().to_string();
@@ -83,19 +88,25 @@ impl Database {
                         params![id, input.first_name.trim(), input.last_name.trim(), company, input.number.trim(), now],
                     )
                 })?;
-                self.get_contact(&id)?.ok_or_else(|| AppError::NotFound("contact".into()))
+                self.get_contact(&id)?
+                    .ok_or_else(|| AppError::NotFound("contact".into()))
             }
         }
     }
 
     pub fn delete_contact(&self, id: &str) -> AppResult<()> {
-        self.with(|c| c.execute("DELETE FROM contacts WHERE id = ?1", [id]).map(|_| ()))
+        self.with(|c| {
+            c.execute("DELETE FROM contacts WHERE id = ?1", [id])
+                .map(|_| ())
+        })
     }
 
     /// Finds the contact whose number matches a SIP URI / phone number (see [`uri::numbers_match`]).
     pub fn find_contact_by_number(&self, number_or_uri: &str) -> AppResult<Option<Contact>> {
         let all = self.list_contacts(None)?;
-        Ok(all.into_iter().find(|c| uri::numbers_match(&c.number, number_or_uri)))
+        Ok(all
+            .into_iter()
+            .find(|c| uri::numbers_match(&c.number, number_or_uri)))
     }
 }
 
@@ -104,7 +115,13 @@ mod tests {
     use super::*;
 
     fn input(first: &str, last: &str, number: &str) -> ContactInput {
-        ContactInput { id: None, first_name: first.into(), last_name: last.into(), company: None, number: number.into() }
+        ContactInput {
+            id: None,
+            first_name: first.into(),
+            last_name: last.into(),
+            company: None,
+            number: number.into(),
+        }
     }
 
     #[test]
@@ -134,7 +151,11 @@ mod tests {
         c.company = Some("Navy".into());
         db.save_contact(&c).unwrap();
         let names = |q: &str| -> Vec<String> {
-            db.list_contacts(Some(q)).unwrap().into_iter().map(|c| c.first_name).collect()
+            db.list_contacts(Some(q))
+                .unwrap()
+                .into_iter()
+                .map(|c| c.first_name)
+                .collect()
         };
         assert_eq!(names("love"), vec!["Ada"]);
         assert_eq!(names("navy"), vec!["Grace"]);
@@ -149,7 +170,10 @@ mod tests {
         let db = Database::open_in_memory().unwrap();
         db.save_contact(&input("Ada", "Lovelace", "1001")).unwrap();
         assert!(db.list_contacts(Some("' OR 1=1 --")).unwrap().is_empty());
-        assert!(db.list_contacts(Some("%")).unwrap().is_empty(), "% is a literal, not a wildcard");
+        assert!(
+            db.list_contacts(Some("%")).unwrap().is_empty(),
+            "% is a literal, not a wildcard"
+        );
     }
 
     #[test]
@@ -157,17 +181,35 @@ mod tests {
         let db = Database::open_in_memory().unwrap();
         db.save_contact(&input("b", "zulu", "2")).unwrap();
         db.save_contact(&input("a", "Alpha", "1")).unwrap();
-        let order: Vec<_> = db.list_contacts(None).unwrap().into_iter().map(|c| c.last_name).collect();
+        let order: Vec<_> = db
+            .list_contacts(None)
+            .unwrap()
+            .into_iter()
+            .map(|c| c.last_name)
+            .collect();
         assert_eq!(order, vec!["Alpha", "zulu"]);
     }
 
     #[test]
     fn lookup_by_number_handles_uris_and_formats() {
         let db = Database::open_in_memory().unwrap();
-        db.save_contact(&input("Ada", "Lovelace", "+33 6 12 34 56 78")).unwrap();
+        db.save_contact(&input("Ada", "Lovelace", "+33 6 12 34 56 78"))
+            .unwrap();
         db.save_contact(&input("Bob", "Ext", "1002")).unwrap();
-        assert_eq!(db.find_contact_by_number("sip:+33612345678@pbx").unwrap().unwrap().first_name, "Ada");
-        assert_eq!(db.find_contact_by_number("sip:1002@pbx").unwrap().unwrap().first_name, "Bob");
+        assert_eq!(
+            db.find_contact_by_number("sip:+33612345678@pbx")
+                .unwrap()
+                .unwrap()
+                .first_name,
+            "Ada"
+        );
+        assert_eq!(
+            db.find_contact_by_number("sip:1002@pbx")
+                .unwrap()
+                .unwrap()
+                .first_name,
+            "Bob"
+        );
         assert!(db.find_contact_by_number("sip:9999@pbx").unwrap().is_none());
     }
 

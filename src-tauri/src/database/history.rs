@@ -106,7 +106,10 @@ impl Database {
     }
 
     pub fn delete_history(&self, id: &str) -> AppResult<()> {
-        self.with(|c| c.execute("DELETE FROM call_history WHERE id = ?1", [id]).map(|_| ()))
+        self.with(|c| {
+            c.execute("DELETE FROM call_history WHERE id = ?1", [id])
+                .map(|_| ())
+        })
     }
 
     pub fn clear_history(&self) -> AppResult<()> {
@@ -118,7 +121,13 @@ impl Database {
 mod tests {
     use super::*;
 
-    fn entry(id: &str, started: &str, dir: CallDirection, res: CallResult, number: &str) -> HistoryEntry {
+    fn entry(
+        id: &str,
+        started: &str,
+        dir: CallDirection,
+        res: CallResult,
+        number: &str,
+    ) -> HistoryEntry {
         HistoryEntry {
             id: id.into(),
             account_id: Some("acc".into()),
@@ -139,15 +148,47 @@ mod tests {
 
     fn seeded() -> Database {
         let db = Database::open_in_memory().unwrap();
-        db.insert_history(&entry("1", "2026-01-01T10:00:00Z", CallDirection::Outgoing, CallResult::Answered, "1002")).unwrap();
-        db.insert_history(&entry("2", "2026-01-02T10:00:00Z", CallDirection::Incoming, CallResult::Missed, "1003")).unwrap();
-        db.insert_history(&entry("3", "2026-01-03T10:00:00Z", CallDirection::Outgoing, CallResult::Failed, "1004")).unwrap();
-        db.insert_history(&entry("4", "2026-01-04T10:00:00Z", CallDirection::Incoming, CallResult::Rejected, "1005")).unwrap();
+        db.insert_history(&entry(
+            "1",
+            "2026-01-01T10:00:00Z",
+            CallDirection::Outgoing,
+            CallResult::Answered,
+            "1002",
+        ))
+        .unwrap();
+        db.insert_history(&entry(
+            "2",
+            "2026-01-02T10:00:00Z",
+            CallDirection::Incoming,
+            CallResult::Missed,
+            "1003",
+        ))
+        .unwrap();
+        db.insert_history(&entry(
+            "3",
+            "2026-01-03T10:00:00Z",
+            CallDirection::Outgoing,
+            CallResult::Failed,
+            "1004",
+        ))
+        .unwrap();
+        db.insert_history(&entry(
+            "4",
+            "2026-01-04T10:00:00Z",
+            CallDirection::Incoming,
+            CallResult::Rejected,
+            "1005",
+        ))
+        .unwrap();
         db
     }
 
     fn ids(db: &Database, f: HistoryFilter) -> Vec<String> {
-        db.list_history(&f).unwrap().into_iter().map(|h| h.id).collect()
+        db.list_history(&f)
+            .unwrap()
+            .into_iter()
+            .map(|h| h.id)
+            .collect()
     }
 
     #[test]
@@ -163,7 +204,10 @@ mod tests {
     #[test]
     fn filters() {
         let db = seeded();
-        let k = |kind| HistoryFilter { kind, ..Default::default() };
+        let k = |kind| HistoryFilter {
+            kind,
+            ..Default::default()
+        };
         assert_eq!(ids(&db, k(HistoryKind::Missed)), vec!["2"]);
         assert_eq!(ids(&db, k(HistoryKind::Incoming)), vec!["4", "2"]);
         assert_eq!(ids(&db, k(HistoryKind::Outgoing)), vec!["3", "1"]);
@@ -173,7 +217,10 @@ mod tests {
     #[test]
     fn search_by_number_and_contact_name() {
         let db = seeded();
-        let q = |s: &str| HistoryFilter { query: Some(s.into()), ..Default::default() };
+        let q = |s: &str| HistoryFilter {
+            query: Some(s.into()),
+            ..Default::default()
+        };
         assert_eq!(ids(&db, q("1003")), vec!["2"]);
         assert_eq!(ids(&db, q("bob")), vec!["1"]);
         assert!(ids(&db, q("nothing")).is_empty());
@@ -182,9 +229,16 @@ mod tests {
     #[test]
     fn pagination_and_limit_clamp() {
         let db = seeded();
-        let f = HistoryFilter { limit: Some(2), offset: Some(1), ..Default::default() };
+        let f = HistoryFilter {
+            limit: Some(2),
+            offset: Some(1),
+            ..Default::default()
+        };
         assert_eq!(ids(&db, f), vec!["3", "2"]);
-        let f = HistoryFilter { limit: Some(0), ..Default::default() };
+        let f = HistoryFilter {
+            limit: Some(0),
+            ..Default::default()
+        };
         assert_eq!(ids(&db, f).len(), 1, "limit is clamped to at least 1");
     }
 

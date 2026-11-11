@@ -27,8 +27,13 @@ pub fn validate_host(host: &str) -> Result<(), String> {
     if h.starts_with(['.', '-']) || h.ends_with(['.', '-']) || h.contains("..") {
         return Err("nom d'hôte invalide".into());
     }
-    if !h.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_')) {
-        return Err("caractères non autorisés (lettres, chiffres, '.', '-' et '_' uniquement)".into());
+    if !h
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+    {
+        return Err(
+            "caractères non autorisés (lettres, chiffres, '.', '-' et '_' uniquement)".into(),
+        );
     }
     Ok(())
 }
@@ -37,10 +42,10 @@ pub fn validate_host(host: &str) -> Result<(), String> {
 pub fn validate_host_port(value: &str) -> Result<(), String> {
     let (host, port) = split_host_port(value.trim())?;
     validate_host(&host)?;
-    if let Some(p) = port {
-        if p == 0 {
-            return Err("port invalide".into());
-        }
+    if let Some(p) = port
+        && p == 0
+    {
+        return Err("port invalide".into());
     }
     Ok(())
 }
@@ -63,7 +68,10 @@ pub fn split_host_port(value: &str) -> Result<(String, Option<u16>), String> {
         return Ok((value.to_string(), None));
     }
     match value.split_once(':') {
-        Some((h, p)) => Ok((h.to_string(), Some(p.parse::<u16>().map_err(|_| "port invalide")?))),
+        Some((h, p)) => Ok((
+            h.to_string(),
+            Some(p.parse::<u16>().map_err(|_| "port invalide")?),
+        )),
         None => Ok((value.to_string(), None)),
     }
 }
@@ -83,8 +91,13 @@ pub fn validate_user(user: &str) -> Result<(), String> {
     if user.len() > 64 {
         return Err("trop long (64 caractères max.)".into());
     }
-    if !user.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-' | '~' | '!' | '*')) {
-        return Err("caractères non autorisés (lettres, chiffres et . _ + - ~ ! * uniquement)".into());
+    if !user
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-' | '~' | '!' | '*'))
+    {
+        return Err(
+            "caractères non autorisés (lettres, chiffres et . _ + - ~ ! * uniquement)".into(),
+        );
     }
     Ok(())
 }
@@ -104,7 +117,9 @@ pub fn validate_quoted_value(v: &str) -> Result<(), String> {
 /// escape mechanism: a double quote or line break in the password cannot be sent.
 pub fn validate_password(pw: &str) -> AppResult<()> {
     if pw.len() > 256 {
-        return Err(AppError::validation("Mot de passe trop long (256 caractères max.)"));
+        return Err(AppError::validation(
+            "Mot de passe trop long (256 caractères max.)",
+        ));
     }
     if pw.contains('"') || has_control(pw) {
         return Err(AppError::validation(
@@ -116,7 +131,10 @@ pub fn validate_password(pw: &str) -> AppResult<()> {
 }
 
 fn is_phone_like(s: &str) -> bool {
-    !s.is_empty() && s.chars().all(|c| c.is_ascii_digit() || matches!(c, '+' | '*' | '#' | ' ' | '-' | '.' | '(' | ')'))
+    !s.is_empty()
+        && s.chars().all(|c| {
+            c.is_ascii_digit() || matches!(c, '+' | '*' | '#' | ' ' | '-' | '.' | '(' | ')')
+        })
 }
 
 fn encode_user(user: &str) -> String {
@@ -167,7 +185,8 @@ pub fn normalize_target(input: &str, default_domain: &str) -> Result<String, Str
         None => None,
         Some(p) => {
             let (k, v) = p.split_once('=').ok_or("paramètre d'URI invalide")?;
-            if !k.eq_ignore_ascii_case("transport") || !matches!(v.to_ascii_lowercase().as_str(), "udp" | "tcp" | "tls")
+            if !k.eq_ignore_ascii_case("transport")
+                || !matches!(v.to_ascii_lowercase().as_str(), "udp" | "tcp" | "tls")
             {
                 return Err("seul le paramètre transport=udp|tcp|tls est accepté".into());
             }
@@ -177,14 +196,18 @@ pub fn normalize_target(input: &str, default_domain: &str) -> Result<String, Str
 
     let (user, host_part) = match addr.rsplit_once('@') {
         Some((u, h)) => (Some(u), h.to_string()),
-        None if is_phone_like(addr) || validate_user(addr).is_ok() => (Some(addr), default_domain.to_string()),
+        None if is_phone_like(addr) || validate_user(addr).is_ok() => {
+            (Some(addr), default_domain.to_string())
+        }
         None => (None, addr.to_string()), // `sip:host`
     };
 
     let user = match user {
         Some(u) => {
             let cleaned: String = if is_phone_like(u) {
-                u.chars().filter(|c| !matches!(c, ' ' | '-' | '.' | '(' | ')')).collect()
+                u.chars()
+                    .filter(|c| !matches!(c, ' ' | '-' | '.' | '(' | ')'))
+                    .collect()
             } else {
                 u.to_string()
             };
@@ -231,11 +254,12 @@ pub fn user_part(uri: &str) -> String {
         _ => uri,
     };
     let lower = inner.to_ascii_lowercase();
-    let inner = if lower.starts_with("sips:") || lower.starts_with("sip:") || lower.starts_with("tel:") {
-        &inner[inner.find(':').map(|i| i + 1).unwrap_or(0)..]
-    } else {
-        inner
-    };
+    let inner =
+        if lower.starts_with("sips:") || lower.starts_with("sip:") || lower.starts_with("tel:") {
+            &inner[inner.find(':').map(|i| i + 1).unwrap_or(0)..]
+        } else {
+            inner
+        };
     let before_params = inner.split(';').next().unwrap_or(inner);
     let user = match before_params.rsplit_once('@') {
         Some((u, _)) => u,
@@ -249,12 +273,15 @@ fn percent_decode(s: &str) -> String {
     let mut out = Vec::with_capacity(bytes.len());
     let mut i = 0;
     while i < bytes.len() {
-        if bytes[i] == b'%' && i + 2 < bytes.len() {
-            if let Some(v) = s.get(i + 1..i + 3).and_then(|h| u8::from_str_radix(h, 16).ok()) {
-                out.push(v);
-                i += 3;
-                continue;
-            }
+        if bytes[i] == b'%'
+            && i + 2 < bytes.len()
+            && let Some(v) = s
+                .get(i + 1..i + 3)
+                .and_then(|h| u8::from_str_radix(h, 16).ok())
+        {
+            out.push(v);
+            i += 3;
+            continue;
         }
         out.push(bytes[i]);
         i += 1;
@@ -302,7 +329,11 @@ pub fn numbers_match(a: &str, b: &str) -> bool {
     if da == db {
         return true;
     }
-    let (short, long) = if da.len() <= db.len() { (&da, &db) } else { (&db, &da) };
+    let (short, long) = if da.len() <= db.len() {
+        (&da, &db)
+    } else {
+        (&db, &da)
+    };
     short.len() >= 8 && long.ends_with(short.as_str())
 }
 
@@ -354,24 +385,54 @@ mod tests {
 
     #[test]
     fn targets_from_numbers() {
-        assert_eq!(normalize_target("1002", "pbx.lan").unwrap(), "sip:1002@pbx.lan");
-        assert_eq!(normalize_target("+33 6 12 34 56 78", "pbx.lan").unwrap(), "sip:+33612345678@pbx.lan");
-        assert_eq!(normalize_target("(01) 23-45.67", "pbx.lan").unwrap(), "sip:01234567@pbx.lan");
-        assert_eq!(normalize_target("*21#", "pbx.lan").unwrap(), "sip:*21%23@pbx.lan");
-        assert_eq!(normalize_target("reception", "pbx.lan").unwrap(), "sip:reception@pbx.lan");
+        assert_eq!(
+            normalize_target("1002", "pbx.lan").unwrap(),
+            "sip:1002@pbx.lan"
+        );
+        assert_eq!(
+            normalize_target("+33 6 12 34 56 78", "pbx.lan").unwrap(),
+            "sip:+33612345678@pbx.lan"
+        );
+        assert_eq!(
+            normalize_target("(01) 23-45.67", "pbx.lan").unwrap(),
+            "sip:01234567@pbx.lan"
+        );
+        assert_eq!(
+            normalize_target("*21#", "pbx.lan").unwrap(),
+            "sip:*21%23@pbx.lan"
+        );
+        assert_eq!(
+            normalize_target("reception", "pbx.lan").unwrap(),
+            "sip:reception@pbx.lan"
+        );
     }
 
     #[test]
     fn targets_from_uris() {
-        assert_eq!(normalize_target("sip:bob@example.com", "x").unwrap(), "sip:bob@example.com");
-        assert_eq!(normalize_target("SIP:bob@Example.com:5070", "x").unwrap(), "sip:bob@Example.com:5070");
-        assert_eq!(normalize_target("bob@example.com", "x").unwrap(), "sip:bob@example.com");
-        assert_eq!(normalize_target("sips:bob@example.com", "x").unwrap(), "sips:bob@example.com");
+        assert_eq!(
+            normalize_target("sip:bob@example.com", "x").unwrap(),
+            "sip:bob@example.com"
+        );
+        assert_eq!(
+            normalize_target("SIP:bob@Example.com:5070", "x").unwrap(),
+            "sip:bob@Example.com:5070"
+        );
+        assert_eq!(
+            normalize_target("bob@example.com", "x").unwrap(),
+            "sip:bob@example.com"
+        );
+        assert_eq!(
+            normalize_target("sips:bob@example.com", "x").unwrap(),
+            "sips:bob@example.com"
+        );
         assert_eq!(
             normalize_target("sip:bob@example.com;transport=tcp", "x").unwrap(),
             "sip:bob@example.com;transport=tcp"
         );
-        assert_eq!(normalize_target("sip:bob@[2001:db8::1]:5070", "x").unwrap(), "sip:bob@[2001:db8::1]:5070");
+        assert_eq!(
+            normalize_target("sip:bob@[2001:db8::1]:5070", "x").unwrap(),
+            "sip:bob@[2001:db8::1]:5070"
+        );
     }
 
     #[test]
@@ -389,7 +450,10 @@ mod tests {
             "sip:bob@example.com:99999",
             "a,b",
         ] {
-            assert!(normalize_target(bad, "pbx.lan").is_err(), "should reject {bad:?}");
+            assert!(
+                normalize_target(bad, "pbx.lan").is_err(),
+                "should reject {bad:?}"
+            );
         }
     }
 
@@ -405,9 +469,18 @@ mod tests {
 
     #[test]
     fn aor_normalisation() {
-        assert_eq!(normalize_aor("sip:1001@Example.com"), "sip:1001@example.com");
-        assert_eq!(normalize_aor("<sip:1001@example.com;transport=tls>"), "sip:1001@example.com");
-        assert_eq!(normalize_aor("sip:1001@example.com:5060"), "sip:1001@example.com");
+        assert_eq!(
+            normalize_aor("sip:1001@Example.com"),
+            "sip:1001@example.com"
+        );
+        assert_eq!(
+            normalize_aor("<sip:1001@example.com;transport=tls>"),
+            "sip:1001@example.com"
+        );
+        assert_eq!(
+            normalize_aor("sip:1001@example.com:5060"),
+            "sip:1001@example.com"
+        );
     }
 
     #[test]

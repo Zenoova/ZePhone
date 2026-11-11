@@ -142,13 +142,20 @@ pub struct Spawned {
 
 /// Starts Baresip with `-f <config dir>`. The child is killed if the handle is
 /// dropped (`kill_on_drop`), so a panic in the app cannot leave it behind.
-pub fn spawn(paths: &BaresipPaths, sink: Arc<LogSink>, sip_trace: bool) -> std::io::Result<Spawned> {
+pub fn spawn(
+    paths: &BaresipPaths,
+    sink: Arc<LogSink>,
+    sip_trace: bool,
+) -> std::io::Result<Spawned> {
     let mut cmd = Command::new(&paths.exe);
     cmd.arg("-f").arg(&paths.work_dir).arg("-c"); // -c: no ANSI colours in logs
     if sip_trace {
         cmd.arg("-s");
     }
-    cmd.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).kill_on_drop(true);
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
     let mut child = cmd.spawn()?;
     if let Some(out) = child.stdout.take() {
         pipe_lines(out, sink.clone());
@@ -171,12 +178,16 @@ pub fn remove_pid_file(paths: &BaresipPaths) {
 /// (and holding the microphone). Kill it, but only if the pid really belongs to
 /// *our* Baresip executable.
 pub fn kill_stale_instance(paths: &BaresipPaths) -> bool {
-    let Ok(text) = std::fs::read_to_string(paths.pid_file()) else { return false };
+    let Ok(text) = std::fs::read_to_string(paths.pid_file()) else {
+        return false;
+    };
     let Ok(pid) = text.trim().parse::<u32>() else {
         remove_pid_file(paths);
         return false;
     };
-    let Ok(mut sys) = sysinfo::System::new() else { return false };
+    let Ok(mut sys) = sysinfo::System::new() else {
+        return false;
+    };
     let pid = sysinfo::Pid::from_u32(pid);
     sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
     let mut killed = false;
@@ -235,13 +246,22 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let sub = dir.path().join("w");
         ensure_private_dir(&sub).unwrap();
-        assert_eq!(std::fs::metadata(&sub).unwrap().permissions().mode() & 0o777, 0o700);
+        assert_eq!(
+            std::fs::metadata(&sub).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
         let f = sub.join("config");
         write_private_file(&f, "x").unwrap();
-        assert_eq!(std::fs::metadata(&f).unwrap().permissions().mode() & 0o777, 0o600);
+        assert_eq!(
+            std::fs::metadata(&f).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
         // Overwriting keeps the mode.
         write_private_file(&f, "y").unwrap();
-        assert_eq!(std::fs::metadata(&f).unwrap().permissions().mode() & 0o777, 0o600);
+        assert_eq!(
+            std::fs::metadata(&f).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
     }
 
     #[test]
