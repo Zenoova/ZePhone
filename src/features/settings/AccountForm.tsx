@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { MEDIA_ENCRYPTION_LABEL, TRANSPORT_LABEL } from "@/lib/labels";
 import { useAccountsStore } from "@/stores/accounts-store";
 
-import { defaultPort, type FormState, toForm, toInput } from "./account-form-model";
+import { defaultPort, editField, type FormState, toForm, toInput } from "./account-form-model";
 import type { AccountView, MediaEncryption, Transport } from "@/types/telephony";
 
 export function AccountFormDialog({
@@ -55,7 +55,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
   const set =
     <K extends keyof FormState>(k: K) =>
     (v: FormState[K]) =>
-      setForm((f) => ({ ...f, [k]: v }));
+      setForm((f) => editField(f, k, v));
   const text = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => set(k)(e.target.value as never);
 
   const onTransport = (t: Transport) =>
@@ -89,7 +89,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
       </DialogHeader>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="a-label" label="Nom du compte" hint="Facultatif. Exemple : Bureau">
+        <Field id="a-label" label="Nom du compte" hint="Facultatif. Par défaut : identifiant@domaine">
           <Input id="a-label" value={form.label} onChange={text("label")} placeholder="Bureau" autoFocus />
         </Field>
         <Field id="a-display" label="Nom affiché" hint="Facultatif. Vu par vos correspondants">
@@ -126,7 +126,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
           </Field>
         </div>
 
-        <Field id="a-domain" label="Domaine SIP" hint="Laissez vide s'il est identique au serveur">
+        <Field id="a-domain" label="Domaine SIP" hint="Reprend le serveur tant que vous ne le modifiez pas">
           <Input
             id="a-domain"
             value={form.domain}
@@ -150,7 +150,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
         <Field
           id="a-auth"
           label="Identifiant d'authentification"
-          hint="Laissez vide s'il est identique à l'identifiant"
+          hint="Reprend l'identifiant tant que vous ne le modifiez pas"
         >
           <Input
             id="a-auth"

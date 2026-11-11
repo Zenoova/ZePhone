@@ -1,10 +1,16 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const { playDtmfTone } = vi.hoisted(() => ({ playDtmfTone: vi.fn() }));
+vi.mock("@/lib/dtmf-tones", () => ({ playDtmfTone: (...a: unknown[]) => playDtmfTone(...a) }));
 
 import { Dialpad } from "./Dialpad";
 
 describe("Dialpad", () => {
-  beforeEach(() => vi.useFakeTimers());
+  beforeEach(() => {
+    vi.useFakeTimers();
+    playDtmfTone.mockReset();
+  });
   afterEach(() => vi.useRealTimers());
 
   it("renders the 12 keys and reports each press", () => {
@@ -43,5 +49,46 @@ describe("Dialpad", () => {
     render(<Dialpad onKey={onKey} disabled />);
     fireEvent.click(screen.getByRole("button", { name: "1" }));
     expect(onKey).not.toHaveBeenCalled();
+  });
+
+  it("plays the key's tone on every press, unless muted", () => {
+    const { rerender } = render(<Dialpad onKey={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "8" }));
+    expect(playDtmfTone).toHaveBeenCalledWith("8");
+    rerender(<Dialpad onKey={vi.fn()} sound={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "9" }));
+    expect(playDtmfTone).toHaveBeenCalledTimes(1);
+  });
+
+  it("only listens to the physical keyboard when asked to", () => {
+    const onKey = vi.fn();
+    const { rerender } = render(<Dialpad onKey={onKey} />);
+    fireEvent.keyDown(window, { key: "2" });
+    expect(onKey).not.toHaveBeenCalled();
+    rerender(<Dialpad onKey={onKey} captureKeyboard />);
+    fireEvent.keyDown(window, { key: "2" });
+    expect(onKey).toHaveBeenCalledWith("2");
+    expect(playDtmfTone).toHaveBeenCalledWith("2");
+  });
+
+  it("stops listening when unmounted or disabled", () => {
+    const onKey = vi.fn();
+    const { rerender, unmount } = render(<Dialpad onKey={onKey} captureKeyboard disabled />);
+    fireEvent.keyDown(window, { key: "3" });
+    expect(onKey).not.toHaveBeenCalled();
+    rerender(<Dialpad onKey={onKey} captureKeyboard />);
+    unmount();
+    fireEvent.keyDown(window, { key: "3" });
+    expect(onKey).not.toHaveBeenCalled();
+  });
+
+  it("highlights the key pressed on the keyboard for a short moment", () => {
+    render(<Dialpad onKey={vi.fn()} captureKeyboard />);
+    fireEvent.keyDown(window, { key: "6" });
+    expect(screen.getByRole("button", { name: "6" })).toHaveAttribute("data-pressed", "true");
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(screen.getByRole("button", { name: "6" })).toHaveAttribute("data-pressed", "false");
   });
 });
