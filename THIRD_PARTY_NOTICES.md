@@ -24,6 +24,8 @@ Notes:
   available from the upstream project and the Homebrew formula `spandsp`. The upstream project is
   unmaintained (Homebrew marks the formula deprecated): if that is a concern, build the `g722` module
   against `libg722` instead, or ship without G.722 (the app then falls back to Opus/G.711 automatically).
+- The bundled Baresip is built from the upstream sources with a single one-line change (module `vumeter`: audio-level
+  reports every 60 ms instead of 500 ms, for the call-screen animation), applied by `scripts/build-baresip.sh`.
 - **G.711 (PCMA/PCMU)** is implemented inside Baresip (`g711` module).
 - The Homebrew bottle of Baresip contains only G.711; Opus and G.722 come from the custom build described in
   the README (`scripts/build-baresip.sh`).
