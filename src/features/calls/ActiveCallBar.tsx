@@ -1,0 +1,55 @@
+import { Mic, MicOff, PhoneCall, PhoneOff } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+
+import { Button } from "@/components/ui/button";
+import { useCallDuration } from "@/hooks/use-call-duration";
+import { callDisplayName, formatDuration } from "@/lib/format";
+import { CALL_STATE_LABEL } from "@/lib/labels";
+import { selectLiveCalls, useCallsStore } from "@/stores/calls-store";
+import { useUiStore } from "@/stores/ui-store";
+
+/** Slim bar shown above any section (except "Appels") while a call is in progress. */
+export function ActiveCallBar() {
+  const live = useCallsStore(useShallow((s) => selectLiveCalls(s.calls)));
+  const section = useUiStore((s) => s.section);
+  const setSection = useUiStore((s) => s.setSection);
+  const call = live[0];
+  const seconds = useCallDuration(call);
+  if (!call || section === "calls") return null;
+  const { toggleMute, hangup } = useCallsStore.getState();
+  const connected = call.state === "connected" || call.state === "onHold";
+
+  return (
+    <div
+      role="status"
+      data-testid="active-call-bar"
+      className="bg-success text-success-foreground flex items-center gap-3 px-4 py-2 text-sm"
+    >
+      <PhoneCall className="size-4 shrink-0" aria-hidden />
+      <button type="button" className="min-w-0 flex-1 truncate text-left font-medium" onClick={() => setSection("calls")}>
+        {callDisplayName(call)} · {connected ? <span className="tabular">{formatDuration(seconds)}</span> : CALL_STATE_LABEL[call.state]}
+        {call.state === "onHold" && " (en attente)"}
+      </button>
+      {connected && (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={call.muted ? "Réactiver le micro" : "Couper le micro"}
+          className="hover:bg-white/20 hover:text-white"
+          onClick={() => void toggleMute(call.id)}
+        >
+          {call.muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label="Raccrocher"
+        className="hover:bg-white/20 hover:text-white"
+        onClick={() => void hangup(call.id)}
+      >
+        <PhoneOff className="size-4" />
+      </Button>
+    </div>
+  );
+}
