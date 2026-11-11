@@ -116,7 +116,9 @@ export function AudioSettings() {
                 {mic === null && "Vérification…"}
               </p>
               {mic === "denied" && (
-                <p className="text-muted-foreground text-xs">Autorisez ZePhone dans Réglages Système › Confidentialité › Microphone.</p>
+                <p className="text-muted-foreground text-xs">
+                  Autorisez ZePhone dans Réglages Système › Confidentialité › Microphone.
+                </p>
               )}
             </div>
           </div>
@@ -141,8 +143,9 @@ export function AudioSettings() {
           </div>
           {codecs.length > 0 && lacking.length > 0 && (
             <Alert>
-              {lacking.map((c) => (c === "G722" ? "G.722" : "Opus")).join(" et ")} {lacking.length > 1 ? "ne sont" : "n'est"} pas inclus
-              dans cette build de Baresip (PCMA/PCMU sont toujours disponibles).
+              {lacking.map((c) => (c === "G722" ? "G.722" : "Opus")).join(" et ")}{" "}
+              {lacking.length > 1 ? "ne sont" : "n'est"} pas inclus dans cette build de Baresip (PCMA/PCMU sont toujours
+              disponibles).
             </Alert>
           )}
         </div>

@@ -51,7 +51,14 @@ describe("CallPanel", () => {
   });
 
   it("freezes the timer on the backend's duration once the call ended", () => {
-    show(makeCall({ state: "ended", connectedAt: "2026-01-01T10:00:00Z", endedAt: "2026-01-01T10:01:05Z", durationSecs: 65 }));
+    show(
+      makeCall({
+        state: "ended",
+        connectedAt: "2026-01-01T10:00:00Z",
+        endedAt: "2026-01-01T10:01:05Z",
+        durationSecs: 65,
+      }),
+    );
     expect(screen.getByLabelText("Durée de l'appel")).toHaveTextContent("01:05");
   });
 

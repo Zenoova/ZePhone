@@ -1,4 +1,14 @@
-import { History, Phone, PhoneIncoming, PhoneMissed, PhoneOutgoing, Search, Trash2, UserPlus, XCircle } from "lucide-react";
+import {
+  History,
+  Phone,
+  PhoneIncoming,
+  PhoneMissed,
+  PhoneOutgoing,
+  Search,
+  Trash2,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -89,7 +99,10 @@ export function HistoryPage() {
           </TabsList>
         </Tabs>
         <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" aria-hidden />
+          <Search
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            aria-hidden
+          />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -111,7 +124,10 @@ export function HistoryPage() {
                 <li key={e.id} className="hover:bg-accent/60 group flex items-center gap-3 rounded-xl px-3 py-2.5">
                   <ContactAvatar name={name} />
                   <div className="min-w-0 flex-1">
-                    <p className={cn("truncate font-medium", e.result === "missed" && "text-destructive")} data-selectable>
+                    <p
+                      className={cn("truncate font-medium", e.result === "missed" && "text-destructive")}
+                      data-selectable
+                    >
                       {name}
                     </p>
                     <p className="text-muted-foreground flex min-w-0 items-center gap-1.5 truncate text-sm">
@@ -123,7 +139,9 @@ export function HistoryPage() {
                         {e.accountLabel && ` · ${e.accountLabel}`}
                       </span>
                     </p>
-                    {e.result === "failed" && e.reason && <p className="text-muted-foreground truncate text-xs">{e.reason}</p>}
+                    {e.result === "failed" && e.reason && (
+                      <p className="text-muted-foreground truncate text-xs">{e.reason}</p>
+                    )}
                   </div>
                   <time className="text-muted-foreground shrink-0 text-xs" dateTime={e.startedAt}>
                     {formatDateTime(e.startedAt)}
@@ -138,11 +156,21 @@ export function HistoryPage() {
                       <Phone className="size-4" />
                     </Button>
                     {!e.contactName && (
-                      <Button variant="ghost" size="icon" aria-label="Ajouter aux contacts" onClick={() => setAddContactFor(e.remoteNumber)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Ajouter aux contacts"
+                        onClick={() => setAddContactFor(e.remoteNumber)}
+                      >
                         <UserPlus className="size-4" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" aria-label="Supprimer cette entrée" onClick={() => void remove(e.id)}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Supprimer cette entrée"
+                      onClick={() => void remove(e.id)}
+                    >
                       <Trash2 className="text-destructive size-4" />
                     </Button>
                   </div>

@@ -32,7 +32,9 @@ export function Sidebar() {
       className="bg-sidebar text-sidebar-foreground border-sidebar-border flex shrink-0 border-t sm:w-16 sm:flex-col sm:border-t-0 sm:border-r lg:w-56"
     >
       <div className="hidden items-center gap-2.5 px-4 pt-5 pb-4 sm:flex sm:justify-center lg:justify-start">
-        <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-xl text-base font-bold">Z</div>
+        <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-xl text-base font-bold">
+          Z
+        </div>
         <span className="hidden text-lg font-semibold tracking-tight lg:inline">ZePhone</span>
       </div>
       <ul className="flex flex-1 justify-around gap-1 p-1.5 sm:flex-col sm:justify-start sm:p-2">

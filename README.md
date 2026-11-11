@@ -4,7 +4,7 @@ Softphone SIP desktop universel — **Tauri 2 + React + Rust + Baresip**.
 macOS en priorité ; l'architecture est prête pour Windows et Linux.
 
 ZePhone n'est pas un simulateur : la signalisation SIP et l'audio (RTP/SRTP) sont assurés par
-[Baresip](https://github.com/baresip/baresip), embarqué dans l'application comme *sidecar* Tauri.
+[Baresip](https://github.com/baresip/baresip), embarqué dans l'application comme _sidecar_ Tauri.
 Aucun PBX n'est codé en dur : vous renseignez votre serveur, domaine, identifiants, port et transport
 (UDP, TCP, TLS).
 
@@ -30,16 +30,16 @@ Aucun PBX n'est codé en dur : vous renseignez votre serveur, domaine, identifia
 
 ## Fonctionnalités
 
-| Domaine | Ce qui est opérationnel |
-| --- | --- |
-| Comptes | Plusieurs comptes, ajout/modification/suppression, compte par défaut, activation, connexion/déconnexion, proxy sortant, intervalle d'enregistrement, SRTP. Statut en temps réel **issu des événements SIP** (Non configuré · Connexion en cours · Enregistré · Déconnecté · Erreur) avec le code SIP (401, 403, 404, 408, 503…). Un challenge 401 suivi d'une authentification réussie n'est **pas** un échec. |
-| Appels sortants | Clavier, adresse SIP libre, appel depuis un contact ou l'historique, choix du compte, progression réelle (initialisation → composition → sonnerie distante → connecté), durée, micro coupé, attente/reprise, DTMF (RFC 4733), transfert aveugle (REFER), raccrochage. |
-| Appels entrants | Sonnerie (Baresip), fenêtre d'appel entrant par-dessus n'importe quelle section, notification native, accepter/refuser (603), appel manqué, réception fenêtre fermée (icône dans la barre des menus). |
-| Audio | Sélection micro/sortie (noms CoreAudio), périphériques USB/Bluetooth, G.711 PCMA/PCMU, SRTP ; G.722/Opus chargés **si présents** dans la build Baresip (voir limites). Permission micro macOS (`NSMicrophoneUsageDescription`, entitlement `audio-input`). |
-| Historique | Entrants/sortants/manqués/refusés/échoués, durée réelle mesurée, compte, résultat ; rappel en un clic, suppression, recherche, filtres, badge « manqués non lus ». |
-| Contacts | Prénom, nom, société, numéro/URI SIP, recherche, ajout/édition/suppression, appel direct ; le nom du contact s'affiche sur les appels entrants/sortants. |
-| Paramètres | Comptes, audio, réseau (port SIP local, interface, CA TLS perso, trace SIP, redémarrage moteur, journal), notifications, général (thème clair/sombre/auto, démarrage à l'ouverture de session, démarrage réduit, icône barre des menus, rester actif à la fermeture), à propos. |
-| Robustesse | Moteur supervisé et redémarré automatiquement (back-off), PBX injoignable ou mauvais identifiants sans plantage, aucun processus orphelin (voir [Sécurité](#sécurité)). |
+| Domaine         | Ce qui est opérationnel                                                                                                                                                                                                                                                                                                                                                                                        |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Comptes         | Plusieurs comptes, ajout/modification/suppression, compte par défaut, activation, connexion/déconnexion, proxy sortant, intervalle d'enregistrement, SRTP. Statut en temps réel **issu des événements SIP** (Non configuré · Connexion en cours · Enregistré · Déconnecté · Erreur) avec le code SIP (401, 403, 404, 408, 503…). Un challenge 401 suivi d'une authentification réussie n'est **pas** un échec. |
+| Appels sortants | Clavier, adresse SIP libre, appel depuis un contact ou l'historique, choix du compte, progression réelle (initialisation → composition → sonnerie distante → connecté), durée, micro coupé, attente/reprise, DTMF (RFC 4733), transfert aveugle (REFER), raccrochage.                                                                                                                                          |
+| Appels entrants | Sonnerie (Baresip), fenêtre d'appel entrant par-dessus n'importe quelle section, notification native, accepter/refuser (603), appel manqué, réception fenêtre fermée (icône dans la barre des menus).                                                                                                                                                                                                          |
+| Audio           | Sélection micro/sortie (noms CoreAudio), périphériques USB/Bluetooth, G.711 PCMA/PCMU, SRTP ; G.722/Opus chargés **si présents** dans la build Baresip (voir limites). Permission micro macOS (`NSMicrophoneUsageDescription`, entitlement `audio-input`).                                                                                                                                                     |
+| Historique      | Entrants/sortants/manqués/refusés/échoués, durée réelle mesurée, compte, résultat ; rappel en un clic, suppression, recherche, filtres, badge « manqués non lus ».                                                                                                                                                                                                                                             |
+| Contacts        | Prénom, nom, société, numéro/URI SIP, recherche, ajout/édition/suppression, appel direct ; le nom du contact s'affiche sur les appels entrants/sortants.                                                                                                                                                                                                                                                       |
+| Paramètres      | Comptes, audio, réseau (port SIP local, interface, CA TLS perso, trace SIP, redémarrage moteur, journal), notifications, général (thème clair/sombre/auto, démarrage à l'ouverture de session, démarrage réduit, icône barre des menus, rester actif à la fermeture), à propos.                                                                                                                                |
+| Robustesse      | Moteur supervisé et redémarré automatiquement (back-off), PBX injoignable ou mauvais identifiants sans plantage, aucun processus orphelin (voir [Sécurité](#sécurité)).                                                                                                                                                                                                                                        |
 
 ## Architecture
 
@@ -63,6 +63,7 @@ Aucun PBX n'est codé en dur : vous renseignez votre serveur, domaine, identifia
                     │ baresip  │◄──────────────────────────────► PBX / opérateur
                     └──────────┘  CoreAudio ◄──► micro / haut-parleurs
 ```
+
 \* sans mots de passe.
 
 - **Le frontend ne connaît pas SIP** : il envoie des intentions (`dial`, `answer_call`, `hold_call`…) et
@@ -90,13 +91,13 @@ scripts/prepare-baresip.sh   prépare le sidecar relocalisable pour le bundle
 
 ## Choix du moteur
 
-| | A — `libbaresip` (FFI C) | B — processus Baresip piloté (`ctrl_tcp`) ✅ |
-| --- | --- | --- |
-| Intégration | bindgen + édition de liens de libre/libbaresip/OpenSSL/modules dans le binaire Rust ; threading (« libre n'est pas thread-safe ») à gérer à la main | binaire autonome embarqué comme *sidecar* Tauri |
-| Stabilité | un crash C emporte toute l'application | un crash du moteur est isolé et le moteur est **redémarré** par le superviseur |
-| Mise en route / packaging macOS | chaîne de build C complexe | `scripts/prepare-baresip.sh` relocalise binaire + dylibs + modules |
-| Latence de commande | appel direct | boucle locale TCP, négligeable pour du contrôle d'appel (l'audio ne transite pas par Rust) |
-| Évolution | — | l'abstraction `SipEngine` permet de passer à (A) plus tard sans réécrire le reste |
+|                                 | A — `libbaresip` (FFI C)                                                                                                                            | B — processus Baresip piloté (`ctrl_tcp`) ✅                                               |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Intégration                     | bindgen + édition de liens de libre/libbaresip/OpenSSL/modules dans le binaire Rust ; threading (« libre n'est pas thread-safe ») à gérer à la main | binaire autonome embarqué comme _sidecar_ Tauri                                            |
+| Stabilité                       | un crash C emporte toute l'application                                                                                                              | un crash du moteur est isolé et le moteur est **redémarré** par le superviseur             |
+| Mise en route / packaging macOS | chaîne de build C complexe                                                                                                                          | `scripts/prepare-baresip.sh` relocalise binaire + dylibs + modules                         |
+| Latence de commande             | appel direct                                                                                                                                        | boucle locale TCP, négligeable pour du contrôle d'appel (l'audio ne transite pas par Rust) |
+| Évolution                       | —                                                                                                                                                   | l'abstraction `SipEngine` permet de passer à (A) plus tard sans réécrire le reste          |
 
 **Décision : B pour la v1.** Un seul processus Baresip pour toute la durée de vie de l'app (jamais un
 processus par appel), supervisé, arrêté proprement, et contrôlé via le module `ctrl_tcp`
@@ -156,7 +157,7 @@ Contenu du bundle : `Contents/MacOS/{zephone,baresip}`, `Contents/Frameworks/{li
 `Entitlements.plist` accorde `audio-input` (hardened runtime) et `disable-library-validation` (Baresip charge ses
 modules par `dlopen`).
 
-**Signature / notarisation** : le build local est signé *ad hoc* (`signingIdentity: "-"`). Pour distribuer,
+**Signature / notarisation** : le build local est signé _ad hoc_ (`signingIdentity: "-"`). Pour distribuer,
 renseignez votre identité Developer ID et les variables `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID`
 (voir la doc Tauri) ; **l'ensemble des Mach-O du bundle (sidecar, dylibs, modules) doit être signé avec la même
 identité**. Au premier lancement d'une app non notarisée, Gatekeeper demande une confirmation
@@ -169,10 +170,10 @@ séparés (un `.dmg` par architecture) — non réalisé ici.
 ## Utiliser ZePhone avec votre PBX
 
 1. Ouvrez ZePhone → **Paramètres › Comptes SIP › Ajouter**.
-2. Renseignez : *Serveur SIP* (`sip.example.com`), *Port* (`5060` / `5061`), *Transport*, *Domaine* (si différent),
-   *Identifiant*, *Identifiant d'authentification* (si différent), *Mot de passe* (saisi dans l'application,
+2. Renseignez : _Serveur SIP_ (`sip.example.com`), _Port_ (`5060` / `5061`), _Transport_, _Domaine_ (si différent),
+   _Identifiant_, _Identifiant d'authentification_ (si différent), _Mot de passe_ (saisi dans l'application,
    stocké dans le Trousseau, jamais en clair).
-3. **Ajouter et connecter** : le statut passe à *Enregistré* (ou affiche le code SIP de l'erreur).
+3. **Ajouter et connecter** : le statut passe à _Enregistré_ (ou affiche le code SIP de l'erreur).
 4. Composez un numéro dans **Clavier** et appelez ; autorisez le micro à la première demande.
 
 Limitation de la syntaxe de compte Baresip : un mot de passe ne peut pas contenir le caractère `"` (refusé avec un
@@ -235,7 +236,7 @@ Le code Rust est portable (pilote audio, extension des modules, chemins, trousse
    (`.dll`) ou en `rpath` (`$ORIGIN/../lib/zephone`).
 3. **Pilote audio** : adapter `audio_driver()` dans `src-tauri/src/sip/engine/baresip/config.rs` si besoin (`winwave` est le défaut Windows).
 4. **Linux** : dépendances de build `libwebkit2gtk-4.1-dev`, `libdbus-1-dev`, `libasound2-dev` ; le trousseau passe par Secret Service.
-5. **Windows** : le chien de garde anti-orphelin n'est pas implémenté (utiliser un *Job Object* `KILL_ON_JOB_CLOSE`) ; le nettoyage
+5. **Windows** : le chien de garde anti-orphelin n'est pas implémenté (utiliser un _Job Object_ `KILL_ON_JOB_CLOSE`) ; le nettoyage
    normal (fermeture, Ctrl-C) fonctionne.
 6. `tauri build` produit alors `.msi`/`.exe` (Windows) et `.deb`/`.AppImage` (Linux).
 

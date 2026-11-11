@@ -26,8 +26,13 @@ export function ActiveCallBar() {
       className="bg-success text-success-foreground flex items-center gap-3 px-4 py-2 text-sm"
     >
       <PhoneCall className="size-4 shrink-0" aria-hidden />
-      <button type="button" className="min-w-0 flex-1 truncate text-left font-medium" onClick={() => setSection("calls")}>
-        {callDisplayName(call)} · {connected ? <span className="tabular">{formatDuration(seconds)}</span> : CALL_STATE_LABEL[call.state]}
+      <button
+        type="button"
+        className="min-w-0 flex-1 truncate text-left font-medium"
+        onClick={() => setSection("calls")}
+      >
+        {callDisplayName(call)} ·{" "}
+        {connected ? <span className="tabular">{formatDuration(seconds)}</span> : CALL_STATE_LABEL[call.state]}
         {call.state === "onHold" && " (en attente)"}
       </button>
       {connected && (

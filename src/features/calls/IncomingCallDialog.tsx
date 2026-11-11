@@ -40,7 +40,12 @@ export function IncomingCallDialog() {
               </DialogDescription>
             </div>
             <div className="flex w-full gap-3 pt-2">
-              <Button variant="destructive" size="lg" className="h-14 flex-1 rounded-2xl dark:bg-destructive dark:hover:bg-destructive/90" onClick={() => void reject(call.id)}>
+              <Button
+                variant="destructive"
+                size="lg"
+                className="h-14 flex-1 rounded-2xl dark:bg-destructive dark:hover:bg-destructive/90"
+                onClick={() => void reject(call.id)}
+              >
                 <PhoneOff className="size-5" aria-hidden /> Refuser
               </Button>
               <Button

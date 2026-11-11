@@ -20,7 +20,10 @@ export function EngineBanner() {
   }
   if (info.state === "failed" || info.state === "stopped") {
     return (
-      <div role="alert" className="bg-destructive/10 text-destructive flex flex-wrap items-center gap-3 px-4 py-2 text-sm">
+      <div
+        role="alert"
+        className="bg-destructive/10 text-destructive flex flex-wrap items-center gap-3 px-4 py-2 text-sm"
+      >
         <AlertTriangle className="size-4 shrink-0" aria-hidden />
         <span className="min-w-0 flex-1">
           {info.state === "failed" ? `Moteur SIP indisponible : ${info.reason}` : "Le moteur SIP est arrêté."}

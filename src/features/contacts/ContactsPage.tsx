@@ -58,7 +58,10 @@ export function ContactsPage() {
       />
       <div className="px-6 pb-3">
         <div className="relative">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" aria-hidden />
+          <Search
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            aria-hidden
+          />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -74,7 +77,11 @@ export function ContactsPage() {
           <EmptyState
             icon={Users}
             title={query ? "Aucun résultat" : "Aucun contact"}
-            description={query ? "Aucun contact ne correspond à cette recherche." : "Ajoutez vos correspondants pour les appeler en un clic."}
+            description={
+              query
+                ? "Aucun contact ne correspond à cette recherche."
+                : "Ajoutez vos correspondants pour les appeler en un clic."
+            }
           />
         ) : (
           <ul className="space-y-1">
@@ -108,7 +115,12 @@ export function ContactsPage() {
                   >
                     <Pencil className="size-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" aria-label={`Supprimer ${contactName(c)}`} onClick={() => setDeleting(c)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Supprimer ${contactName(c)}`}
+                    onClick={() => setDeleting(c)}
+                  >
                     <Trash2 className="text-destructive size-4" />
                   </Button>
                 </div>
@@ -123,7 +135,9 @@ export function ContactsPage() {
         open={deleting !== null}
         onOpenChange={(o) => !o && setDeleting(null)}
         title="Supprimer ce contact ?"
-        description={deleting ? `« ${contactName(deleting)} » sera définitivement supprimé de votre carnet d'adresses.` : ""}
+        description={
+          deleting ? `« ${contactName(deleting)} » sera définitivement supprimé de votre carnet d'adresses.` : ""
+        }
         confirmLabel="Supprimer"
         onConfirm={() => {
           if (deleting) void remove(deleting.id);

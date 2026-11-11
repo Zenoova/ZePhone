@@ -2,7 +2,15 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-export function SettingsSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+export function SettingsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
   return (
     <section className="space-y-3">
       <div>

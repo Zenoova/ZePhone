@@ -40,7 +40,9 @@ export function useTelephonyBootstrap(): void {
         useCallsStore.getState().hydrate(snap.calls);
         useEngineStore.getState().apply(snap.engine);
       } catch (e) {
-        toast.error(e instanceof Object && "message" in e ? String((e as { message: unknown }).message) : "Chargement impossible");
+        toast.error(
+          e instanceof Object && "message" in e ? String((e as { message: unknown }).message) : "Chargement impossible",
+        );
       }
       void useSettingsStore.getState().load();
       void useHistoryStore.getState().load();

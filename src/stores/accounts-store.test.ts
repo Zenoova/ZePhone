@@ -36,8 +36,12 @@ describe("summarizeRegistration", () => {
     expect(s2).toMatchObject({ state: "registered", label: "B" });
   });
   it("falls back to connecting, then error, then disconnected", () => {
-    expect(summarizeRegistration([a], { a: makeStatus({ accountId: "a", state: "connecting" }) }).state).toBe("connecting");
-    expect(summarizeRegistration([a], { a: makeStatus({ accountId: "a", state: "error", sipCode: 401 }) }).state).toBe("error");
+    expect(summarizeRegistration([a], { a: makeStatus({ accountId: "a", state: "connecting" }) }).state).toBe(
+      "connecting",
+    );
+    expect(summarizeRegistration([a], { a: makeStatus({ accountId: "a", state: "error", sipCode: 401 }) }).state).toBe(
+      "error",
+    );
     expect(summarizeRegistration([a], {}).state).toBe("disconnected");
   });
   it("ignores disabled accounts for the live state", () => {

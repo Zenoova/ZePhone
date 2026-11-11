@@ -2,13 +2,28 @@ import { PhoneForwarded } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sanitizeDialInput } from "@/lib/phone";
 import { useCallsStore } from "@/stores/calls-store";
 
-export function TransferDialog({ callId, open, onOpenChange }: { callId: string; open: boolean; onOpenChange: (o: boolean) => void }) {
+export function TransferDialog({
+  callId,
+  open,
+  onOpenChange,
+}: {
+  callId: string;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const [target, setTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const transfer = useCallsStore((s) => s.transfer);

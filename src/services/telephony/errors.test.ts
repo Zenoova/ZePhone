@@ -4,7 +4,10 @@ import { errorMessage, toAppError } from "./errors";
 
 describe("toAppError", () => {
   it("keeps the backend's {kind, message}", () => {
-    expect(toAppError({ kind: "validation", message: "Port invalide" })).toEqual({ kind: "validation", message: "Port invalide" });
+    expect(toAppError({ kind: "validation", message: "Port invalide" })).toEqual({
+      kind: "validation",
+      message: "Port invalide",
+    });
   });
   it("accepts plain strings and unknown shapes", () => {
     expect(toAppError("boom")).toEqual({ kind: "unknown", message: "boom" });

@@ -8,8 +8,14 @@ export function NotificationSettings() {
   const update = useSettingsStore((s) => s.update);
   return (
     <div className="space-y-6">
-      <SettingsSection title="Notifications" description="L'appel entrant s'affiche toujours dans l'application, même si la fenêtre était réduite.">
-        <SettingRow label="Notification système pour un appel entrant" description="Notification native du système à l'arrivée d'un appel">
+      <SettingsSection
+        title="Notifications"
+        description="L'appel entrant s'affiche toujours dans l'application, même si la fenêtre était réduite."
+      >
+        <SettingRow
+          label="Notification système pour un appel entrant"
+          description="Notification native du système à l'arrivée d'un appel"
+        >
           <Switch
             checked={n.incomingCall}
             onCheckedChange={(v) => void update({ notifications: { incomingCall: v } })}
@@ -23,7 +29,10 @@ export function NotificationSettings() {
             aria-label="Notification pour un appel manqué"
           />
         </SettingRow>
-        <SettingRow label="Sonnerie" description="Joue une sonnerie sur la sortie audio choisie pendant un appel entrant">
+        <SettingRow
+          label="Sonnerie"
+          description="Joue une sonnerie sur la sortie audio choisie pendant un appel entrant"
+        >
           <Switch
             checked={n.ringtone}
             onCheckedChange={(v) => void update({ notifications: { ringtone: v } })}

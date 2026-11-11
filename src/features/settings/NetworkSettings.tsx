@@ -64,7 +64,11 @@ export function NetworkSettings() {
         title="Réseau et transport SIP"
         description="Le transport (UDP, TCP, TLS) et le port du serveur se règlent compte par compte."
       >
-        <SettingRow label="Port SIP local" htmlFor="net-port" description="Vide = choisi automatiquement. Utile derrière un pare-feu.">
+        <SettingRow
+          label="Port SIP local"
+          htmlFor="net-port"
+          description="Vide = choisi automatiquement. Utile derrière un pare-feu."
+        >
           <Input
             id="net-port"
             className="w-32"
@@ -76,7 +80,11 @@ export function NetworkSettings() {
             onKeyDown={onEnter}
           />
         </SettingRow>
-        <SettingRow label="Interface ou adresse locale" htmlFor="net-iface" description="Exemple : en0 ou 192.168.1.20. Vide = automatique.">
+        <SettingRow
+          label="Interface ou adresse locale"
+          htmlFor="net-iface"
+          description="Exemple : en0 ou 192.168.1.20. Vide = automatique."
+        >
           <Input
             id="net-iface"
             className="w-48"
@@ -113,10 +121,20 @@ export function NetworkSettings() {
       </SettingsSection>
 
       <SettingsSection title="Diagnostic" description="Pour comprendre un problème de connexion avec votre serveur.">
-        <SettingRow label="Tracer les messages SIP" description="Affiche les échanges SIP dans le journal du moteur (redémarrage requis).">
-          <Switch checked={net.sipTrace} onCheckedChange={(v) => void update({ network: { sipTrace: v } })} aria-label="Tracer les messages SIP" />
+        <SettingRow
+          label="Tracer les messages SIP"
+          description="Affiche les échanges SIP dans le journal du moteur (redémarrage requis)."
+        >
+          <Switch
+            checked={net.sipTrace}
+            onCheckedChange={(v) => void update({ network: { sipTrace: v } })}
+            aria-label="Tracer les messages SIP"
+          />
         </SettingRow>
-        <SettingRow label="Journal du moteur SIP" description="Dernières lignes de sortie de Baresip (mots de passe masqués).">
+        <SettingRow
+          label="Journal du moteur SIP"
+          description="Dernières lignes de sortie de Baresip (mots de passe masqués)."
+        >
           <Button
             variant="outline"
             size="sm"

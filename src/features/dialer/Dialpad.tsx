@@ -53,7 +53,9 @@ export function Dialpad({ onKey, onLongZero, disabled, compact, className }: Dia
           )}
         >
           <span className={cn("leading-none font-medium", compact ? "text-lg" : "text-2xl")}>{key}</span>
-          <span className="text-muted-foreground mt-0.5 h-3 text-[10px] leading-3 font-medium tracking-widest">{letters}</span>
+          <span className="text-muted-foreground mt-0.5 h-3 text-[10px] leading-3 font-medium tracking-widest">
+            {letters}
+          </span>
         </button>
       ))}
     </div>

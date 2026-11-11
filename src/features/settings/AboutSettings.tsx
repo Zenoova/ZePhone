@@ -21,7 +21,9 @@ export function AboutSettings() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <div className="bg-primary text-primary-foreground flex size-14 items-center justify-center rounded-2xl text-2xl font-bold">Z</div>
+        <div className="bg-primary text-primary-foreground flex size-14 items-center justify-center rounded-2xl text-2xl font-bold">
+          Z
+        </div>
         <div>
           <h2 className="text-xl font-semibold">ZePhone</h2>
           <p className="text-muted-foreground text-sm">Softphone SIP universel · version {app?.version ?? "—"}</p>
@@ -43,8 +45,8 @@ export function AboutSettings() {
       </SettingsSection>
 
       <p className="text-muted-foreground text-xs leading-relaxed">
-        ZePhone s'appuie sur Baresip (BSD-3-Clause) et libre (BSD-3-Clause), embarqués avec l'application. Aucune télémétrie n'est
-        envoyée. Les mots de passe SIP sont stockés dans le trousseau du système.
+        ZePhone s'appuie sur Baresip (BSD-3-Clause) et libre (BSD-3-Clause), embarqués avec l'application. Aucune
+        télémétrie n'est envoyée. Les mots de passe SIP sont stockés dans le trousseau du système.
       </p>
     </div>
   );

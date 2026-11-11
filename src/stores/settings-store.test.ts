@@ -22,10 +22,15 @@ describe("mergeSettings", () => {
 
 describe("update", () => {
   it("applies optimistically, persists and remembers that a restart is required", async () => {
-    invoke.mockImplementation(async (_cmd: string, args: { settings: unknown }) => ({ settings: args.settings, restartRequired: true }));
+    invoke.mockImplementation(async (_cmd: string, args: { settings: unknown }) => ({
+      settings: args.settings,
+      restartRequired: true,
+    }));
     const ok = await useSettingsStore.getState().update({ network: { localSipPort: 5070 } });
     expect(ok).toBe(true);
-    expect(invoke).toHaveBeenCalledWith("update_settings", { settings: expect.objectContaining({ network: expect.objectContaining({ localSipPort: 5070 }) }) });
+    expect(invoke).toHaveBeenCalledWith("update_settings", {
+      settings: expect.objectContaining({ network: expect.objectContaining({ localSipPort: 5070 }) }),
+    });
     expect(useSettingsStore.getState().settings.network.localSipPort).toBe(5070);
     expect(useSettingsStore.getState().restartRequired).toBe(true);
   });

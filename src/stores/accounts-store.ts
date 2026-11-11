@@ -90,5 +90,10 @@ export function summarizeRegistration(
     if (account) return { state, label: account.label, status: statuses[account.id], account };
   }
   const account = def ?? accounts[0];
-  return { state: "disconnected", label: account?.label ?? "", status: account ? statuses[account.id] : undefined, account };
+  return {
+    state: "disconnected",
+    label: account?.label ?? "",
+    status: account ? statuses[account.id] : undefined,
+    account,
+  };
 }

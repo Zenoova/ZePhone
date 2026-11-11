@@ -105,7 +105,9 @@ export function CallPanel({ call }: { call: Call }) {
               {formatDuration(seconds)}
             </p>
           )}
-          {call.state === "failed" && call.reason && <p className="text-muted-foreground max-w-xs text-xs">{call.reason}</p>}
+          {call.state === "failed" && call.reason && (
+            <p className="text-muted-foreground max-w-xs text-xs">{call.reason}</p>
+          )}
         </div>
       </div>
 
@@ -148,7 +150,12 @@ export function CallPanel({ call }: { call: Call }) {
             >
               {call.heldLocally ? <Play className="size-5" /> : <Pause className="size-5" />}
             </ControlButton>
-            <ControlButton label="Clavier (tonalités DTMF)" active={showKeypad} disabled={!inDialog} onClick={() => setShowKeypad((v) => !v)}>
+            <ControlButton
+              label="Clavier (tonalités DTMF)"
+              active={showKeypad}
+              disabled={!inDialog}
+              onClick={() => setShowKeypad((v) => !v)}
+            >
               <Grip className="size-5" />
             </ControlButton>
             <ControlButton label="Transférer l'appel" disabled={!inDialog} onClick={() => setTransferOpen(true)}>

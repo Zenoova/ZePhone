@@ -32,7 +32,10 @@ export function GeneralSettings() {
       </SettingsSection>
 
       <SettingsSection title="Démarrage et fenêtre">
-        <SettingRow label="Lancer ZePhone à l'ouverture de session" description="Pour recevoir les appels dès que vous vous connectez">
+        <SettingRow
+          label="Lancer ZePhone à l'ouverture de session"
+          description="Pour recevoir les appels dès que vous vous connectez"
+        >
           <Switch
             checked={g.launchAtLogin}
             onCheckedChange={(v) => void update({ general: { launchAtLogin: v } })}

@@ -34,7 +34,11 @@ export function StatusBar() {
           {stateLabel}
           {code}
         </span>
-        {accounts.length > 1 && <span className="shrink-0">· {registered}/{accounts.length} enregistrés</span>}
+        {accounts.length > 1 && (
+          <span className="shrink-0">
+            · {registered}/{accounts.length} enregistrés
+          </span>
+        )}
       </button>
       <span className="hidden shrink-0 sm:inline" aria-label="Moteur SIP">
         {engine ? `${engine.name} ${engine.version ?? ""}` : "…"}

@@ -95,7 +95,13 @@ describe("intents sent to the backend", () => {
     await s.hangup("x");
     await s.sendDtmf("x", "5");
     expect(await s.transfer("x", "1005")).toBe(true);
-    expect(invoke.mock.calls.map((c) => c[0])).toEqual(["answer_call", "reject_call", "hangup_call", "send_dtmf", "transfer_call"]);
+    expect(invoke.mock.calls.map((c) => c[0])).toEqual([
+      "answer_call",
+      "reject_call",
+      "hangup_call",
+      "send_dtmf",
+      "transfer_call",
+    ]);
     expect(invoke).toHaveBeenCalledWith("transfer_call", { id: "x", target: "1005" });
   });
 

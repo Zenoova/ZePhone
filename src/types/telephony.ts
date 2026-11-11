@@ -63,7 +63,8 @@ export interface AccountStatus {
 
 export type CallDirection = "incoming" | "outgoing";
 
-export type CallState = "initializing" | "dialing" | "ringing" | "incoming" | "connected" | "onHold" | "ended" | "failed";
+export type CallState =
+  "initializing" | "dialing" | "ringing" | "incoming" | "connected" | "onHold" | "ended" | "failed";
 
 export interface Call {
   id: string;

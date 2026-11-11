@@ -26,7 +26,9 @@ describe("IncomingCallDialog", () => {
 
   it("appears over any section and lets the user answer", () => {
     useCallsStore.setState({
-      calls: { call1: makeCall({ state: "incoming", direction: "incoming", remoteName: "Alice", remoteNumber: "2000" }) },
+      calls: {
+        call1: makeCall({ state: "incoming", direction: "incoming", remoteName: "Alice", remoteNumber: "2000" }),
+      },
     });
     render(<IncomingCallDialog />);
     expect(screen.getByTestId("incoming-call")).toBeInTheDocument();

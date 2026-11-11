@@ -20,14 +20,24 @@ function StatusDetail({ status }: { status: AccountStatus | undefined }) {
   return (
     <p className="text-muted-foreground mt-1 text-xs" data-selectable data-testid="status-detail">
       {status.sipCode !== null && status.state === "error" && (
-        <span className="bg-destructive/10 text-destructive mr-1.5 rounded px-1.5 py-0.5 font-mono">SIP {status.sipCode}</span>
+        <span className="bg-destructive/10 text-destructive mr-1.5 rounded px-1.5 py-0.5 font-mono">
+          SIP {status.sipCode}
+        </span>
       )}
       {detail}
     </p>
   );
 }
 
-function AccountCard({ account, onEdit, onDelete }: { account: AccountView; onEdit: () => void; onDelete: () => void }) {
+function AccountCard({
+  account,
+  onEdit,
+  onDelete,
+}: {
+  account: AccountView;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   const status = useAccountsStore((s) => s.statuses[account.id]);
   const { setDefault, setEnabled, connect, disconnect } = useAccountsStore.getState();
   const state = status?.state ?? "disconnected";
@@ -76,7 +86,12 @@ function AccountCard({ account, onEdit, onDelete }: { account: AccountView; onEd
         <Button size="sm" variant="ghost" onClick={onEdit}>
           <Pencil className="size-4" aria-hidden /> Modifier
         </Button>
-        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive ml-auto" onClick={onDelete}>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:text-destructive ml-auto"
+          onClick={onDelete}
+        >
           <Trash2 className="size-4" aria-hidden /> Supprimer
         </Button>
       </div>

@@ -84,9 +84,33 @@ export function installMockBackend(): void {
     },
   };
   let contacts: Contact[] = [
-    { id: "c1", firstName: "Bob", lastName: "Martin", company: "Acme", number: "1002", createdAt: now(), updatedAt: now() },
-    { id: "c2", firstName: "Alice", lastName: "Durand", company: null, number: "+33 6 12 34 56 78", createdAt: now(), updatedAt: now() },
-    { id: "c3", firstName: "", lastName: "", company: "Standard Acme", number: "sip:standard@example.com", createdAt: now(), updatedAt: now() },
+    {
+      id: "c1",
+      firstName: "Bob",
+      lastName: "Martin",
+      company: "Acme",
+      number: "1002",
+      createdAt: now(),
+      updatedAt: now(),
+    },
+    {
+      id: "c2",
+      firstName: "Alice",
+      lastName: "Durand",
+      company: null,
+      number: "+33 6 12 34 56 78",
+      createdAt: now(),
+      updatedAt: now(),
+    },
+    {
+      id: "c3",
+      firstName: "",
+      lastName: "",
+      company: "Standard Acme",
+      number: "sip:standard@example.com",
+      createdAt: now(),
+      updatedAt: now(),
+    },
   ];
   let history: HistoryEntry[] = [
     h("h1", "incoming", "missed", "2000", null, 12, 0),
@@ -183,10 +207,26 @@ export function installMockBackend(): void {
         label: (input.label as string) || `${input.username}@${input.server}`,
         hasPassword: Boolean(input.password) || Boolean(accounts.find((x) => x.id === id)?.hasPassword),
       } as AccountView;
-      accounts = accounts.some((x) => x.id === id) ? accounts.map((x) => (x.id === id ? view : x)) : [...accounts, view];
-      statuses[id] = { accountId: id, state: "connecting", sipCode: null, reason: null, message: null, updatedAt: now() };
+      accounts = accounts.some((x) => x.id === id)
+        ? accounts.map((x) => (x.id === id ? view : x))
+        : [...accounts, view];
+      statuses[id] = {
+        accountId: id,
+        state: "connecting",
+        sipCode: null,
+        reason: null,
+        message: null,
+        updatedAt: now(),
+      };
       setTimeout(() => {
-        statuses[id] = { accountId: id, state: "registered", sipCode: 200, reason: "OK", message: null, updatedAt: now() };
+        statuses[id] = {
+          accountId: id,
+          state: "registered",
+          sipCode: 200,
+          reason: "OK",
+          message: null,
+          updatedAt: now(),
+        };
         emit("account:status", statuses[id]);
       }, 900);
       emit("account:status", statuses[id]);
@@ -194,15 +234,30 @@ export function installMockBackend(): void {
     },
     delete_account: (a) => void (accounts = accounts.filter((x) => x.id !== a?.id)),
     set_default_account: (a) => void (accounts = accounts.map((x) => ({ ...x, isDefault: x.id === a?.id }))),
-    set_account_enabled: (a) => void (accounts = accounts.map((x) => (x.id === a?.id ? { ...x, enabled: Boolean(a?.enabled) } : x))),
+    set_account_enabled: (a) =>
+      void (accounts = accounts.map((x) => (x.id === a?.id ? { ...x, enabled: Boolean(a?.enabled) } : x))),
     connect_account: (a) => {
       const id = a?.id as string;
-      statuses[id] = { accountId: id, state: "registered", sipCode: 200, reason: "OK", message: null, updatedAt: now() };
+      statuses[id] = {
+        accountId: id,
+        state: "registered",
+        sipCode: 200,
+        reason: "OK",
+        message: null,
+        updatedAt: now(),
+      };
       emit("account:status", statuses[id]);
     },
     disconnect_account: (a) => {
       const id = a?.id as string;
-      statuses[id] = { accountId: id, state: "disconnected", sipCode: null, reason: null, message: null, updatedAt: now() };
+      statuses[id] = {
+        accountId: id,
+        state: "disconnected",
+        sipCode: null,
+        reason: null,
+        message: null,
+        updatedAt: now(),
+      };
       emit("account:status", statuses[id]);
     },
 
@@ -249,11 +304,21 @@ export function installMockBackend(): void {
 
     list_contacts: (a) => {
       const q = String(a?.query ?? "").toLowerCase();
-      return contacts.filter((c) => !q || `${c.firstName} ${c.lastName} ${c.company ?? ""} ${c.number}`.toLowerCase().includes(q));
+      return contacts.filter(
+        (c) => !q || `${c.firstName} ${c.lastName} ${c.company ?? ""} ${c.number}`.toLowerCase().includes(q),
+      );
     },
     save_contact: (a) => {
       const i = a?.input as Record<string, string | null>;
-      const c = { id: i.id ?? `c${Date.now()}`, firstName: i.firstName ?? "", lastName: i.lastName ?? "", company: i.company ?? null, number: i.number ?? "", createdAt: now(), updatedAt: now() } as Contact;
+      const c = {
+        id: i.id ?? `c${Date.now()}`,
+        firstName: i.firstName ?? "",
+        lastName: i.lastName ?? "",
+        company: i.company ?? null,
+        number: i.number ?? "",
+        createdAt: now(),
+        updatedAt: now(),
+      } as Contact;
       contacts = contacts.some((x) => x.id === c.id) ? contacts.map((x) => (x.id === c.id ? c : x)) : [...contacts, c];
       return c;
     },
@@ -262,7 +327,13 @@ export function installMockBackend(): void {
       const f = (a?.filter ?? {}) as { kind?: string; query?: string | null };
       return history.filter(
         (e) =>
-          (!f.kind || f.kind === "all" || (f.kind === "missed" ? e.result === "missed" : f.kind === "failed" ? ["failed", "rejected", "cancelled"].includes(e.result) : e.direction === f.kind)) &&
+          (!f.kind ||
+            f.kind === "all" ||
+            (f.kind === "missed"
+              ? e.result === "missed"
+              : f.kind === "failed"
+                ? ["failed", "rejected", "cancelled"].includes(e.result)
+                : e.direction === f.kind)) &&
           (!f.query || `${e.remoteNumber} ${e.contactName ?? ""}`.toLowerCase().includes(f.query.toLowerCase())),
       );
     },
@@ -279,7 +350,12 @@ export function installMockBackend(): void {
     request_microphone_permission: () => "authorized",
     open_microphone_settings: () => undefined,
     restart_engine: () => undefined,
-    get_engine_log: () => ["baresip v4.13.0 (aperçu : journal factice)", "aucodec: PCMU/8000/1", "aucodec: PCMA/8000/1", "baresip is ready."],
+    get_engine_log: () => [
+      "baresip v4.13.0 (aperçu : journal factice)",
+      "aucodec: PCMU/8000/1",
+      "aucodec: PCMA/8000/1",
+      "baresip is ready.",
+    ],
     quit_app: () => undefined,
   };
 
@@ -303,7 +379,10 @@ export function installMockBackend(): void {
       }
       if (cmd === "plugin:event|unlisten") {
         const { event, eventId } = args as { event: string; eventId: number };
-        listeners.set(event, (listeners.get(event) ?? []).filter((l) => l.id !== eventId));
+        listeners.set(
+          event,
+          (listeners.get(event) ?? []).filter((l) => l.id !== eventId),
+        );
         return undefined;
       }
       const fn = commands[cmd];
@@ -341,12 +420,26 @@ export function installMockBackend(): void {
         return id;
       },
       regError(code = 401, state: AccountStatus["state"] = "error") {
-        const s = { accountId: "acc1", state, sipCode: code, reason: "Unauthorized", message: `Authentification refusée (${code})`, updatedAt: now() };
+        const s = {
+          accountId: "acc1",
+          state,
+          sipCode: code,
+          reason: "Unauthorized",
+          message: `Authentification refusée (${code})`,
+          updatedAt: now(),
+        };
         statuses["acc1"] = s;
         emit("account:status", s);
       },
       engine(state: "restarting" | "failed" | "running") {
-        emit("engine:state", state === "running" ? engine() : state === "failed" ? { ...engine(), state, reason: "binaire manquant" } : { ...engine(), state, attempt: 1, reason: "crash" });
+        emit(
+          "engine:state",
+          state === "running"
+            ? engine()
+            : state === "failed"
+              ? { ...engine(), state, reason: "binaire manquant" }
+              : { ...engine(), state, attempt: 1, reason: "crash" },
+        );
       },
       emit,
     },

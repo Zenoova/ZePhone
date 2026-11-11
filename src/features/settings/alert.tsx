@@ -4,7 +4,15 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /** Small inline notice (info / warning). */
-export function Alert({ children, tone = "info", className }: { children: ReactNode; tone?: "info" | "warning" | "error"; className?: string }) {
+export function Alert({
+  children,
+  tone = "info",
+  className,
+}: {
+  children: ReactNode;
+  tone?: "info" | "warning" | "error";
+  className?: string;
+}) {
   return (
     <div
       role={tone === "error" ? "alert" : "note"}
