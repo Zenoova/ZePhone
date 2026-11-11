@@ -149,6 +149,8 @@ export interface Settings {
     startMinimized: boolean;
     closeToTray: boolean;
     showTrayIcon: boolean;
+    /** Frosted-glass window background (macOS only). */
+    translucent: boolean;
   };
   network: {
     customCaFile: string | null;

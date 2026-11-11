@@ -13,6 +13,17 @@ function ThemeSync() {
   return null;
 }
 
+/** Frosted glass only makes sense where the native vibrancy exists (macOS). */
+const IS_MAC = typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
+
+function TranslucencySync() {
+  const translucent = useSettingsStore((s) => s.settings.general.translucent);
+  useEffect(() => {
+    document.documentElement.classList.toggle("translucent", IS_MAC && translucent);
+  }, [translucent]);
+  return null;
+}
+
 function BackendUnavailable() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
@@ -31,6 +42,7 @@ export default function App() {
   return (
     <>
       <ThemeSync />
+      <TranslucencySync />
       {unavailable ? <BackendUnavailable /> : <AppShell />}
     </>
   );

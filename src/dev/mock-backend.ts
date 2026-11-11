@@ -122,7 +122,14 @@ export function installMockBackend(): void {
   let settings: Settings = {
     audio: { inputDevice: null, outputDevice: null },
     notifications: { incomingCall: true, missedCall: true, ringtone: true },
-    general: { theme: "system", launchAtLogin: false, startMinimized: false, closeToTray: true, showTrayIcon: true },
+    general: {
+      theme: "system",
+      launchAtLogin: false,
+      startMinimized: false,
+      closeToTray: true,
+      showTrayIcon: true,
+      translucent: true,
+    },
     network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
   };
   const calls = new Map<string, Call>();
@@ -459,5 +466,6 @@ export function installMockBackend(): void {
       emit,
     },
   });
+  document.documentElement.dataset.preview = "1";
   console.warn("[ZePhone] APERÇU HORS-LIGNE : backend simulé en mémoire, aucune communication SIP réelle.");
 }

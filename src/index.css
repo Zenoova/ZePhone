@@ -105,6 +105,44 @@
   --sidebar-border: oklch(1 0 0 / 9%);
 }
 
+/*
+ * Frosted-glass window (macOS): a native vibrancy layer sits behind the webview, so the page draws
+ * semi-transparent surfaces. Dialogs and menus keep opaque backgrounds (--background / --popover).
+ */
+:root {
+  --app-bg: var(--background);
+}
+:root.translucent {
+  --app-bg: oklch(0.985 0.003 255 / 0.4);
+  --card: oklch(1 0 0 / 0.55);
+  --sidebar: oklch(0.97 0.006 258 / 0.28);
+  --sidebar-border: oklch(0.2 0.02 258 / 0.08);
+  --border: oklch(0.2 0.02 258 / 0.1);
+}
+.dark.translucent {
+  --app-bg: oklch(0.17 0.014 258 / 0.42);
+  --card: oklch(0.26 0.016 258 / 0.5);
+  --sidebar: oklch(0.19 0.016 258 / 0.32);
+  --sidebar-border: oklch(1 0 0 / 0.08);
+  --border: oklch(1 0 0 / 0.1);
+}
+
+/* Floating glass sheet (in-call keypad): blurred, tinted, hairline border. */
+.glass {
+  background: color-mix(in oklab, var(--background) 52%, transparent);
+  -webkit-backdrop-filter: blur(26px) saturate(1.7);
+  backdrop-filter: blur(26px) saturate(1.7);
+  border: 1px solid color-mix(in oklab, var(--foreground) 14%, transparent);
+  box-shadow:
+    0 18px 50px -12px color-mix(in oklab, var(--foreground) 35%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 35%, transparent);
+}
+
+/* Dev-only UI preview (`/?mock`): something colourful behind the glass, standing in for the vibrancy. */
+html[data-preview] {
+  background: linear-gradient(135deg, #4f6bff 0%, #b06cff 48%, #ff8fb1 100%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -115,7 +153,8 @@
     height: 100%;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply text-foreground font-sans antialiased;
+    background-color: var(--app-bg);
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
     user-select: none; /* a desktop app, not a web page: text selection is opt-in */

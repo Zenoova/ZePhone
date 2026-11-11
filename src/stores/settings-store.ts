@@ -7,7 +7,14 @@ import type { AudioDevices, MicPermission, Settings } from "@/types/telephony";
 export const DEFAULT_SETTINGS: Settings = {
   audio: { inputDevice: null, outputDevice: null },
   notifications: { incomingCall: true, missedCall: true, ringtone: true },
-  general: { theme: "system", launchAtLogin: false, startMinimized: false, closeToTray: true, showTrayIcon: true },
+  general: {
+    theme: "system",
+    launchAtLogin: false,
+    startMinimized: false,
+    closeToTray: true,
+    showTrayIcon: true,
+    translucent: true,
+  },
   network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
 };
 

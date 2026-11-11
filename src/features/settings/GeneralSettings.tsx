@@ -31,6 +31,21 @@ export function GeneralSettings() {
         </SettingRow>
       </SettingsSection>
 
+      {isMac && (
+        <SettingsSection title="Fenêtre">
+          <SettingRow
+            label="Fond translucide (effet verre)"
+            description="Laisse transparaître le bureau derrière la fenêtre, comme les apps macOS récentes"
+          >
+            <Switch
+              checked={g.translucent}
+              onCheckedChange={(v) => void update({ general: { translucent: v } })}
+              aria-label="Fond translucide"
+            />
+          </SettingRow>
+        </SettingsSection>
+      )}
+
       <SettingsSection title="Démarrage et fenêtre">
         <SettingRow
           label="Lancer ZePhone à l'ouverture de session"
