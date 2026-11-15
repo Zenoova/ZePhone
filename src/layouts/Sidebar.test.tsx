@@ -31,34 +31,35 @@ describe("Sidebar", () => {
     expect(names).not.toContain("Appels");
   });
 
-  it("the logo is the voice orb and opens the choice of the orb", async () => {
+  it("the logo is the voice orb and opens the carousel of orbs", async () => {
     render(<Sidebar />);
     const orb = screen.getByTestId("sidebar-orb");
     await waitFor(() => expect(orb.querySelector("[data-orb=shdr-32]")).not.toBeNull()); // the default orb
     expect(orb).toHaveAttribute("data-in-call", "false");
     fireEvent.click(orb);
-    expect(await screen.findByRole("radiogroup", { name: "Orbe vocal" })).toBeInTheDocument();
+    expect(await screen.findByRole("radiogroup", { name: "Voice orb" })).toBeInTheDocument();
+    expect(screen.getByTestId("orb-name")).toHaveTextContent("Galaxy");
     expect(useUiStore.getState().section).toBe("settings"); // it no longer navigates
   });
 
-  it("can still show the classic bubble", () => {
+  it("falls back to the default orb when the saved one is retired", async () => {
     useSettingsStore.setState({
       settings: { ...DEFAULT_SETTINGS, general: { ...DEFAULT_SETTINGS.general, voiceOrb: "classic" } },
     });
     render(<Sidebar />);
-    expect(screen.getByTestId("sidebar-orb").querySelector("canvas")).not.toBeNull();
-    expect(screen.getByTestId("sidebar-orb").querySelector("[data-orb]")).toBeNull();
+    await waitFor(() => expect(screen.getByTestId("sidebar-orb").querySelector("[data-orb=shdr-32]")).not.toBeNull());
   });
 
-  it("picking an orb is applied to the logo and saved", async () => {
+  it("the orb picked in the carousel is applied to the logo and saved", async () => {
     render(<Sidebar />);
     fireEvent.click(screen.getByTestId("sidebar-orb"));
-    fireEvent.click(await screen.findByRole("radio", { name: "Plasma" }));
+    const group = await screen.findByRole("radiogroup", { name: "Voice orb" });
+    fireEvent.keyDown(group, { key: "ArrowLeft" }); // Galaxy -> Plasma
+    await waitFor(() => expect(useSettingsStore.getState().settings.general.voiceOrb).toBe("shdr-13"));
     expect(invoke).toHaveBeenCalledWith("update_settings", {
       settings: expect.objectContaining({ general: expect.objectContaining({ voiceOrb: "shdr-13" }) }),
     });
     await waitFor(() => expect(screen.getByTestId("sidebar-orb").querySelector("[data-orb=shdr-13]")).not.toBeNull());
-    expect(useSettingsStore.getState().settings.general.voiceOrb).toBe("shdr-13");
   });
 
   it("follows the call in progress", () => {

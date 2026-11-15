@@ -500,7 +500,7 @@ pub struct GeneralSettings {
     pub show_tray_icon: bool,
     /// Frosted-glass window background (macOS vibrancy). Ignored on other platforms.
     pub translucent: bool,
-    /// Voice orb of the call screen: `classic` or an OrbKit id such as `shdr-32` (the default). The webview checks it
+    /// Voice orb of the call screen: an OrbKit id such as `shdr-32` (the default). The webview checks it
     /// against the orbs it knows; the backend only keeps a well-formed id.
     pub voice_orb: String,
 }

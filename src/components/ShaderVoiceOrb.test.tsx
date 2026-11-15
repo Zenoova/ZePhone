@@ -24,18 +24,18 @@ afterEach(() => {
 describe("ShaderVoiceOrb", () => {
   it("loads its shader and rests while nobody speaks", async () => {
     vi.useRealTimers();
-    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" source="rx" />);
+    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" />);
     await waitFor(() => expect(orb()).toHaveAttribute("data-orb", "shdr-11"));
     expect(orb()).toHaveAttribute("data-state", "idle");
   });
 
   it("is restless while the other party is being reached", () => {
-    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" source="rx" waiting />);
+    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" waiting />);
     expect(orb()).toHaveAttribute("data-state", "thinking");
   });
 
   it("speaks with the real audio level, and calms down shortly after it stops", async () => {
-    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" source="rx" />);
+    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" />);
     pushLevel("c1", false, -20, performance.now());
     await run(200);
     expect(orb()).toHaveAttribute("data-state", "speaking");
@@ -44,26 +44,24 @@ describe("ShaderVoiceOrb", () => {
     expect(orb()).toHaveAttribute("data-state", "idle");
   });
 
-  it("listens to the microphone for our own orb, not to the remote voice", async () => {
-    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" source="tx" />);
-    pushLevel("c1", false, -20, performance.now()); // remote voice only
+  it("ignores the level of other calls", async () => {
+    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" />);
+    pushLevel("c2", false, -20, performance.now());
+    pushLevel("c1", true, -20, performance.now()); // our own microphone is not the voice we show
     await run(300);
     expect(orb()).toHaveAttribute("data-state", "idle");
-    pushLevel("c1", true, -20, performance.now()); // our voice
-    await run(200);
-    expect(orb()).toHaveAttribute("data-state", "speaking");
   });
 
-  it("stays calm and grey when the microphone is muted, whatever the level", async () => {
-    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" source="tx" muted />);
-    pushLevel("c1", true, -10, performance.now());
+  it("is calm and dimmed when the call is on hold, whatever the level", async () => {
+    render(<ShaderVoiceOrb orb="shdr-11" callId="c1" paused />);
+    pushLevel("c1", false, -10, performance.now());
     await run(300);
     expect(orb()).toHaveAttribute("data-state", "idle");
-    expect(orb()).toHaveClass("grayscale");
+    expect(orb()).toHaveClass("opacity-50");
   });
 
   it("always shows the speaking look in a preview", () => {
-    render(<ShaderVoiceOrb orb="shdr-11" callId="" source="rx" demo />);
+    render(<ShaderVoiceOrb orb="shdr-11" callId="" demo />);
     expect(orb()).toHaveAttribute("data-state", "speaking");
   });
 });

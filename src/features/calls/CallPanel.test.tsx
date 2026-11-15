@@ -124,11 +124,11 @@ describe("CallPanel", () => {
       ]);
     });
 
-    it("shows the remote voice orb and our own, and says whose is whose", () => {
+    it("shows only the voice of the other party: no orb for our own", () => {
       show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
       expect(screen.getByTestId("orb-remote")).toBeInTheDocument();
-      expect(screen.getByTestId("orb-local")).toBeInTheDocument();
-      expect(screen.getByText("Vous")).toBeInTheDocument();
+      expect(screen.queryByTestId("orb-local")).toBeNull();
+      expect(screen.queryByText("Vous")).toBeNull();
     });
 
     it("the keypad is a glass sheet over the voices, right above the controls, hidden until asked for", () => {
@@ -145,9 +145,8 @@ describe("CallPanel", () => {
       const controls = screen.getByRole("group", { name: "Commandes de l'appel" });
       expect(sheet.parentElement).toBe(controls.parentElement);
       expect(sheet.compareDocumentPosition(controls) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      // The voices keep their size: nothing is pushed aside.
-      expect(screen.getByTestId("orb-remote").className).toContain("size-[clamp(11rem");
-      expect(screen.getByTestId("orb-local").className).toContain("size-[clamp(5rem");
+      // The orb keeps its size: nothing is pushed aside.
+      expect(screen.getByTestId("orb-remote").className).toContain("size-[clamp(12rem");
     });
 
     it("keyboard digits drive the keypad only while it is open", () => {
@@ -159,7 +158,7 @@ describe("CallPanel", () => {
       expect(invoke).toHaveBeenLastCalledWith("send_dtmf", { id: "call1", digits: "4" });
     });
 
-    it("a muted microphone is shown on our orb", () => {
+    it("says when the microphone is muted", () => {
       show(makeCall({ state: "connected", muted: true, connectedAt: new Date().toISOString() }));
       expect(screen.getByText("Micro coupé")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Réactiver le micro" })).toHaveAttribute("aria-pressed", "true");

@@ -28,12 +28,12 @@ function SidebarOrb() {
           className="focus-visible:ring-ring/50 hidden items-center gap-2.5 rounded-2xl px-3 pt-4 pb-3 text-left outline-none focus-visible:ring-[3px] sm:flex sm:justify-center lg:justify-start"
         >
           <span className="block size-11 shrink-0">
-            <VoiceOrb callId={callId} source="rx" tone="remote" vivid waiting={waiting} />
+            <VoiceOrb callId={callId} waiting={waiting} />
           </span>
           <span className="hidden text-lg font-semibold tracking-tight lg:inline">ZePhone</span>
         </button>
       </PopoverTrigger>
-      <PopoverContent side="right" align="start" sideOffset={8} className="glass glass-dense w-80">
+      <PopoverContent side="right" align="start" sideOffset={8} collisionPadding={8} className="glass glass-dense w-96">
         <OrbPicker />
       </PopoverContent>
     </Popover>

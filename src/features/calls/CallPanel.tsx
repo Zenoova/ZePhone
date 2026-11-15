@@ -64,8 +64,8 @@ function Control({
 }
 
 /**
- * The call screen: the remote party's voice as a living orb in the middle, our own (smaller) below it,
- * and the aligned controls at the bottom. The keypad rises over the voices as a blurred glass sheet.
+ * The call screen: the remote party's voice as a living orb in the middle and the aligned controls at the
+ * bottom. The keypad rises over the orb as a blurred glass sheet.
  */
 export function CallPanel({ call }: { call: Call }) {
   const { answer, reject, hangup, toggleHold, toggleMute, sendDtmf } = useCallsStore.getState();
@@ -127,23 +127,16 @@ export function CallPanel({ call }: { call: Call }) {
         )}
       </header>
 
-      {/* the voices */}
+      {/* the voice of the other party */}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center gap-3 py-3">
         <div
           data-testid="orb-remote"
           className={cn(
-            "relative size-[clamp(11rem,36vh,18rem)]",
+            "relative size-[clamp(12rem,44vh,22rem)]",
             (incoming || call.state === "ringing") && "animate-ring-pulse rounded-full",
           )}
         >
-          <VoiceOrb
-            callId={call.id}
-            source="rx"
-            tone="remote"
-            paused={onHold || terminal}
-            idle={!terminal}
-            waiting={!inDialog && !terminal}
-          />
+          <VoiceOrb callId={call.id} paused={onHold || terminal} waiting={!inDialog && !terminal} />
           {onHold && (
             <Pause
               className="text-foreground/70 absolute top-1/2 left-1/2 size-1/5 -translate-x-1/2 -translate-y-1/2"
@@ -151,27 +144,11 @@ export function CallPanel({ call }: { call: Call }) {
             />
           )}
         </div>
-        <div className="flex flex-col items-center gap-1">
-          <div data-testid="orb-local" className="relative size-[clamp(5rem,15vh,7.5rem)]">
-            <VoiceOrb
-              callId={call.id}
-              source="tx"
-              tone="local"
-              muted={call.muted}
-              paused={onHold || terminal}
-              idle={inDialog}
-            />
-            {call.muted && (
-              <MicOff
-                className="text-foreground/75 absolute top-1/2 left-1/2 size-1/4 -translate-x-1/2 -translate-y-1/2"
-                aria-hidden
-              />
-            )}
-          </div>
-          <span className="text-muted-foreground -mt-1 text-[11px] font-medium">
-            {call.muted ? "Micro coupé" : "Vous"}
-          </span>
-        </div>
+        {call.muted && !terminal && (
+          <p role="status" className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+            <MicOff className="size-3.5" aria-hidden /> Micro coupé
+          </p>
+        )}
       </div>
 
       {incoming && (
