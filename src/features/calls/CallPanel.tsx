@@ -136,7 +136,14 @@ export function CallPanel({ call }: { call: Call }) {
             (incoming || call.state === "ringing") && "animate-ring-pulse rounded-full",
           )}
         >
-          <VoiceOrb callId={call.id} source="rx" tone="remote" paused={onHold || terminal} idle={!terminal} />
+          <VoiceOrb
+            callId={call.id}
+            source="rx"
+            tone="remote"
+            paused={onHold || terminal}
+            idle={!terminal}
+            waiting={!inDialog && !terminal}
+          />
           {onHold && (
             <Pause
               className="text-foreground/70 absolute top-1/2 left-1/2 size-1/5 -translate-x-1/2 -translate-y-1/2"

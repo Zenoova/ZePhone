@@ -12,7 +12,7 @@ const PALETTE: Record<OrbTone | "muted", { stops: [string, string, string]; glow
   muted: { stops: ["#e5e7eb", "#9ca3af", "#6b7280"], glow: "156,163,175" },
 };
 
-interface VoiceOrbProps {
+export interface VoiceOrbProps {
   callId: string;
   /** Whose voice drives the shape: the remote party (`rx`) or our microphone (`tx`). */
   source: LevelSource;
@@ -25,16 +25,19 @@ interface VoiceOrbProps {
   idle?: boolean;
   /** Livelier idle motion and a bigger body: for small orbs (the sidebar logo) that must read at a glance. */
   vivid?: boolean;
+  /** Waiting for the other party (ringing, connecting): the shader orbs turn restless. */
+  waiting?: boolean;
   className?: string;
 }
 
 const POINTS = 72;
 
 /**
- * A living blob that swells and ripples with the voice, in the spirit of ChatGPT's voice mode. It reads the
- * live level every animation frame (no React re-render) and smooths it: fast attack, slow release.
+ * ZePhone's own orb: a living blob that swells and ripples with the voice, in the spirit of ChatGPT's voice
+ * mode. It reads the live level every animation frame (no React re-render) and smooths it: fast attack, slow
+ * release.
  */
-export function VoiceOrb({
+export function ClassicVoiceOrb({
   callId,
   source,
   tone = "remote",
