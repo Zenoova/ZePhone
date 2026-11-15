@@ -15,6 +15,7 @@ components. Full licence texts of the native libraries are shipped in the applic
 | [OpenSSL](https://www.openssl.org/) (`libssl`, `libcrypto`) | TLS, SRTP                                     | Apache-2.0                                                                                |
 | [Opus](https://opus-codec.org/)                             | Opus audio codec (module `opus`)              | BSD-3-Clause                                                                              |
 | [spandsp](https://www.soft-switch.org/)                     | G.722 codec implementation (module `g722`)    | **LGPL-2.1** (library)                                                                    |
+| `zeaudio` (`scripts/baresip-modules/zeaudio`)                | ZePhone's own Baresip audio filter: volumes, call recording | BSD-3-Clause (like Baresip, whose module API it is written against)                       |
 | libtiff, libjpeg-turbo, libwebp, xz (liblzma), zstd         | transitive dependencies of spandsp            | libtiff licence (BSD-like), IJG/BSD-3/zlib, BSD-3, public domain/0BSD, BSD-3 / GPL-2 dual |
 
 Notes:
@@ -25,7 +26,8 @@ Notes:
   unmaintained (Homebrew marks the formula deprecated): if that is a concern, build the `g722` module
   against `libg722` instead, or ship without G.722 (the app then falls back to Opus/G.711 automatically).
 - The bundled Baresip is built from the upstream sources with a single one-line change (module `vumeter`: audio-level
-  reports every 60 ms instead of 500 ms, for the call-screen animation), applied by `scripts/build-baresip.sh`.
+  reports every 60 ms instead of 500 ms, for the call-screen animation), applied by `scripts/build-baresip.sh`, plus the
+  out-of-tree `zeaudio` module (volumes and call recording).
 - **G.711 (PCMA/PCMU)** is implemented inside Baresip (`g711` module).
 - The Homebrew bottle of Baresip contains only G.711; Opus and G.722 come from the custom build described in
   the README (`scripts/build-baresip.sh`).
