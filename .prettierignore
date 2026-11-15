@@ -4,3 +4,5 @@ src-tauri
 src/components/ui
 package-lock.json
 .baresip-build
+
+src/components/orbs
