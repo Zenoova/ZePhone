@@ -1,4 +1,4 @@
-import { Plug, PlugZap, Plus, Star, Trash2, UserPlus, Pencil } from "lucide-react";
+import { Plug, PlugZap, Plus, Star, Trash2, UserPlus, Pencil } from "@/components/icons";
 import { useState } from "react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";

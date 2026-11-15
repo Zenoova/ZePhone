@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Mic, RefreshCw } from "lucide-react";
+import { TriangleAlert, CircleCheck, Mic, RefreshCw } from "@/components/icons";
 import { useEffect } from "react";
 
 import { Alert } from "@/features/settings/alert";
@@ -101,11 +101,11 @@ export function AudioSettings() {
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
           <div className="flex items-center gap-3">
             {mic === "authorized" ? (
-              <CheckCircle2 className="text-success size-5" aria-hidden />
+              <CircleCheck className="text-success size-5" aria-hidden />
             ) : mic === null ? (
               <Mic className="text-muted-foreground size-5" aria-hidden />
             ) : (
-              <AlertTriangle className="text-warning size-5" aria-hidden />
+              <TriangleAlert className="text-warning size-5" aria-hidden />
             )}
             <div>
               <p className="text-sm font-medium" data-testid="mic-status">

@@ -1,4 +1,4 @@
-import { Grip, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneOff, Play } from "lucide-react";
+import { Grid3x3, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneOff, Play } from "@/components/icons";
 import { useState, type ReactNode } from "react";
 
 import { VoiceOrb } from "@/components/VoiceOrb";
@@ -235,7 +235,7 @@ export function CallPanel({ call }: { call: Call }) {
               disabled={!inDialog}
               onClick={() => setKeypadOpen((v) => !v)}
             >
-              <Grip className="size-6" />
+              <Grid3x3 className="size-6" />
             </Control>
             <Control
               label="Transfert"

@@ -1,4 +1,4 @@
-import { Pencil, Phone, Plus, Search, Trash2, Users } from "lucide-react";
+import { Pencil, Phone, Plus, Search, Trash2, Users } from "@/components/icons";
 import { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";

@@ -1,4 +1,4 @@
-import { Mic, MicOff, PhoneCall, PhoneOff } from "lucide-react";
+import { Mic, MicOff, PhoneCall, PhoneOff } from "@/components/icons";
 import { useShallow } from "zustand/react/shallow";
 
 import { Button } from "@/components/ui/button";

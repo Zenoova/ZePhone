@@ -1,4 +1,4 @@
-import { Delete, Phone, UserPlus } from "lucide-react";
+import { Delete, Phone, UserPlus } from "@/components/icons";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 

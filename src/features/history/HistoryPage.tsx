@@ -3,12 +3,12 @@ import {
   Phone,
   PhoneIncoming,
   PhoneMissed,
-  PhoneOutgoing,
+  PhoneForwarded,
   Search,
   Trash2,
   UserPlus,
-  XCircle,
-} from "lucide-react";
+  CircleX,
+} from "@/components/icons";
 import { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -40,11 +40,11 @@ const TABS: ReadonlyArray<{ value: HistoryKind; label: string }> = [
 export function EntryIcon({ entry }: { entry: HistoryEntry }) {
   if (entry.result === "missed") return <PhoneMissed className="text-destructive size-4" aria-label="Manqué" />;
   if (entry.result === "failed" || entry.result === "rejected" || entry.result === "cancelled")
-    return <XCircle className="text-muted-foreground size-4" aria-label={RESULT_LABEL[entry.result]} />;
+    return <CircleX className="text-muted-foreground size-4" aria-label={RESULT_LABEL[entry.result]} />;
   return entry.direction === "incoming" ? (
     <PhoneIncoming className="text-success size-4" aria-label="Entrant" />
   ) : (
-    <PhoneOutgoing className="text-primary size-4" aria-label="Sortant" />
+    <PhoneForwarded className="text-primary size-4" aria-label="Sortant" />
   );
 }
 
@@ -130,7 +130,7 @@ export function HistoryPage() {
                     >
                       {name}
                     </p>
-                    <p className="text-muted-foreground flex min-w-0 items-center gap-1.5 truncate text-sm">
+                    <div className="text-muted-foreground flex min-w-0 items-center gap-1.5 truncate text-sm">
                       <EntryIcon entry={e} />
                       <span className="truncate">
                         {RESULT_LABEL[e.result]}
@@ -138,7 +138,7 @@ export function HistoryPage() {
                         {e.contactName && ` · ${e.remoteNumber}`}
                         {e.accountLabel && ` · ${e.accountLabel}`}
                       </span>
-                    </p>
+                    </div>
                     {e.result === "failed" && e.reason && (
                       <p className="text-muted-foreground truncate text-xs">{e.reason}</p>
                     )}

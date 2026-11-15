@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2, CircleDashed, Loader2, PlugZap } from "lucide-react";
+import { type AppIcon, CircleAlert, CircleCheck, CircleDashed, LoaderCircle, PlugZap } from "@/components/icons";
 
 import { Badge } from "@/components/ui/badge";
 import { REGISTRATION_LABEL } from "@/lib/labels";
@@ -13,10 +13,10 @@ const STYLE: Record<RegistrationState, string> = {
   unconfigured: "border-border bg-muted text-muted-foreground",
 };
 
-const ICON: Record<RegistrationState, typeof CheckCircle2> = {
-  registered: CheckCircle2,
-  connecting: Loader2,
-  error: AlertCircle,
+const ICON: Record<RegistrationState, AppIcon> = {
+  registered: CircleCheck,
+  connecting: LoaderCircle,
+  error: CircleAlert,
   disconnected: PlugZap,
   unconfigured: CircleDashed,
 };

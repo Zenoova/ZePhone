@@ -1,4 +1,4 @@
-import { PhoneForwarded } from "lucide-react";
+import { PhoneForwarded } from "@/components/icons";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,4 @@
-import { Pause, Phone, PhoneOff, Play } from "lucide-react";
+import { Pause, Phone, PhoneOff, Play } from "@/components/icons";
 
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { Button } from "@/components/ui/button";

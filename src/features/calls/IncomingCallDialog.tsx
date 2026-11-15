@@ -1,4 +1,4 @@
-import { Phone, PhoneIncoming, PhoneOff } from "lucide-react";
+import { Phone, PhoneIncoming, PhoneOff } from "@/components/icons";
 import { useShallow } from "zustand/react/shallow";
 
 import { ContactAvatar } from "@/components/ContactAvatar";

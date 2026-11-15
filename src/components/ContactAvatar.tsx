@@ -1,4 +1,4 @@
-import { UserRound } from "lucide-react";
+import { UserRound } from "@/components/icons";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { initials } from "@/lib/format";

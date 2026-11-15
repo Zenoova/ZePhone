@@ -1,4 +1,4 @@
-import { RefreshCw, ScrollText } from "lucide-react";
+import { RefreshCw, ScrollText } from "@/components/icons";
 import { useState } from "react";
 import { toast } from "sonner";
 

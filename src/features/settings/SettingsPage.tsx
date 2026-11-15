@@ -1,4 +1,4 @@
-import { Bell, Info, Network, SlidersHorizontal, UserRound, Volume2 } from "lucide-react";
+import { Bell, Info, Network, SlidersHorizontal, UserRound, Volume2 } from "@/components/icons";
 
 import { PageHeader } from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
