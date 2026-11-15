@@ -1,3 +1,4 @@
+import type * as AnimatedIcons from "@animateicons/react/lucide";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { forwardRef, useImperativeHandle } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -7,7 +8,7 @@ const stop = vi.fn();
 
 // Replace one animated icon by a stub exposing the same imperative handle, to observe it.
 vi.mock("@animateicons/react/lucide", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@animateicons/react/lucide")>();
+  const actual = await importOriginal<typeof AnimatedIcons>();
   const Stub = forwardRef<{ startAnimation: () => void; stopAnimation: () => void }, { className?: string }>(
     ({ className, ...rest }, ref) => {
       useImperativeHandle(ref, () => ({ startAnimation: start, stopAnimation: stop }));
