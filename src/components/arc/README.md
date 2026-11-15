@@ -14,6 +14,7 @@ Components of [Arc UI](https://uiarc.dev) (free tier, MIT), copied as source the
   focus of the whole app.
 - `@radix-ui/react-*` imports come from the unified `radix-ui` package; `lucide-react` icons come from
   `@/components/icons` (the animated AnimateIcons set).
+- `tabs`: translucent, blurred list and selection pill (instead of the opaque surface), like the other glass surfaces.
 - `dropdown-menu`: an optional `trigger` prop, to open the menu from an icon button.
 
 The folder is excluded from ESLint and Prettier so it stays diffable against upstream.

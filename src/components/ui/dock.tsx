@@ -3,7 +3,7 @@
  * (https://www.jolyui.dev/docs/components/navigation/dock, MIT, Copyright (c) 2025 Johuniq — see
  * THIRD_PARTY_NOTICES.md).
  *
- * Changes from upstream: items are real buttons (keyboard, focus ring, accessible name, `aria-current`),
+ * Changes from upstream: items are real buttons (keyboard, focus ring, accessible name, `aria-current`), a translucent blurred glass look,
  * they forward their ref and props (so they can be a Radix trigger), `fixed` items keep their size,
  * `DockBadge` was added, the pointer is read in viewport coordinates, and magnification is off under
  * `prefers-reduced-motion`.
@@ -66,7 +66,7 @@ const Dock = React.forwardRef<HTMLDivElement, DockProps>(
             onMouseLeave?.(e)
           }}
           className={cn(
-            "dock mx-auto flex h-16 items-end gap-2 rounded-2xl border bg-background/80 px-3 pb-2 shadow-lg shadow-foreground/5 backdrop-blur-md",
+            "dock mx-auto flex h-16 items-end gap-2 rounded-2xl border border-foreground/15 bg-background/25 px-3 pb-2 shadow-lg shadow-foreground/10 backdrop-blur-2xl backdrop-saturate-150 [box-shadow:inset_0_1px_0_color-mix(in_oklab,white_22%,transparent),0_10px_30px_-10px_color-mix(in_oklab,var(--foreground)_30%,transparent)]",
             className
           )}
           {...props}
@@ -125,7 +125,7 @@ const DockItem = React.forwardRef<HTMLButtonElement, DockItemProps>(
           type="button"
           aria-current={active ? "page" : undefined}
           className={cn(
-            "dock-item absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl bg-muted/60 text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50",
+            "dock-item absolute inset-0 flex cursor-pointer items-center justify-center rounded-xl bg-foreground/[0.07] text-foreground outline-none transition-colors hover:bg-foreground/[0.14] focus-visible:ring-[3px] focus-visible:ring-ring/50",
             active && "bg-primary/15 text-primary hover:bg-primary/20",
             className
           )}
