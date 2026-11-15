@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 import { create } from "zustand";
 
+import { DEFAULT_ORB } from "@/lib/voice-orbs";
 import { errorMessage, telephony } from "@/services/telephony";
 import type { AudioDevices, MicPermission, Settings } from "@/types/telephony";
 
@@ -14,6 +15,7 @@ export const DEFAULT_SETTINGS: Settings = {
     closeToTray: true,
     showTrayIcon: true,
     translucent: true,
+    voiceOrb: DEFAULT_ORB,
   },
   network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
 };

@@ -189,6 +189,15 @@ pub async fn update_settings(
 }
 
 fn validate_settings(s: &Settings) -> AppResult<()> {
+    let orb = &s.general.voice_orb;
+    if orb.is_empty()
+        || orb.len() > 32
+        || !orb
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+    {
+        return Err(AppError::validation("Orbe vocal invalide"));
+    }
     if let Some(p) = s.network.local_sip_port
         && p < 1024
     {
@@ -308,5 +317,27 @@ mod tests {
         s.network.custom_ca_file = None;
         s.audio.input_device = Some("bad, name".into());
         assert!(validate_settings(&s).is_err());
+    }
+
+    #[test]
+    fn voice_orb_validation() {
+        let mut s = Settings::default();
+        assert_eq!(s.general.voice_orb, "shdr-32");
+        for ok in ["classic", "shdr-11", "a1-b2"] {
+            s.general.voice_orb = ok.into();
+            assert!(validate_settings(&s).is_ok(), "{ok}");
+        }
+        for bad in [
+            "",
+            "SHDR-11",
+            "shdr_11",
+            "../x",
+            "a b",
+            "<script>",
+            &"a".repeat(33),
+        ] {
+            s.general.voice_orb = bad.into();
+            assert!(validate_settings(&s).is_err(), "{bad}");
+        }
     }
 }

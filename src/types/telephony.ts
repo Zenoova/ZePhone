@@ -151,6 +151,8 @@ export interface Settings {
     showTrayIcon: boolean;
     /** Frosted-glass window background (macOS only). */
     translucent: boolean;
+    /** Id of the voice orb of the call screen (`VOICE_ORBS`). */
+    voiceOrb: string;
   };
   network: {
     customCaFile: string | null;

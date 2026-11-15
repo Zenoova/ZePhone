@@ -129,6 +129,7 @@ export function installMockBackend(): void {
       closeToTray: true,
       showTrayIcon: true,
       translucent: true,
+      voiceOrb: "shdr-32",
     },
     network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
   };
