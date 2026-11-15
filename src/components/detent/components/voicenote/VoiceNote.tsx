@@ -2,11 +2,12 @@
  * Voice note — from Detent (https://detentui.com/components/voicenote, `https://detentui.com/r/voicenote.json`).
  * Changes for ZePhone: French labels; the transcript button is only there when there is a transcript (a call
  * recording has none); the card is the app's own card colour instead of the page colour; `findLast` is replaced
- * (the web view of older macOS lacks it).
+ * (the web view of older macOS lacks it); the card is as wide as its container and the bars of the waveform
+ * follow its width.
  */
 'use client'
 
-import { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { PointerEvent, Ref } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ChevronDown, Pause, Play } from '@/components/detent/icons'
@@ -17,7 +18,9 @@ import { RollingText } from '@/components/detent/ui/RollingText'
 export type SpokenWord = { word: string; at: number }
 export type VoiceNoteHandle = { play(): void; pause(): void; seek(seconds: number): void; speed(rate: number): void; transcript(open: boolean): void }
 
+/** Bars at first, until the width of the waveform is known: then as many as fit (a 3 px bar and a 3 px gap each). */
 const COLS = 38
+const BAR = 6
 const ROWS = 7
 const RATES = [1, 1.5, 2]
 /** Index of the last word said at or before `at` seconds (-1 if none): `findLastIndex` without needing Safari 15.4. */
@@ -50,11 +53,22 @@ export function VoiceNote({
   const audio = useRef<HTMLAudioElement | null>(null)
   const wave = useRef<HTMLDivElement>(null)
   const scrubbing = useRef(false)
+  const [cols, setCols] = useState(COLS)
+
+  useLayoutEffect(() => {
+    const el = wave.current
+    if (!el) return
+    const fit = () => setCols(Math.max(24, Math.min(240, Math.floor((el.clientWidth + 3) / BAR))))
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
 
   const peaks = useMemo(() => {
-    if (given) return Array.from({ length: COLS }, (_, c) => given[Math.floor((c / COLS) * given.length)] ?? 0)
-    return Array.from({ length: COLS }, (_, c) => {
-      const at = ((c + 0.5) / COLS) * duration
+    if (given) return Array.from({ length: cols }, (_, c) => given[Math.floor((c / cols) * given.length)] ?? 0)
+    return Array.from({ length: cols }, (_, c) => {
+      const at = ((c + 0.5) / cols) * duration
       const w = words[lastIndexAtOrBefore(words, at)]
       const next = words.find((x) => x.at > at)
       const gap = next && w ? next.at - w.at : 1
@@ -62,7 +76,7 @@ export function VoiceNote({
       const voiced = into < Math.min(0.42, gap * 0.85)
       return voiced ? 0.2 + 0.8 * Math.abs(Math.sin(c * 2.3 + w!.word.length) * Math.cos(c * 0.7)) : 0.04
     })
-  }, [given, duration, words])
+  }, [given, duration, words, cols])
 
   useEffect(() => {
     if (!src) return
@@ -130,7 +144,7 @@ export function VoiceNote({
   const played = t / duration
   const spoken = lastIndexAtOrBefore(words, t + 0.05)
   return (
-    <div className="w-[384px] max-w-full rounded-[22px] bg-card p-3 shadow-raised">
+    <div className="w-full rounded-[22px] bg-card/50 p-3 shadow-raised backdrop-blur-xl">
       <div className="flex items-center gap-3">
         <motion.button
           type="button"
@@ -171,11 +185,11 @@ export function VoiceNote({
           onPointerUp={() => (scrubbing.current = false)}
           onPointerCancel={() => (scrubbing.current = false)}
           className="ring-focus grid h-9 min-w-0 flex-1 cursor-pointer touch-pan-y content-center items-center justify-between gap-y-[1.5px] rounded-[6px] outline-none"
-          style={{ gridTemplateColumns: `repeat(${COLS}, 3px)`, gridTemplateRows: `repeat(${ROWS}, 3px)`, gridAutoFlow: 'column' }}
+          style={{ gridTemplateColumns: `repeat(${cols}, 3px)`, gridTemplateRows: `repeat(${ROWS}, 3px)`, gridAutoFlow: 'column' }}
         >
           {peaks.flatMap((p, c) => {
             const reach = p < 0.08 ? 0 : p < 0.35 ? 1 : p < 0.65 ? 2 : 3
-            const done = (c + 0.5) / COLS <= played
+            const done = (c + 0.5) / cols <= played
             return Array.from({ length: ROWS }, (_, r) => {
               const lit = Math.abs(r - 3) <= reach
               return <span key={`${c}-${r}`} className="size-[3px] rounded-full bg-ink transition-opacity ease-detent duration-150" style={{ opacity: lit ? (done ? 1 : 0.28) : 0.07 }} />
