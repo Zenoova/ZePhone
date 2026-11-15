@@ -92,6 +92,11 @@ const MIGRATIONS: &[&str] = &[
     );
     CREATE INDEX idx_recordings_started ON recordings (started_at DESC);
     "#,
+    // v3: recording became automatic. The `recording` section saved so far only holds the old default
+    // (off, from when recording was a button): drop it so that the new default applies.
+    r#"
+    UPDATE settings SET value = json_remove(value, '$.recording') WHERE key = 'app';
+    "#,
 ];
 
 impl Database {
@@ -182,6 +187,37 @@ mod tests {
         drop(db);
         let db = Database::open(&path).unwrap();
         assert_eq!(db.schema_version().unwrap(), MIGRATIONS.len());
+    }
+
+    #[test]
+    fn the_old_recording_default_is_reset_when_recording_became_automatic() {
+        // A database as v2 left it: recording was a button, its setting saved as "off".
+        let conn = Connection::open_in_memory().unwrap();
+        for sql in &MIGRATIONS[..2] {
+            conn.execute_batch(sql).unwrap();
+        }
+        conn.pragma_update(None, "user_version", 2).unwrap();
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES ('app', ?1)",
+            [r#"{"general":{"theme":"dark"},"recording":{"autoRecord":false}}"#],
+        )
+        .unwrap();
+
+        let db = Database::init(conn).unwrap();
+        assert_eq!(db.schema_version().unwrap(), MIGRATIONS.len());
+        let s = db.get_settings().unwrap();
+        assert!(s.recording.auto_record, "the new default applies");
+        assert_eq!(
+            s.general.theme,
+            crate::sip::types::Theme::Dark,
+            "the rest is kept"
+        );
+
+        // Turning it off afterwards sticks: the migration ran once.
+        let mut off = s;
+        off.recording.auto_record = false;
+        db.save_settings(&off).unwrap();
+        assert!(!db.get_settings().unwrap().recording.auto_record);
     }
 
     #[test]

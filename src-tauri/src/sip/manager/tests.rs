@@ -1101,17 +1101,18 @@ fn closed(r: &Rig, rf: &CallRef) {
 }
 
 #[tokio::test]
-async fn a_call_can_be_recorded_kept_listed_and_deleted() {
+async fn every_answered_call_is_recorded_kept_listed_and_deleted() {
     let (r, _) = registered_rig().await;
     let dir = tempfile::tempdir().unwrap();
     r.mgr.set_recordings_dir(dir.path().to_path_buf());
-    let (call, _rf) = connected_call(&r).await;
+    let (call, rf) = connected_call(&r).await;
 
-    r.mgr.start_recording(&call.id).await.unwrap();
-    assert!(
-        r.mgr.calls()[0].recording,
-        "the call says it is being recorded"
-    );
+    // Nobody pressed anything: the call is recorded as soon as it is answered.
+    let m = r.mgr.clone();
+    until("automatic recording", move || {
+        m.calls().first().is_some_and(|c| c.recording)
+    })
+    .await;
     assert!(
         r.mgr.start_recording(&call.id).await.is_err(),
         "one recording at a time"
@@ -1131,9 +1132,14 @@ async fn a_call_can_be_recorded_kept_listed_and_deleted() {
         2,
     );
 
-    let rec = r.mgr.stop_recording().await.unwrap().expect("a recording");
+    closed(&r, &rf);
+    let m = r.mgr.clone();
+    until("recording kept", move || {
+        m.list_recordings().is_ok_and(|l| !l.is_empty())
+    })
+    .await;
     assert!(r.engine.cmds().contains(&"rec-stop".to_owned()));
-    assert!(!r.mgr.calls()[0].recording);
+    let rec = r.mgr.list_recordings().unwrap().remove(0);
     assert_eq!((rec.duration_secs, rec.remote_number.as_str()), (2, "1002"));
     assert_eq!(rec.direction, CallDirection::Outgoing);
     assert_eq!(rec.peaks.len(), crate::recording::wav::PEAK_BINS);
@@ -1142,10 +1148,8 @@ async fn a_call_can_be_recorded_kept_listed_and_deleted() {
         !PathBuf::from(format!("{}-tx.wav", base.display())).exists(),
         "raw files are cleaned up"
     );
-
-    let listed = r.mgr.list_recordings().unwrap();
-    assert_eq!(listed.len(), 1);
-    assert_eq!(listed[0].path, rec.path);
+    let history = r.db.list_history(&Default::default()).unwrap();
+    assert_eq!(rec.history_id.as_deref(), Some(history[0].id.as_str()));
 
     r.mgr.delete_recording(&rec.id).unwrap();
     assert!(r.mgr.list_recordings().unwrap().is_empty());
@@ -1154,29 +1158,20 @@ async fn a_call_can_be_recorded_kept_listed_and_deleted() {
 }
 
 #[tokio::test]
-async fn a_recording_in_progress_is_kept_when_the_call_ends_and_tied_to_its_history() {
+async fn recording_is_automatic_unless_turned_off() {
+    assert!(Settings::default().recording.auto_record);
+
     let (r, _) = registered_rig().await;
     let dir = tempfile::tempdir().unwrap();
     r.mgr.set_recordings_dir(dir.path().to_path_buf());
-    let (call, rf) = connected_call(&r).await;
-    r.mgr.start_recording(&call.id).await.unwrap();
-    let base = recording_base(&r);
-    write_raw_side(
-        &PathBuf::from(format!("{}-rx.wav", base.display())),
-        8_000,
-        1,
-    );
+    let mut s = r.db.get_settings().unwrap();
+    s.recording.auto_record = false;
+    r.mgr.update_settings(s).await.unwrap();
 
-    closed(&r, &rf);
-    let sink = r.sink.clone();
-    until("history", move || sink.all().contains(&Seen::History)).await;
-
-    assert!(r.engine.cmds().contains(&"rec-stop".to_owned()));
-    let rec = r.db.list_recordings().unwrap();
-    assert_eq!(rec.len(), 1, "kept without the user stopping it");
-    let history = r.db.list_history(&Default::default()).unwrap();
-    assert_eq!(rec[0].history_id.as_deref(), Some(history[0].id.as_str()));
-    assert_eq!(rec[0].remote_number, "1002");
+    let (_call, _rf) = connected_call(&r).await;
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert!(!r.mgr.calls()[0].recording);
+    assert!(!r.engine.cmds().iter().any(|c| c.starts_with("rec-start ")));
 }
 
 #[tokio::test]
@@ -1184,14 +1179,17 @@ async fn a_call_with_no_audio_leaves_no_recording() {
     let (r, _) = registered_rig().await;
     let dir = tempfile::tempdir().unwrap();
     r.mgr.set_recordings_dir(dir.path().to_path_buf());
-    let (call, _rf) = connected_call(&r).await;
-    r.mgr.start_recording(&call.id).await.unwrap();
-    assert!(r.mgr.stop_recording().await.unwrap().is_none());
+    let (_call, rf) = connected_call(&r).await;
+    let m = r.mgr.clone();
+    until("recording started", move || {
+        m.calls().first().is_some_and(|c| c.recording)
+    })
+    .await;
+    closed(&r, &rf);
+    let sink = r.sink.clone();
+    until("history", move || sink.all().contains(&Seen::History)).await;
+    assert!(r.engine.cmds().contains(&"rec-stop".to_owned()));
     assert!(r.mgr.list_recordings().unwrap().is_empty());
-    assert!(
-        r.mgr.stop_recording().await.unwrap().is_none(),
-        "nothing left to stop"
-    );
 }
 
 #[tokio::test]
@@ -1204,28 +1202,11 @@ async fn only_an_established_call_can_be_recorded_and_a_folder_is_needed() {
     );
     assert!(r.mgr.start_recording("nope").await.is_err(), "unknown call");
 
-    let (r, _) = registered_rig().await; // no folder set
+    let (r, _) = registered_rig().await; // no folder set: the call still works, it is just not recorded
     let (call, _rf) = connected_call(&r).await;
     assert!(r.mgr.start_recording(&call.id).await.is_err());
     assert!(r.mgr.list_recordings().is_err());
-}
-
-#[tokio::test]
-async fn the_setting_records_every_answered_call() {
-    let (r, _) = registered_rig().await;
-    let dir = tempfile::tempdir().unwrap();
-    r.mgr.set_recordings_dir(dir.path().to_path_buf());
-    let mut s = r.db.get_settings().unwrap();
-    s.recording.auto_record = true;
-    r.mgr.update_settings(s).await.unwrap();
-
-    let (_call, _rf) = connected_call(&r).await;
-    let m = r.mgr.clone();
-    until("auto recording", move || {
-        m.calls().first().is_some_and(|c| c.recording)
-    })
-    .await;
-    assert!(r.engine.cmds().iter().any(|c| c.starts_with("rec-start ")));
+    assert!(!r.mgr.calls()[0].recording);
 }
 
 #[tokio::test]

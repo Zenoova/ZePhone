@@ -481,12 +481,18 @@ impl Default for AudioSettings {
 /// Highest incoming/outgoing volume that can be set, in percent.
 pub const MAX_GAIN_PERCENT: u16 = 200;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct RecordingSettings {
-    /// Record every call as soon as it is answered. Off by default: recording a call may require the
-    /// other party's consent.
+    /// Record every call as soon as it is answered (there is no record button: recording is automatic).
+    /// Recording a call may require the other party's consent, so it can be turned off.
     pub auto_record: bool,
+}
+
+impl Default for RecordingSettings {
+    fn default() -> Self {
+        Self { auto_record: true }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

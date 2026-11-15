@@ -148,16 +148,6 @@ pub fn show_main(app: AppHandle) {
 // --------------------------------------------------------------- recording
 
 #[tauri::command]
-pub async fn start_recording(state: S<'_>, id: String) -> AppResult<()> {
-    state.manager.start_recording(&id).await
-}
-
-#[tauri::command]
-pub async fn stop_recording(state: S<'_>) -> AppResult<Option<Recording>> {
-    state.manager.stop_recording().await
-}
-
-#[tauri::command]
 pub fn list_recordings(state: S) -> AppResult<Vec<Recording>> {
     state.manager.list_recordings()
 }

@@ -666,8 +666,9 @@ impl SipManager {
         })
     }
 
-    /// Starts recording the call in progress. Only one call is recorded at a time.
-    pub async fn start_recording(&self, call_id: &str) -> AppResult<()> {
+    /// Starts recording the call in progress (automatically, when it is answered). Only one call is recorded
+    /// at a time.
+    async fn start_recording(&self, call_id: &str) -> AppResult<()> {
         let c = self.known(call_id)?;
         if !matches!(c.state, CallState::Connected | CallState::OnHold) {
             return Err(AppError::validation(
@@ -700,26 +701,6 @@ impl SipManager {
             self.sink.call_update(&call);
         }
         Ok(())
-    }
-
-    /// Stops the recording in progress and keeps it. `Ok(None)` when nothing was recording or when
-    /// no audio went through.
-    pub async fn stop_recording(&self) -> AppResult<Option<Recording>> {
-        let Some(active) = self.state.lock().unwrap().recording.take() else {
-            return Ok(None);
-        };
-        let _ = self.engine.stop_recording().await;
-        let updated = self
-            .state
-            .lock()
-            .unwrap()
-            .tracker
-            .set_recording(&active.call_id, false);
-        let call = updated.clone();
-        if let Some(call) = updated {
-            self.sink.call_update(&call);
-        }
-        self.store_recording(active, call.as_ref(), None).await
     }
 
     /// Mixes the raw files of a finished recording into one WAV and lists it.

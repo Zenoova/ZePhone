@@ -264,8 +264,6 @@ pub fn run() {
             commands::close_call_window,
             commands::set_call_window_on_top,
             commands::show_main,
-            commands::start_recording,
-            commands::stop_recording,
             commands::list_recordings,
             commands::delete_recording,
             commands::set_audio_gains,
