@@ -86,7 +86,7 @@ export function CallPanel({ call }: { call: Call }) {
       aria-label={`Appel avec ${name}`}
       data-testid="call-panel"
       data-state={call.state}
-      className="relative flex h-full min-h-[30rem] w-full flex-col items-center overflow-hidden px-5 pt-7 pb-6"
+      className="relative flex h-full min-h-[30rem] w-full flex-col items-center overflow-hidden px-5 pt-7 pb-[6.5rem]"
     >
       {/* soft light behind the orbs */}
       <div

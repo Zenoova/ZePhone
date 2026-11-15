@@ -72,7 +72,7 @@ export function ContactsPage() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-3 pb-6">
+      <div className="min-h-0 flex-1 overflow-auto px-3 pb-28">
         {loaded && contacts.length === 0 ? (
           <EmptyState
             icon={Users}

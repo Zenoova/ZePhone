@@ -63,14 +63,17 @@ export function AppShell() {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex h-full flex-col">
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <EngineBanner />
-          <ActiveCallBar />
-          <div className="min-h-0 flex-1 overflow-auto" key={section}>
-            <Page />
-          </div>
-        </main>
-        <NavDock />
+        {/* The dock floats over the bottom of the page: what scrolls shows through its glass. */}
+        <div className="relative min-h-0 flex-1">
+          <main className="flex h-full min-h-0 min-w-0 flex-col">
+            <EngineBanner />
+            <ActiveCallBar />
+            <div className="min-h-0 flex-1 overflow-auto" key={section}>
+              <Page />
+            </div>
+          </main>
+          <NavDock />
+        </div>
         <StatusBar />
       </div>
       <IncomingCallDialog />

@@ -41,10 +41,13 @@ export function NavDock() {
 
   return (
     <Popover>
-      <nav aria-label="Navigation principale" className="relative z-20 flex shrink-0 justify-center px-2 pt-1 pb-2">
+      <nav
+        aria-label="Navigation principale"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-2 pt-1 pb-2"
+      >
         {/* the orb opens its picker, centred on the whole dock */}
         <PopoverAnchor asChild>
-          <Dock>
+          <Dock className="pointer-events-auto">
             <OrbItem />
             <DockSeparator />
             {NAV_ITEMS.map(({ id, label, icon: Icon, shortcut }) => {

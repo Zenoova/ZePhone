@@ -51,7 +51,7 @@ export function SettingsPage() {
             </button>
           ))}
         </nav>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-8 md:px-0 md:pr-2">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-28 md:px-0 md:pr-2">
           <div className="mx-auto max-w-2xl">
             {tab === "accounts" && <AccountsSettings />}
             {tab === "audio" && <AudioSettings />}
