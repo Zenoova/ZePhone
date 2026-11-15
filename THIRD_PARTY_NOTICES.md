@@ -45,6 +45,12 @@ React, Vite, Tailwind CSS, Zustand, Radix UI primitives, shadcn/ui components (M
 `motion` (MIT, bundled with it), `sonner`, `next-themes`, `class-variance-authority`, `clsx`, `tailwind-merge` — MIT/ISC.
 List them with `npx license-checker --summary`.
 
+### Joly UI Dock (navigation)
+
+`src/components/ui/dock.tsx` is adapted from the Dock of [Joly UI](https://www.jolyui.dev/docs/components/navigation/dock),
+MIT licensed, Copyright (c) 2025 Johuniq. It uses `motion` (MIT) for the magnification springs. The changes (real
+buttons, ref forwarding, fixed items, badge, reduced motion) are listed at the top of the file.
+
 ### OrbKit (voice orbs)
 
 `src/components/orbs/` contains the WebGL runtime and 14 shader orbs from [OrbKit](https://orbkit.zzzzshawn.cloud)
