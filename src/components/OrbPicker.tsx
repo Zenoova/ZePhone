@@ -27,7 +27,7 @@ const mod = (i: number, n: number) => ((i % n) + n) % n;
 
 /**
  * Choose the voice orb: a horizontal carousel with the chosen orb alive in the middle and its name under it.
- * Click a neighbour, swipe, scroll or use the arrow keys; the choice applies to the call screen and the logo
+ * Click a neighbour, swipe, scroll or use the arrow keys; the choice applies to the call screen and the dock
  * once the carousel stops, and is remembered.
  */
 export function OrbPicker() {

@@ -13,7 +13,7 @@ import { type Section, useUiStore } from "@/stores/ui-store";
 
 import { EngineBanner } from "./EngineBanner";
 import { NAV_ITEMS } from "./nav";
-import { Sidebar } from "./Sidebar";
+import { NavDock } from "./NavDock";
 import { StatusBar } from "./StatusBar";
 
 const PAGES: Record<Section, () => React.JSX.Element> = {
@@ -62,16 +62,16 @@ export function AppShell() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex h-full flex-col-reverse sm:flex-row">
-        <Sidebar />
+      <div className="flex h-full flex-col">
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <EngineBanner />
           <ActiveCallBar />
           <div className="min-h-0 flex-1 overflow-auto" key={section}>
             <Page />
           </div>
-          <StatusBar />
         </main>
+        <NavDock />
+        <StatusBar />
       </div>
       <IncomingCallDialog />
       <Toaster position="top-center" richColors closeButton />
