@@ -45,6 +45,13 @@ React, Vite, Tailwind CSS, Zustand, Radix UI primitives, shadcn/ui components (M
 `motion` (MIT, bundled with it), `sonner`, `next-themes`, `class-variance-authority`, `clsx`, `tailwind-merge` — MIT/ISC.
 List them with `npx license-checker --summary`.
 
+### OrbKit (voice orbs)
+
+`src/components/orbs/` contains the WebGL runtime and 14 shader orbs from [OrbKit](https://orbkit.zzzzshawn.cloud)
+(<https://github.com/zzzzshawn/orbkit>), MIT licensed, Copyright (c) 2026 zzzzshawn — the licence text is kept in
+`src/components/orbs/LICENSE`. OrbKit's other 19 orbs are ported from shaders by @XorDev for non-commercial use only,
+with attribution: they are **not** bundled. See `src/components/orbs/README.md`.
+
 ## Test-only software (not distributed)
 
 FreeSWITCH (MPL-1.1) is used locally by `scripts/test-pbx-freeswitch.sh` as a real PBX to test against. It is never bundled.
