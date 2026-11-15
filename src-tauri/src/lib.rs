@@ -3,6 +3,7 @@ pub mod audio;
 pub mod commands;
 pub mod database;
 pub mod error;
+pub mod recording;
 pub mod security;
 pub mod sip;
 
@@ -80,6 +81,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(KeyringStore),
         Arc::new(TauriSink::new(handle.clone())),
     );
+    manager.set_recordings_dir(data_dir.join("recordings"));
     app.manage(AppState {
         manager: manager.clone(),
         db,
@@ -258,6 +260,11 @@ pub fn run() {
             commands::get_settings,
             commands::update_settings,
             commands::list_audio_devices,
+            commands::start_recording,
+            commands::stop_recording,
+            commands::list_recordings,
+            commands::delete_recording,
+            commands::set_audio_gains,
             commands::get_microphone_permission,
             commands::request_microphone_permission,
             commands::open_microphone_settings,
