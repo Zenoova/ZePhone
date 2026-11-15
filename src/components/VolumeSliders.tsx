@@ -35,6 +35,7 @@ export function VolumeSliders({ className }: { className?: string }) {
     <div className={className} data-testid="volume-sliders">
       <div className="flex flex-col gap-3">
         <FluidSlider
+          className="max-w-none"
           label="Son entrant"
           ariaLabel="Volume du son entrant (ce que vous entendez)"
           min={0}
@@ -55,6 +56,7 @@ export function VolumeSliders({ className }: { className?: string }) {
           }}
         />
         <FluidSlider
+          className="max-w-none"
           label="Son sortant"
           ariaLabel="Volume du son sortant (ce que votre correspondant entend)"
           min={0}
