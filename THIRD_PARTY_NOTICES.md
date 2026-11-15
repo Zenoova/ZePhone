@@ -45,6 +45,13 @@ React, Vite, Tailwind CSS, Zustand, Radix UI primitives, shadcn/ui components (M
 `motion` (MIT, bundled with it), `@yusufceng1z/ding-react` (MIT, https://ding.yusufcengiz.dev — the alerts), `next-themes`, `class-variance-authority`, `clsx`, `tailwind-merge` — MIT/ISC.
 List them with `npx license-checker --summary`.
 
+### Detent (voice note)
+
+`src/components/detent/` is the free Voice note of [Detent](https://detentui.com/components/voicenote) (MIT, Copyright (c)
+2026 Detent — the licence is kept in `src/components/detent/LICENSE`), with a trimmed copy of its theme. It plays the call
+recordings. Changes: French labels, no transcript button when there is no transcript, the app's card colour, and no
+`findLast`.
+
 ### Arc UI, Sona UI (components)
 
 `src/components/arc/` holds components of [Arc UI](https://uiarc.dev) (free tier, MIT); `src/components/ui/fluid-slider.tsx`

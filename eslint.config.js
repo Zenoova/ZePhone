@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist", "src-tauri", "node_modules", ".baresip-build", "src/components/ui/**", "src/components/orbs/**", "src/components/arc/**"],
+    ignores: ["dist", "src-tauri", "node_modules", ".baresip-build", "src/components/ui/**", "src/components/orbs/**", "src/components/arc/**", "src/components/detent/**"],
   },
   {
     files: ["**/*.{ts,tsx}"],

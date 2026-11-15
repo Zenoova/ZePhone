@@ -32,7 +32,14 @@ describe("NavDock", () => {
     const names = within(nav)
       .getAllByRole("button")
       .map((b) => b.getAttribute("aria-label"));
-    expect(names).toEqual(["Choisir l'orbe vocal", "Clavier", "Contacts", "Historique", "Paramètres"]);
+    expect(names).toEqual([
+      "Choisir l'orbe vocal",
+      "Clavier",
+      "Contacts",
+      "Historique",
+      "Enregistrements",
+      "Paramètres",
+    ]);
   });
 
   it("goes to a page when its icon is clicked, and marks the page being shown", () => {

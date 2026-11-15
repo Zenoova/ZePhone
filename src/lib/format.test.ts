@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { callDisplayName, elapsedSince, formatDateTime, formatDuration, formatDurationHuman, initials } from "./format";
+import {
+  callDisplayName,
+  elapsedSince,
+  formatBytes,
+  formatDateTime,
+  formatDuration,
+  formatDurationHuman,
+  initials,
+} from "./format";
 
 describe("formatDuration", () => {
   it("formats mm:ss and h:mm:ss", () => {
@@ -59,5 +67,20 @@ describe("initials / display name", () => {
     expect(callDisplayName({ remoteName: "Bob", remoteNumber: "1002" })).toBe("Bob");
     expect(callDisplayName({ remoteName: null, remoteNumber: "1002" })).toBe("1002");
     expect(callDisplayName({ remoteName: " ", remoteNumber: "" })).toBe("Numéro inconnu");
+  });
+});
+
+describe("formatBytes", () => {
+  it("uses French units", () => {
+    expect(formatBytes(0)).toBe("0 o");
+    expect(formatBytes(900)).toBe("900 o");
+    expect(formatBytes(1_000)).toBe("1 Ko");
+    expect(formatBytes(1_536)).toBe("1,5 Ko");
+    expect(formatBytes(4_000_000)).toBe("4 Mo");
+    expect(formatBytes(3_400_000)).toBe("3,4 Mo");
+    expect(formatBytes(250_000_000)).toBe("250 Mo");
+    expect(formatBytes(2_500_000_000)).toBe("2,5 Go");
+    expect(formatBytes(-1)).toBe("");
+    expect(formatBytes(Number.NaN)).toBe("");
   });
 });

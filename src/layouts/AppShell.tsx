@@ -6,6 +6,7 @@ import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
 import { ContactsPage } from "@/features/contacts/ContactsPage";
 import { HomePage } from "@/features/home/HomePage";
 import { HistoryPage } from "@/features/history/HistoryPage";
+import { RecordingsPage } from "@/features/recordings/RecordingsPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { type Section, useUiStore } from "@/stores/ui-store";
 
@@ -18,6 +19,7 @@ const PAGES: Record<Section, () => React.JSX.Element> = {
   dialer: HomePage,
   contacts: ContactsPage,
   history: HistoryPage,
+  recordings: RecordingsPage,
   settings: SettingsPage,
 };
 

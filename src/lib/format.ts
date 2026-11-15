@@ -60,3 +60,19 @@ export function initials(name: string): string {
 export function callDisplayName(call: Pick<Call, "remoteName" | "remoteNumber">): string {
   return call.remoteName?.trim() || call.remoteNumber || "Numéro inconnu";
 }
+
+/** "42 Ko", "3,4 Mo": a file size in French units. */
+export function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "";
+  if (bytes < 1000) return `${Math.round(bytes)} o`;
+  const units = ["Ko", "Mo", "Go"];
+  let value = bytes;
+  let i = -1;
+  do {
+    value /= 1000;
+    i += 1;
+  } while (value >= 1000 && i < units.length - 1);
+  const tenth = Math.round(value * 10) / 10;
+  const text = value >= 100 || Number.isInteger(tenth) ? String(Math.round(value)) : tenth.toFixed(1).replace(".", ",");
+  return `${text} ${units[i]}`;
+}

@@ -1,0 +1,222 @@
+/*
+ * Voice note — from Detent (https://detentui.com/components/voicenote, `https://detentui.com/r/voicenote.json`).
+ * Changes for ZePhone: French labels; the transcript button is only there when there is a transcript (a call
+ * recording has none); the card is the app's own card colour instead of the page colour; `findLast` is replaced
+ * (the web view of older macOS lacks it).
+ */
+'use client'
+
+import { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import type { PointerEvent, Ref } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { ChevronDown, Pause, Play } from '@/components/detent/icons'
+import { tap } from '@/components/detent/lib/feel'
+import { ease, press, spring } from '@/components/detent/lib/motion'
+import { RollingText } from '@/components/detent/ui/RollingText'
+
+export type SpokenWord = { word: string; at: number }
+export type VoiceNoteHandle = { play(): void; pause(): void; seek(seconds: number): void; speed(rate: number): void; transcript(open: boolean): void }
+
+const COLS = 38
+const ROWS = 7
+const RATES = [1, 1.5, 2]
+/** Index of the last word said at or before `at` seconds (-1 if none): `findLastIndex` without needing Safari 15.4. */
+function lastIndexAtOrBefore(words: SpokenWord[], at: number): number {
+  for (let i = words.length - 1; i >= 0; i--) if (words[i]!.at <= at) return i
+  return -1
+}
+const time = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+
+export function VoiceNote({
+  words,
+  duration,
+  src,
+  peaks: given,
+  defaultTranscript = true,
+  ref,
+}: {
+  words: SpokenWord[]
+  duration: number
+  src?: string
+  peaks?: number[]
+  defaultTranscript?: boolean
+  ref?: Ref<VoiceNoteHandle>
+}) {
+  const [t, setT] = useState(0)
+  const head = useRef(0)
+  const [playing, setPlaying] = useState(false)
+  const [rate, setRate] = useState(1)
+  const [reading, setReading] = useState(defaultTranscript)
+  const audio = useRef<HTMLAudioElement | null>(null)
+  const wave = useRef<HTMLDivElement>(null)
+  const scrubbing = useRef(false)
+
+  const peaks = useMemo(() => {
+    if (given) return Array.from({ length: COLS }, (_, c) => given[Math.floor((c / COLS) * given.length)] ?? 0)
+    return Array.from({ length: COLS }, (_, c) => {
+      const at = ((c + 0.5) / COLS) * duration
+      const w = words[lastIndexAtOrBefore(words, at)]
+      const next = words.find((x) => x.at > at)
+      const gap = next && w ? next.at - w.at : 1
+      const into = w ? at - w.at : 9
+      const voiced = into < Math.min(0.42, gap * 0.85)
+      return voiced ? 0.2 + 0.8 * Math.abs(Math.sin(c * 2.3 + w!.word.length) * Math.cos(c * 0.7)) : 0.04
+    })
+  }, [given, duration, words])
+
+  useEffect(() => {
+    if (!src) return
+    const a = new Audio(src)
+    audio.current = a
+    a.onended = () => setPlaying(false)
+    return () => {
+      a.pause()
+      audio.current = null
+    }
+  }, [src])
+
+  useEffect(() => {
+    if (!playing) return
+    let raf = 0
+    let last = performance.now()
+    const frame = (now: number) => {
+      const dt = (now - last) / 1000
+      last = now
+      if (!scrubbing.current) {
+        const next = Math.min(duration, audio.current ? audio.current.currentTime : head.current + dt * rate)
+        head.current = next
+        setT(next)
+        if (next >= duration) setPlaying(false)
+      }
+      raf = requestAnimationFrame(frame)
+    }
+    raf = requestAnimationFrame(frame)
+    return () => cancelAnimationFrame(raf)
+  }, [playing, rate, duration])
+
+  useEffect(() => {
+    if (audio.current) audio.current.playbackRate = rate
+  }, [rate])
+
+  const play = () => {
+    const from = t >= duration ? 0 : t
+    head.current = from
+    setT(from)
+    if (audio.current) {
+      audio.current.currentTime = from
+      audio.current.play().catch(() => {})
+    }
+    setPlaying(true)
+  }
+  const pause = () => {
+    audio.current?.pause()
+    setPlaying(false)
+  }
+  const seek = (s: number) => {
+    const to = Math.max(0, Math.min(duration, s))
+    if (audio.current) audio.current.currentTime = to
+    head.current = to
+    setT(to)
+  }
+  const cycle = () => setRate((r) => RATES[(RATES.indexOf(r) + 1) % RATES.length] ?? 1)
+
+  useImperativeHandle(ref, () => ({ play, pause, seek, speed: setRate, transcript: setReading }))
+
+  const scrubTo = (e: PointerEvent) => {
+    const r = wave.current!.getBoundingClientRect()
+    seek(((e.clientX - r.left) / r.width) * duration)
+  }
+
+  const played = t / duration
+  const spoken = lastIndexAtOrBefore(words, t + 0.05)
+  return (
+    <div className="w-[384px] max-w-full rounded-[22px] bg-card p-3 shadow-raised">
+      <div className="flex items-center gap-3">
+        <motion.button
+          type="button"
+          aria-label={playing ? 'Pause' : 'Lecture'}
+          whileTap={press}
+          onPointerDown={tap}
+          onClick={playing ? pause : play}
+          className="ring-focus flex size-10 shrink-0 items-center justify-center rounded-full bg-ink text-surface"
+        >
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.span key={playing ? 'pause' : 'play'} className="flex" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.6 }} transition={spring.snappy}>
+              {playing ? <Pause size={15} /> : <Play size={15} className="translate-x-px" />}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
+
+        <div
+          ref={wave}
+          role="slider"
+          tabIndex={0}
+          aria-label="Position de lecture"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(duration)}
+          aria-valuenow={Math.round(t)}
+          aria-valuetext={`${time(t)} sur ${time(duration)}`}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight') seek(t + 2)
+            else if (e.key === 'ArrowLeft') seek(t - 2)
+            else return
+            e.preventDefault()
+          }}
+          onPointerDown={(e) => {
+            ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+            scrubbing.current = true
+            scrubTo(e)
+          }}
+          onPointerMove={(e) => scrubbing.current && scrubTo(e)}
+          onPointerUp={() => (scrubbing.current = false)}
+          onPointerCancel={() => (scrubbing.current = false)}
+          className="ring-focus grid h-9 min-w-0 flex-1 cursor-pointer touch-pan-y content-center items-center justify-between gap-y-[1.5px] rounded-[6px] outline-none"
+          style={{ gridTemplateColumns: `repeat(${COLS}, 3px)`, gridTemplateRows: `repeat(${ROWS}, 3px)`, gridAutoFlow: 'column' }}
+        >
+          {peaks.flatMap((p, c) => {
+            const reach = p < 0.08 ? 0 : p < 0.35 ? 1 : p < 0.65 ? 2 : 3
+            const done = (c + 0.5) / COLS <= played
+            return Array.from({ length: ROWS }, (_, r) => {
+              const lit = Math.abs(r - 3) <= reach
+              return <span key={`${c}-${r}`} className="size-[3px] rounded-full bg-ink transition-opacity ease-detent duration-150" style={{ opacity: lit ? (done ? 1 : 0.28) : 0.07 }} />
+            })
+          })}
+        </div>
+
+        <p className="tnum flex w-[74px] shrink-0 justify-end text-footnote">
+          <RollingText text={time(t)} className="text-ink" />
+          <span className="text-ink-3">&nbsp;/ {time(duration)}</span>
+        </p>
+      </div>
+
+      <div className="mt-2 flex items-center gap-1 pl-[52px]">
+        <motion.button type="button" whileTap={press} onPointerDown={tap} onClick={cycle} aria-label={`Vitesse ${rate}×`} className="ring-focus relative flex h-6 items-center rounded-full bg-surface-2 px-2 pointer-coarse:before:absolute pointer-coarse:before:-inset-x-1 pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:content-[''] text-caption font-medium text-ink transition-colors ease-detent hover:bg-surface-3">
+          <RollingText text={`${rate}×`} />
+        </motion.button>
+        {words.length > 0 && (
+        <button type="button" onClick={() => setReading((o) => !o)} aria-expanded={reading} className="ring-focus relative flex h-6 items-center gap-1 rounded-full px-2 pointer-coarse:before:absolute pointer-coarse:before:-inset-x-1 pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:content-[''] text-caption font-medium text-ink-2 transition-colors ease-detent hover:bg-surface-2 hover:text-ink">
+          Transcription
+          <motion.span className="flex" animate={{ rotate: reading ? 180 : 0 }} transition={spring.snappy}>
+            <ChevronDown size={12} />
+          </motion.span>
+        </button>
+        )}
+      </div>
+
+      <AnimatePresence initial={false}>
+        {reading && words.length > 0 && (
+          <motion.div className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ height: spring.smooth, opacity: { duration: 0.2, ease: ease.out } }}>
+            <p className="px-[52px] pb-1.5 pr-3 pt-2.5 text-callout leading-[22px]">
+              {words.map((w, i) => (
+                <span key={i} className={`transition-colors ease-detent duration-200 ${i <= spoken ? 'text-ink' : 'text-ink-3'}`}>
+                  {i > 0 && ' '}
+                  {w.word}
+                </span>
+              ))}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
