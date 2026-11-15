@@ -3,6 +3,7 @@
 mod accounts;
 mod contacts;
 mod history;
+mod recordings;
 mod settings;
 
 pub use history::{HistoryFilter, HistoryKind};
@@ -72,6 +73,24 @@ const MIGRATIONS: &[&str] = &[
         key   TEXT PRIMARY KEY,
         value TEXT NOT NULL
     );
+    "#,
+    // v2: local call recordings (the audio files live in the application's data folder).
+    r#"
+    CREATE TABLE recordings (
+        id            TEXT PRIMARY KEY,
+        call_id       TEXT,
+        history_id    TEXT,
+        file_name     TEXT NOT NULL,
+        started_at    TEXT NOT NULL,
+        duration_secs INTEGER NOT NULL DEFAULT 0,
+        size_bytes    INTEGER NOT NULL DEFAULT 0,
+        remote_number TEXT NOT NULL,
+        remote_name   TEXT,
+        account_label TEXT,
+        direction     TEXT NOT NULL,
+        peaks         TEXT NOT NULL DEFAULT '[]'
+    );
+    CREATE INDEX idx_recordings_started ON recordings (started_at DESC);
     "#,
 ];
 

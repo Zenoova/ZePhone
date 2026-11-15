@@ -104,6 +104,7 @@ impl CallTracker {
                     remote_number: number,
                     remote_name,
                     muted: false,
+                    recording: false,
                     held_locally: false,
                     held_remotely: false,
                     created_at: rfc(now),
@@ -176,6 +177,12 @@ impl CallTracker {
     pub fn set_muted(&mut self, id: &str, muted: bool) -> Option<Call> {
         let t = self.calls.get_mut(id)?;
         t.call.muted = muted;
+        Some(t.call.clone())
+    }
+
+    pub fn set_recording(&mut self, id: &str, recording: bool) -> Option<Call> {
+        let t = self.calls.get_mut(id)?;
+        t.call.recording = recording;
         Some(t.call.clone())
     }
 

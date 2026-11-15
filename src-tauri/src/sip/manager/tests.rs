@@ -153,6 +153,18 @@ impl SipEngine for FakeEngine {
         self.log(format!("audio {input:?} {output:?}"));
         Ok(())
     }
+    async fn set_gains(&self, input: f32, output: f32) -> EngineResult<()> {
+        self.log(format!("gains {input:.2} {output:.2}"));
+        Ok(())
+    }
+    async fn start_recording(&self, base: &std::path::Path) -> EngineResult<()> {
+        self.log(format!("rec-start {}", base.display()));
+        Ok(())
+    }
+    async fn stop_recording(&self) -> EngineResult<()> {
+        self.log("rec-stop");
+        Ok(())
+    }
     fn set_options(&self, _o: EngineOptions) {}
     fn log_tail(&self, _n: usize) -> Vec<String> {
         vec![]
@@ -1020,4 +1032,229 @@ async fn audio_levels_reach_the_ui_only_for_calls_in_progress() {
         levels,
         vec![("lv1".to_string(), false), ("lv1".to_string(), true)]
     );
+}
+
+// ------------------------------------------------------------------ recording
+
+/// Writes a raw side of a recording the way the engine does (16-bit mono WAV, header not finalised).
+fn write_raw_side(path: &std::path::Path, rate: u32, secs: u32) {
+    use std::io::Write;
+    let mut f = std::fs::File::create(path).unwrap();
+    f.write_all(b"RIFF\0\0\0\0WAVEfmt ").unwrap();
+    f.write_all(&16u32.to_le_bytes()).unwrap();
+    f.write_all(&1u16.to_le_bytes()).unwrap();
+    f.write_all(&1u16.to_le_bytes()).unwrap();
+    f.write_all(&rate.to_le_bytes()).unwrap();
+    f.write_all(&(rate * 2).to_le_bytes()).unwrap();
+    f.write_all(&2u16.to_le_bytes()).unwrap();
+    f.write_all(&16u16.to_le_bytes()).unwrap();
+    f.write_all(b"data\0\0\0\0").unwrap();
+    for i in 0..rate * secs {
+        let s = (6000.0 * (i as f32 * 0.05).sin()) as i16;
+        f.write_all(&s.to_le_bytes()).unwrap();
+    }
+}
+
+/// The base path the manager gave the engine for the recording in progress.
+fn recording_base(r: &Rig) -> std::path::PathBuf {
+    let cmd = r
+        .engine
+        .cmds()
+        .into_iter()
+        .rev()
+        .find_map(|c| c.strip_prefix("rec-start ").map(str::to_owned))
+        .expect("the engine was asked to record");
+    std::path::PathBuf::from(cmd)
+}
+
+async fn connected_call(r: &Rig) -> (Call, CallRef) {
+    let call = r.mgr.dial("1002", None).await.unwrap();
+    let rf = cref(&call.id, CallDirection::Outgoing, "sip:1002@example.com");
+    for event in [
+        CallEvent::Outgoing,
+        CallEvent::Ringing,
+        CallEvent::Established,
+    ] {
+        r.engine.emit(EngineEvent::Call {
+            call: rf.clone(),
+            event,
+        });
+    }
+    let m = r.mgr.clone();
+    until("connected", move || {
+        m.calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
+    (call, rf)
+}
+
+fn closed(r: &Rig, rf: &CallRef) {
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Closed {
+            code: None,
+            reason: String::new(),
+        },
+    });
+}
+
+#[tokio::test]
+async fn a_call_can_be_recorded_kept_listed_and_deleted() {
+    let (r, _) = registered_rig().await;
+    let dir = tempfile::tempdir().unwrap();
+    r.mgr.set_recordings_dir(dir.path().to_path_buf());
+    let (call, _rf) = connected_call(&r).await;
+
+    r.mgr.start_recording(&call.id).await.unwrap();
+    assert!(
+        r.mgr.calls()[0].recording,
+        "the call says it is being recorded"
+    );
+    assert!(
+        r.mgr.start_recording(&call.id).await.is_err(),
+        "one recording at a time"
+    );
+
+    // The engine writes both sides as the call goes.
+    let base = recording_base(&r);
+    assert_eq!(base.parent().unwrap(), dir.path().join(".raw"));
+    write_raw_side(
+        &PathBuf::from(format!("{}-tx.wav", base.display())),
+        8_000,
+        2,
+    );
+    write_raw_side(
+        &PathBuf::from(format!("{}-rx.wav", base.display())),
+        16_000,
+        2,
+    );
+
+    let rec = r.mgr.stop_recording().await.unwrap().expect("a recording");
+    assert!(r.engine.cmds().contains(&"rec-stop".to_owned()));
+    assert!(!r.mgr.calls()[0].recording);
+    assert_eq!((rec.duration_secs, rec.remote_number.as_str()), (2, "1002"));
+    assert_eq!(rec.direction, CallDirection::Outgoing);
+    assert_eq!(rec.peaks.len(), crate::recording::wav::PEAK_BINS);
+    assert!(std::path::Path::new(&rec.path).is_file());
+    assert!(
+        !PathBuf::from(format!("{}-tx.wav", base.display())).exists(),
+        "raw files are cleaned up"
+    );
+
+    let listed = r.mgr.list_recordings().unwrap();
+    assert_eq!(listed.len(), 1);
+    assert_eq!(listed[0].path, rec.path);
+
+    r.mgr.delete_recording(&rec.id).unwrap();
+    assert!(r.mgr.list_recordings().unwrap().is_empty());
+    assert!(!std::path::Path::new(&rec.path).exists());
+    assert!(r.mgr.delete_recording(&rec.id).is_err(), "already gone");
+}
+
+#[tokio::test]
+async fn a_recording_in_progress_is_kept_when_the_call_ends_and_tied_to_its_history() {
+    let (r, _) = registered_rig().await;
+    let dir = tempfile::tempdir().unwrap();
+    r.mgr.set_recordings_dir(dir.path().to_path_buf());
+    let (call, rf) = connected_call(&r).await;
+    r.mgr.start_recording(&call.id).await.unwrap();
+    let base = recording_base(&r);
+    write_raw_side(
+        &PathBuf::from(format!("{}-rx.wav", base.display())),
+        8_000,
+        1,
+    );
+
+    closed(&r, &rf);
+    let sink = r.sink.clone();
+    until("history", move || sink.all().contains(&Seen::History)).await;
+
+    assert!(r.engine.cmds().contains(&"rec-stop".to_owned()));
+    let rec = r.db.list_recordings().unwrap();
+    assert_eq!(rec.len(), 1, "kept without the user stopping it");
+    let history = r.db.list_history(&Default::default()).unwrap();
+    assert_eq!(rec[0].history_id.as_deref(), Some(history[0].id.as_str()));
+    assert_eq!(rec[0].remote_number, "1002");
+}
+
+#[tokio::test]
+async fn a_call_with_no_audio_leaves_no_recording() {
+    let (r, _) = registered_rig().await;
+    let dir = tempfile::tempdir().unwrap();
+    r.mgr.set_recordings_dir(dir.path().to_path_buf());
+    let (call, _rf) = connected_call(&r).await;
+    r.mgr.start_recording(&call.id).await.unwrap();
+    assert!(r.mgr.stop_recording().await.unwrap().is_none());
+    assert!(r.mgr.list_recordings().unwrap().is_empty());
+    assert!(
+        r.mgr.stop_recording().await.unwrap().is_none(),
+        "nothing left to stop"
+    );
+}
+
+#[tokio::test]
+async fn only_an_established_call_can_be_recorded_and_a_folder_is_needed() {
+    let (r, _) = registered_rig().await;
+    let call = r.mgr.dial("1002", None).await.unwrap();
+    assert!(
+        r.mgr.start_recording(&call.id).await.is_err(),
+        "not connected yet"
+    );
+    assert!(r.mgr.start_recording("nope").await.is_err(), "unknown call");
+
+    let (r, _) = registered_rig().await; // no folder set
+    let (call, _rf) = connected_call(&r).await;
+    assert!(r.mgr.start_recording(&call.id).await.is_err());
+    assert!(r.mgr.list_recordings().is_err());
+}
+
+#[tokio::test]
+async fn the_setting_records_every_answered_call() {
+    let (r, _) = registered_rig().await;
+    let dir = tempfile::tempdir().unwrap();
+    r.mgr.set_recordings_dir(dir.path().to_path_buf());
+    let mut s = r.db.get_settings().unwrap();
+    s.recording.auto_record = true;
+    r.mgr.update_settings(s).await.unwrap();
+
+    let (_call, _rf) = connected_call(&r).await;
+    let m = r.mgr.clone();
+    until("auto recording", move || {
+        m.calls().first().is_some_and(|c| c.recording)
+    })
+    .await;
+    assert!(r.engine.cmds().iter().any(|c| c.starts_with("rec-start ")));
+}
+
+#[tokio::test]
+async fn volumes_are_applied_live_bounded_and_restored_after_a_restart() {
+    let (r, _) = registered_rig().await;
+    r.mgr.set_audio_gains(50, 150).await.unwrap();
+    assert!(r.engine.cmds().contains(&"gains 0.50 1.50".to_owned()));
+    assert!(r.mgr.set_audio_gains(201, 100).await.is_err());
+
+    // Saving the settings with other volumes applies them; unrelated changes do not touch them.
+    let mut s = r.db.get_settings().unwrap();
+    s.audio.input_gain = 80;
+    s.audio.output_gain = 120;
+    r.mgr.update_settings(s.clone()).await.unwrap();
+    assert!(r.engine.cmds().contains(&"gains 0.80 1.20".to_owned()));
+    let before = r.engine.cmds().len();
+    s.general.translucent = !s.general.translucent;
+    r.mgr.update_settings(s).await.unwrap();
+    assert_eq!(r.engine.cmds().len(), before);
+
+    // An engine (re)start forgets them: the saved ones are applied again when it is running.
+    r.engine.set_state(EngineState::Restarting {
+        attempt: 1,
+        reason: "test".into(),
+    });
+    r.engine.set_state(EngineState::Running);
+    let e = r.engine.clone();
+    until("volumes restored", move || {
+        e.cmds().iter().filter(|c| *c == "gains 0.80 1.20").count() >= 2
+    })
+    .await;
 }

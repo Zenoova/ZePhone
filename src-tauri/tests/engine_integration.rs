@@ -8,7 +8,11 @@
 
 mod support;
 
-use std::{path::Path, process::Command, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+    time::Duration,
+};
 
 use secrecy::SecretString;
 use support::*;
@@ -945,4 +949,186 @@ async fn live_audio_levels_follow_the_remote_voice_the_microphone_and_the_mute()
     a.hangup(&call_a, None).await.unwrap();
     a.stop().await;
     b.stop().await;
+}
+
+/// The samples of a finished 16-bit WAV, with the number of samples per second of audio (the sample rate
+/// times the channels: the file may be stereo, its samples are interleaved).
+fn wav_samples(path: &Path) -> (u32, Vec<i16>) {
+    let bytes = std::fs::read(path).unwrap_or_default();
+    assert!(bytes.len() > 44, "{} is empty", path.display());
+    let channels = u32::from(u16::from_le_bytes([bytes[22], bytes[23]]));
+    let rate = u32::from_le_bytes([bytes[24], bytes[25], bytes[26], bytes[27]]) * channels.max(1);
+    let samples = bytes[44..]
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|c| i16::from_le_bytes(*c))
+        .collect();
+    (rate, samples)
+}
+
+fn peak_between(rate: u32, samples: &[i16], from_s: f32, to_s: f32) -> i16 {
+    let (a, b) = (
+        (from_s * rate as f32) as usize,
+        (to_s * rate as f32) as usize,
+    );
+    samples[a.min(samples.len())..b.min(samples.len())]
+        .iter()
+        .map(|s| s.saturating_abs())
+        .max()
+        .unwrap_or(0)
+}
+
+/// Two real engines call each other with synthetic voices (440 Hz and 880 Hz). Proves, with the real
+/// `zeaudio` module: both sides of a call are recorded into complete WAV files; the incoming and the
+/// outgoing volumes change what is played / sent while the call runs.
+#[tokio::test]
+async fn zeaudio_records_both_voices_and_changes_the_volumes_during_a_call() {
+    if !std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("resources/baresip/modules/zeaudio.so")
+        .is_file()
+    {
+        eprintln!("SKIPPED: zeaudio module not bundled (run scripts/build-baresip.sh)");
+        return;
+    }
+    let tmp = tempfile::tempdir().unwrap();
+    let port_b = std::net::UdpSocket::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port();
+    let (a_wav, b_wav) = (tmp.path().join("a.wav"), tmp.path().join("b.wav"));
+    let (Some(a), Some(b)) = (
+        remote_phone(tmp.path(), "a", 440, &a_wav, None).await,
+        remote_phone(tmp.path(), "b", 880, &b_wav, Some(port_b)).await,
+    ) else {
+        eprintln!("SKIPPED: sidecar/test modules missing");
+        return;
+    };
+    let (mut ea, mut eb) = (a.subscribe(), b.subscribe());
+    a.add_account(&spec_at("alice", "pw", LOOPBACK, port_b, 0))
+        .await
+        .unwrap();
+    b.add_account(&spec_at("bob", "pw", LOOPBACK, 9, 0))
+        .await
+        .unwrap();
+
+    let call_a = a
+        .dial(
+            "sip:alice@127.0.0.1",
+            &format!("sip:bob@127.0.0.1:{port_b}"),
+        )
+        .await
+        .unwrap();
+    let call_b = match wait_for(&mut eb, 10, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Incoming,
+                ..
+            }
+        )
+    })
+    .await
+    {
+        Some(EngineEvent::Call { call, .. }) => call.id,
+        other => panic!("B was not called: {other:?}"),
+    };
+    b.accept(&call_b).await.unwrap();
+    assert!(
+        wait_for(&mut ea, 10, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Established,
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
+    let established = tokio::time::Instant::now();
+
+    // --- recording on A: both voices end up in two complete files ------------------------------
+    let base = tmp.path().join("rec with spaces").join("call1");
+    std::fs::create_dir_all(base.parent().unwrap()).unwrap();
+    a.start_recording(&base).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(2500)).await;
+    a.stop_recording().await.unwrap();
+    let (tx, rx) = (
+        PathBuf::from(format!("{}-tx.wav", base.display())),
+        PathBuf::from(format!("{}-rx.wav", base.display())),
+    );
+    let (tx_rate, tx_s) = wav_samples(&tx);
+    let (rx_rate, rx_s) = wav_samples(&rx);
+    println!(
+        "recorded: tx {} samples @ {tx_rate} Hz (peak {}), rx {} samples @ {rx_rate} Hz (peak {})",
+        tx_s.len(),
+        tx_s.iter().map(|s| s.saturating_abs()).max().unwrap(),
+        rx_s.len(),
+        rx_s.iter().map(|s| s.saturating_abs()).max().unwrap()
+    );
+    for (name, rate, s) in [("tx", tx_rate, &tx_s), ("rx", rx_rate, &rx_s)] {
+        let secs = s.len() as f32 / rate as f32;
+        assert!((1.8..=3.2).contains(&secs), "{name}: {secs} s recorded");
+        assert!(
+            s.iter().map(|v| v.saturating_abs()).max().unwrap() > 1_000,
+            "{name} has no audio"
+        );
+    }
+    // The header was finalised by the engine: the declared size matches the file.
+    let head = std::fs::read(&tx).unwrap();
+    let declared = u32::from_le_bytes([head[40], head[41], head[42], head[43]]) as usize;
+    assert_eq!(declared, head.len() - 44, "tx header was not finalised");
+
+    // The two sides mix into one playable file.
+    let mixed = tmp.path().join("mixed.wav");
+    let m = zephone_lib::recording::wav::mix(&tx, &rx, &mixed)
+        .unwrap()
+        .expect("something recorded");
+    assert!((2..=3).contains(&m.duration_secs), "{}", m.duration_secs);
+    assert!(m.peaks.iter().any(|&p| p == 255));
+
+    // --- volumes -------------------------------------------------------------------------------
+    // What A hears (a.wav, 880 Hz from B) follows the incoming volume; what B hears (b.wav, 440 Hz
+    // from A) follows the outgoing volume of A.
+    let phase = Duration::from_millis(1600);
+    let t_full = established.elapsed();
+    tokio::time::sleep(phase.saturating_sub(t_full.min(phase))).await;
+    a.set_gains(0.5, 0.5).await.unwrap();
+    let t_half = established.elapsed().as_secs_f32();
+    tokio::time::sleep(phase).await;
+    a.set_gains(0.0, 0.0).await.unwrap();
+    let t_zero = established.elapsed().as_secs_f32();
+    tokio::time::sleep(phase).await;
+    a.set_gains(1.0, 1.0).await.unwrap();
+    let t_back = established.elapsed().as_secs_f32();
+    tokio::time::sleep(phase).await;
+
+    a.hangup(&call_a, None).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    a.stop().await;
+    b.stop().await;
+
+    for (who, path) in [("A hears", &a_wav), ("B hears", &b_wav)] {
+        let (rate, s) = wav_samples(path);
+        // The player file starts a little after the call is established: look at the middle of each phase.
+        let full = peak_between(rate, &s, 0.2, t_half - 0.4) as f32;
+        let half = peak_between(rate, &s, t_half + 0.3, t_zero - 0.3) as f32;
+        let zero = peak_between(rate, &s, t_zero + 0.3, t_back - 0.3) as f32;
+        let back = peak_between(rate, &s, t_back + 0.3, t_back + 1.0) as f32;
+        println!("{who}: full {full}, half {half}, zero {zero}, back {back}");
+        assert!(full > 1_000.0, "{who}: no audio at full volume");
+        assert!(
+            (0.35..=0.65).contains(&(half / full)),
+            "{who}: half volume should halve the amplitude ({half} vs {full})"
+        );
+        assert!(
+            zero < full * 0.02,
+            "{who}: zero volume is not silent ({zero})"
+        );
+        assert!(
+            back > full * 0.8,
+            "{who}: volume did not come back ({back} vs {full})"
+        );
+    }
 }

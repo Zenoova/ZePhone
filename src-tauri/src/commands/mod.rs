@@ -2,17 +2,21 @@
 //! business rules live in the SIP manager, the database and the `sip::uri` module.
 
 use serde::Serialize;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::{
-    app::{AppState, tray},
+    app::{AppState, events, tray},
     audio::{self, AudioDevices, permissions::MicPermission},
     database::HistoryFilter,
     error::{AppError, AppResult},
+    recording::Recording,
     sip::{
         manager::{EngineInfo, SettingsApplied, Snapshot},
-        types::{AccountInput, AccountView, Call, Contact, ContactInput, HistoryEntry, Settings},
+        types::{
+            AccountInput, AccountView, Call, Contact, ContactInput, HistoryEntry, MAX_GAIN_PERCENT,
+            Settings,
+        },
     },
 };
 
@@ -119,6 +123,34 @@ pub async fn transfer_call(state: S<'_>, id: String, target: String) -> AppResul
     state.manager.transfer(&id, &target).await
 }
 
+// --------------------------------------------------------------- recording
+
+#[tauri::command]
+pub async fn start_recording(state: S<'_>, id: String) -> AppResult<()> {
+    state.manager.start_recording(&id).await
+}
+
+#[tauri::command]
+pub async fn stop_recording(state: S<'_>) -> AppResult<Option<Recording>> {
+    state.manager.stop_recording().await
+}
+
+#[tauri::command]
+pub fn list_recordings(state: S) -> AppResult<Vec<Recording>> {
+    state.manager.list_recordings()
+}
+
+#[tauri::command]
+pub fn delete_recording(state: S, id: String) -> AppResult<()> {
+    state.manager.delete_recording(&id)
+}
+
+/// Live volume change (percent), applied at once and not saved: the sliders save on release.
+#[tauri::command]
+pub async fn set_audio_gains(state: S<'_>, input: u16, output: u16) -> AppResult<()> {
+    state.manager.set_audio_gains(input, output).await
+}
+
 // ----------------------------------------------------------------- contacts
 
 #[tauri::command]
@@ -168,6 +200,7 @@ pub async fn update_settings(
 ) -> AppResult<SettingsApplied> {
     validate_settings(&settings)?;
     let applied = state.manager.update_settings(settings.clone()).await?;
+    let _ = app.emit(events::SETTINGS_CHANGED, &applied.settings);
 
     // Desktop-shell settings take effect immediately.
     tray::set_visible(&app, settings.general.show_tray_icon);
@@ -189,6 +222,9 @@ pub async fn update_settings(
 }
 
 fn validate_settings(s: &Settings) -> AppResult<()> {
+    if s.audio.input_gain > MAX_GAIN_PERCENT || s.audio.output_gain > MAX_GAIN_PERCENT {
+        return Err(AppError::validation("Volume hors limites (0 à 200 %)"));
+    }
     let orb = &s.general.voice_orb;
     if orb.is_empty()
         || orb.len() > 32
@@ -316,6 +352,17 @@ mod tests {
         assert!(validate_settings(&s).is_err());
         s.network.custom_ca_file = None;
         s.audio.input_device = Some("bad, name".into());
+        assert!(validate_settings(&s).is_err());
+    }
+
+    #[test]
+    fn volumes_are_bounded() {
+        let mut s = Settings::default();
+        assert_eq!((s.audio.input_gain, s.audio.output_gain), (100, 100));
+        s.audio.input_gain = 200;
+        s.audio.output_gain = 0;
+        assert!(validate_settings(&s).is_ok());
+        s.audio.output_gain = 201;
         assert!(validate_settings(&s).is_err());
     }
 

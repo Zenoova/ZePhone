@@ -301,6 +301,8 @@ pub struct Call {
     /// Display name announced by the peer, or the matching contact.
     pub remote_name: Option<String>,
     pub muted: bool,
+    /// The call is being recorded (locally).
+    pub recording: bool,
     /// We put the call on hold (Baresip only reports holds initiated by the remote party).
     pub held_locally: bool,
     /// The remote party put the call on hold.
@@ -454,12 +456,37 @@ impl ContactInput {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
-#[derive(Default)]
 pub struct AudioSettings {
     /// Microphone device name as reported by the system. `None` = system default.
     pub input_device: Option<String>,
     /// Speaker device name. `None` = system default.
     pub output_device: Option<String>,
+    /// Outgoing volume (what the other party hears), in percent of the microphone level: 0-200.
+    pub input_gain: u16,
+    /// Incoming volume (what we hear), in percent: 0-200.
+    pub output_gain: u16,
+}
+
+impl Default for AudioSettings {
+    fn default() -> Self {
+        Self {
+            input_device: None,
+            output_device: None,
+            input_gain: 100,
+            output_gain: 100,
+        }
+    }
+}
+
+/// Highest incoming/outgoing volume that can be set, in percent.
+pub const MAX_GAIN_PERCENT: u16 = 200;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct RecordingSettings {
+    /// Record every call as soon as it is answered. Off by default: recording a call may require the
+    /// other party's consent.
+    pub auto_record: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -539,6 +566,7 @@ pub struct Settings {
     pub notifications: NotificationSettings,
     pub general: GeneralSettings,
     pub network: NetworkSettings,
+    pub recording: RecordingSettings,
 }
 
 #[cfg(test)]

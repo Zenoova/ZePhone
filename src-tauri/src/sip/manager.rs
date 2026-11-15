@@ -4,7 +4,12 @@
 //! All telephony logic lives here, in Rust: calls keep working (and incoming calls
 //! are still announced) when the webview is hidden or reloading.
 
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
 
 use chrono::Utc;
 use secrecy::SecretString;
@@ -25,6 +30,7 @@ use super::{
 use crate::{
     database::Database,
     error::{AppError, AppResult},
+    recording::{Recording, wav},
     security::secrets::SecretStore,
 };
 
@@ -34,6 +40,8 @@ pub trait UiSink: Send + Sync + 'static {
     fn account_status(&self, status: &AccountStatus);
     fn call_update(&self, call: &Call);
     fn history_changed(&self);
+    /// A recording was added or deleted.
+    fn recordings_changed(&self) {}
     /// A new incoming call: bring the window up and (if `notify`) raise an OS notification.
     fn incoming_call(&self, call: &Call, notify: bool);
     fn missed_call(&self, call: &Call, notify: bool);
@@ -77,12 +85,23 @@ struct Hosted {
     register_interval: u32,
 }
 
+/// The call being recorded (the engine records one call at a time).
+#[derive(Debug, Clone)]
+struct ActiveRecording {
+    id: String,
+    call_id: String,
+    /// Raw files written by the engine: `<base>-tx.wav` and `<base>-rx.wav`.
+    base: PathBuf,
+    started_at: String,
+}
+
 #[derive(Default)]
 struct State {
     statuses: HashMap<String, AccountStatus>,
     /// normalized AoR -> hosted account
     hosted: HashMap<String, Hosted>,
     tracker: CallTracker,
+    recording: Option<ActiveRecording>,
 }
 
 pub type OptionsHook = Arc<dyn Fn(EngineOptions) -> EngineOptions + Send + Sync>;
@@ -96,6 +115,8 @@ pub struct SipManager {
     secrets: Arc<dyn SecretStore>,
     sink: Arc<dyn UiSink>,
     state: std::sync::Mutex<State>,
+    /// Where finished recordings are kept; recording is unavailable until it is set.
+    recordings_dir: std::sync::Mutex<Option<PathBuf>>,
 }
 
 fn engine_options(s: &Settings) -> EngineOptions {
@@ -112,6 +133,13 @@ fn engine_options(s: &Settings) -> EngineOptions {
 
 fn restart_needed(old: &Settings, new: &Settings) -> bool {
     old.network != new.network
+}
+
+/// `<base>-tx.wav` / `<base>-rx.wav`: the two raw files the engine writes for a recording.
+fn raw_path(base: &Path, side: &str) -> PathBuf {
+    let mut name = base.as_os_str().to_owned();
+    name.push(format!("-{side}.wav"));
+    PathBuf::from(name)
 }
 
 fn engine_err(e: impl std::fmt::Display) -> AppError {
@@ -133,7 +161,13 @@ impl SipManager {
             secrets,
             sink,
             state: Default::default(),
+            recordings_dir: Default::default(),
         })
+    }
+
+    /// Sets the folder of the recordings (created when needed).
+    pub fn set_recordings_dir(&self, dir: PathBuf) {
+        *self.recordings_dir.lock().unwrap() = Some(dir);
     }
 
     /// Adjusts the engine options derived from the settings. Used by the end-to-end tests
@@ -624,6 +658,207 @@ impl SipManager {
         self.engine.transfer(id, &uri).await.map_err(engine_err)
     }
 
+    // ----------------------------------------------------------- recording
+
+    fn recordings_dir(&self) -> AppResult<PathBuf> {
+        self.recordings_dir.lock().unwrap().clone().ok_or_else(|| {
+            AppError::Other("L'enregistrement des appels n'est pas disponible".into())
+        })
+    }
+
+    /// Starts recording the call in progress. Only one call is recorded at a time.
+    pub async fn start_recording(&self, call_id: &str) -> AppResult<()> {
+        let c = self.known(call_id)?;
+        if !matches!(c.state, CallState::Connected | CallState::OnHold) {
+            return Err(AppError::validation(
+                "Seul un appel établi peut être enregistré",
+            ));
+        }
+        if self.state.lock().unwrap().recording.is_some() {
+            return Err(AppError::validation("Un enregistrement est déjà en cours"));
+        }
+        let id = Uuid::new_v4().to_string();
+        let raw = self.recordings_dir()?.join(".raw");
+        std::fs::create_dir_all(&raw)
+            .map_err(|e| AppError::Other(format!("Dossier d'enregistrement inaccessible : {e}")))?;
+        let base = raw.join(&id);
+        self.engine
+            .start_recording(&base)
+            .await
+            .map_err(engine_err)?;
+        let updated = {
+            let mut s = self.state.lock().unwrap();
+            s.recording = Some(ActiveRecording {
+                id,
+                call_id: call_id.to_owned(),
+                base,
+                started_at: Utc::now().to_rfc3339(),
+            });
+            s.tracker.set_recording(call_id, true)
+        };
+        if let Some(call) = updated {
+            self.sink.call_update(&call);
+        }
+        Ok(())
+    }
+
+    /// Stops the recording in progress and keeps it. `Ok(None)` when nothing was recording or when
+    /// no audio went through.
+    pub async fn stop_recording(&self) -> AppResult<Option<Recording>> {
+        let Some(active) = self.state.lock().unwrap().recording.take() else {
+            return Ok(None);
+        };
+        let _ = self.engine.stop_recording().await;
+        let updated = self
+            .state
+            .lock()
+            .unwrap()
+            .tracker
+            .set_recording(&active.call_id, false);
+        let call = updated.clone();
+        if let Some(call) = updated {
+            self.sink.call_update(&call);
+        }
+        self.store_recording(active, call.as_ref(), None).await
+    }
+
+    /// Mixes the raw files of a finished recording into one WAV and lists it.
+    async fn store_recording(
+        &self,
+        active: ActiveRecording,
+        call: Option<&Call>,
+        history_id: Option<String>,
+    ) -> AppResult<Option<Recording>> {
+        let dir = self.recordings_dir()?;
+        let file_name = format!("{}.wav", active.id);
+        let out = dir.join(&file_name);
+        let (tx, rx) = (raw_path(&active.base, "tx"), raw_path(&active.base, "rx"));
+        let (mix_tx, mix_rx, mix_out) = (tx.clone(), rx.clone(), out.clone());
+        let mixed = tokio::task::spawn_blocking(move || wav::mix(&mix_tx, &mix_rx, &mix_out))
+            .await
+            .map_err(|e| AppError::Other(e.to_string()))?;
+        let _ = std::fs::remove_file(&tx);
+        let _ = std::fs::remove_file(&rx);
+        let mixed = match mixed {
+            Ok(Some(m)) => m,
+            Ok(None) => {
+                log::info!(
+                    "recording {}: no audio went through, nothing kept",
+                    active.id
+                );
+                return Ok(None);
+            }
+            Err(e) => {
+                let _ = std::fs::remove_file(&out);
+                return Err(AppError::Other(format!(
+                    "Enregistrement impossible à finaliser : {e}"
+                )));
+            }
+        };
+        let rec = Recording {
+            id: active.id,
+            call_id: Some(active.call_id),
+            history_id,
+            path: out.display().to_string(),
+            file_name,
+            started_at: active.started_at,
+            duration_secs: mixed.duration_secs,
+            size_bytes: mixed.size_bytes,
+            remote_number: call.map(|c| c.remote_number.clone()).unwrap_or_default(),
+            remote_name: call.and_then(|c| c.remote_name.clone()),
+            account_label: call.and_then(|c| c.account_label.clone()),
+            direction: call
+                .map(|c| c.direction)
+                .unwrap_or(crate::sip::types::CallDirection::Outgoing),
+            peaks: mixed.peaks,
+        };
+        if let Err(e) = self.db.insert_recording(&rec) {
+            let _ = std::fs::remove_file(&out);
+            return Err(e);
+        }
+        self.sink.recordings_changed();
+        Ok(Some(rec))
+    }
+
+    /// The call ended: whatever was being recorded for it is finished and kept.
+    async fn end_recording_for(&self, update: &CallUpdate) {
+        let active = {
+            let mut s = self.state.lock().unwrap();
+            match &s.recording {
+                Some(a) if a.call_id == update.call.id => s.recording.take(),
+                _ => None,
+            }
+        };
+        let Some(active) = active else { return };
+        let _ = self.engine.stop_recording().await;
+        let history_id = update.history.as_ref().map(|h| h.id.clone());
+        if let Err(e) = self
+            .store_recording(active, Some(&update.call), history_id)
+            .await
+        {
+            log::error!("cannot keep the call recording: {e}");
+        }
+    }
+
+    pub fn list_recordings(&self) -> AppResult<Vec<Recording>> {
+        let dir = self.recordings_dir()?;
+        let mut all = self.db.list_recordings()?;
+        for r in &mut all {
+            r.path = dir.join(&r.file_name).display().to_string();
+        }
+        Ok(all)
+    }
+
+    pub fn delete_recording(&self, id: &str) -> AppResult<()> {
+        let dir = self.recordings_dir()?;
+        let rec = self
+            .db
+            .get_recording(id)?
+            .ok_or_else(|| AppError::NotFound("enregistrement".into()))?;
+        // The name is ours (`<uuid>.wav`), but never trust a path read back from a file.
+        if rec.file_name.contains(['/', '\\']) || rec.file_name.starts_with('.') {
+            return Err(AppError::validation("Nom de fichier invalide"));
+        }
+        match std::fs::remove_file(dir.join(&rec.file_name)) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => {
+                return Err(AppError::Other(format!("Suppression impossible : {e}")));
+            }
+        }
+        self.db.delete_recording(id)?;
+        self.sink.recordings_changed();
+        Ok(())
+    }
+
+    /// Incoming and outgoing volume, in percent (100 = unchanged). Applied at once, to the call in
+    /// progress too; the settings are what makes them last.
+    pub async fn set_audio_gains(&self, input_pct: u16, output_pct: u16) -> AppResult<()> {
+        use super::types::MAX_GAIN_PERCENT;
+        if input_pct > MAX_GAIN_PERCENT || output_pct > MAX_GAIN_PERCENT {
+            return Err(AppError::validation("Volume hors limites (0 à 200 %)"));
+        }
+        self.engine
+            .set_gains(f32::from(input_pct) / 100.0, f32::from(output_pct) / 100.0)
+            .await
+            .map_err(engine_err)
+    }
+
+    async fn apply_stored_gains(&self) {
+        let Ok(s) = self.db.get_settings() else {
+            return;
+        };
+        if (s.audio.input_gain, s.audio.output_gain) == (100, 100) {
+            return; // the engine starts at 100 %: nothing to say
+        }
+        if let Err(e) = self
+            .set_audio_gains(s.audio.input_gain, s.audio.output_gain)
+            .await
+        {
+            log::warn!("cannot apply the saved volumes: {e}");
+        }
+    }
+
     // ------------------------------------------------------------- settings
 
     pub fn settings(&self) -> AppResult<Settings> {
@@ -635,7 +870,8 @@ impl SipManager {
         self.db.save_settings(&new)?;
         let mut restart_required = false;
         self.engine.set_options(self.options(&new));
-        if old.audio != new.audio
+        if (&old.audio.input_device, &old.audio.output_device)
+            != (&new.audio.input_device, &new.audio.output_device)
             && let Err(e) = self
                 .engine
                 .set_audio_devices(
@@ -645,6 +881,14 @@ impl SipManager {
                 .await
         {
             // Unknown device: keep the choice stored (it may be unplugged now) but tell the UI.
+            self.sink.audio_error(&e.to_string());
+        }
+        if (old.audio.input_gain, old.audio.output_gain)
+            != (new.audio.input_gain, new.audio.output_gain)
+            && let Err(e) = self
+                .set_audio_gains(new.audio.input_gain, new.audio.output_gain)
+                .await
+        {
             self.sink.audio_error(&e.to_string());
         }
         if restart_needed(&old, &new) {
@@ -688,6 +932,8 @@ impl SipManager {
             if let Err(e) = self.db.insert_history(&h) {
                 log::error!("cannot save call history: {e}");
             } else {
+                // A recording stopped by hand before the end of the call is tied to it now.
+                let _ = self.db.link_recordings_to_history(&call.id, &h.id);
                 self.sink.history_changed();
             }
             if h.result == CallResult::Missed {
@@ -710,7 +956,10 @@ impl SipManager {
             EngineEvent::State(st) => {
                 self.sink.engine_state(&self.engine_info());
                 match st {
-                    EngineState::Running => self.connect_all_enabled().await,
+                    EngineState::Running => {
+                        self.apply_stored_gains().await;
+                        self.connect_all_enabled().await
+                    }
                     EngineState::Starting => {}
                     ref other => {
                         let (ids, ended) = {
@@ -720,6 +969,7 @@ impl SipManager {
                             (ids, s.tracker.abort_all("Moteur SIP interrompu", now))
                         };
                         for u in ended {
+                            self.end_recording_for(&u).await;
                             self.finish(u);
                         }
                         for id in ids {
@@ -784,6 +1034,7 @@ impl SipManager {
                     .apply(&r, &event, &ctx, now);
                 let Some(update) = update else { return };
                 if update.history.is_some() {
+                    self.end_recording_for(&update).await;
                     self.finish(update);
                     return;
                 }
@@ -793,6 +1044,14 @@ impl SipManager {
                     let held = self.state.lock().unwrap().tracker.hold_others(&r.id);
                     for c in held {
                         self.sink.call_update(&c);
+                    }
+                    let auto = self
+                        .db
+                        .get_settings()
+                        .map(|s| s.recording.auto_record)
+                        .unwrap_or(false);
+                    if auto && let Err(e) = self.start_recording(&r.id).await {
+                        log::warn!("automatic recording not started: {e}");
                     }
                 }
                 if update.is_new_incoming {

@@ -21,6 +21,9 @@ pub mod events {
     pub const HISTORY_CHANGED: &str = "history:changed";
     pub const AUDIO_ERROR: &str = "audio:error";
     pub const AUDIO_LEVEL: &str = "audio:level";
+    pub const RECORDINGS_CHANGED: &str = "recordings:changed";
+    /// The settings were saved: every window refreshes its copy.
+    pub const SETTINGS_CHANGED: &str = "settings:changed";
 }
 
 pub struct AppState {

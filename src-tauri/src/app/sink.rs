@@ -90,6 +90,10 @@ impl UiSink for TauriSink {
         self.emit(events::HISTORY_CHANGED, ());
     }
 
+    fn recordings_changed(&self) {
+        self.emit(events::RECORDINGS_CHANGED, ());
+    }
+
     fn incoming_call(&self, call: &Call, notify: bool) {
         // Whatever the section the user is on (or even if the window was hidden or
         // minimised), the incoming-call UI must be visible.
