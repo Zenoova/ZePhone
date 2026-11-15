@@ -2,19 +2,24 @@
 
 use tauri::{AppHandle, Manager};
 
-use super::MAIN_WINDOW;
+use super::{MAIN_WINDOW, call_window::CALL_WINDOW};
 use crate::sip::types::{GeneralSettings, Theme};
 
-/// Applies the theme and the translucency preference to the main window.
+/// Applies the theme and the translucency preference to the main window and the call window.
 ///
 /// * The window theme follows the app's own light/dark choice, so the glass material under the
 ///   page matches the interface (otherwise a dark UI could sit on a light material).
 /// * Translucency uses a native `NSVisualEffectView` (the sidebar material, kept active when the
 ///   window is not focused). The page draws semi-transparent surfaces on top of it.
 pub fn apply_appearance(app: &AppHandle, general: &GeneralSettings) {
-    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
-        return;
-    };
+    for label in [MAIN_WINDOW, CALL_WINDOW] {
+        if let Some(window) = app.get_webview_window(label) {
+            apply_to(&window, general);
+        }
+    }
+}
+
+fn apply_to(window: &tauri::WebviewWindow, general: &GeneralSettings) {
     let theme = match general.theme {
         Theme::System => None,
         Theme::Light => Some(tauri::Theme::Light),

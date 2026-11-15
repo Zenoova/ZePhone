@@ -6,16 +6,14 @@ import { useCallDuration } from "@/hooks/use-call-duration";
 import { callDisplayName, formatDuration } from "@/lib/format";
 import { CALL_STATE_LABEL } from "@/lib/labels";
 import { selectLiveCalls, useCallsStore } from "@/stores/calls-store";
-import { useUiStore } from "@/stores/ui-store";
+import { telephony } from "@/services/telephony";
 
-/** Slim bar shown above any section (except the keypad page, which shows the call itself) while a call is in progress. */
+/** Slim bar shown above every page while a call is in progress; clicking it brings up the call window. */
 export function ActiveCallBar() {
   const live = useCallsStore(useShallow((s) => selectLiveCalls(s.calls)));
-  const section = useUiStore((s) => s.section);
-  const setSection = useUiStore((s) => s.setSection);
   const call = live[0];
   const seconds = useCallDuration(call);
-  if (!call || section === "dialer") return null;
+  if (!call) return null;
   const { toggleMute, hangup } = useCallsStore.getState();
   const connected = call.state === "connected" || call.state === "onHold";
 
@@ -29,7 +27,7 @@ export function ActiveCallBar() {
       <button
         type="button"
         className="min-w-0 flex-1 truncate text-left font-medium"
-        onClick={() => setSection("dialer")}
+        onClick={() => void telephony.openCallWindow()}
       >
         {callDisplayName(call)} ·{" "}
         {connected ? <span className="tabular">{formatDuration(seconds)}</span> : CALL_STATE_LABEL[call.state]}

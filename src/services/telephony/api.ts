@@ -71,6 +71,10 @@ export const telephony = {
   setAudioGains: (input: number, output: number) => call<void>("set_audio_gains", { input, output }),
   /** Brings the call window up (it is opened by the backend when a call starts). */
   openCallWindow: () => call<void>("open_call_window"),
+  closeCallWindow: () => call<void>("close_call_window"),
+  setCallWindowOnTop: (onTop: boolean) => call<void>("set_call_window_on_top", { onTop }),
+  /** Brings the main window up (from the call window). */
+  showMain: () => call<void>("show_main"),
 
   // contacts
   listContacts: (query?: string) => call<Contact[]>("list_contacts", { query: query ?? null }),

@@ -1,28 +1,7 @@
-import { useTheme } from "next-themes";
-import { useEffect } from "react";
-
 import { useTelephonyBootstrap } from "@/hooks/use-telephony-bootstrap";
 import { AppShell } from "@/layouts/AppShell";
-import { useSettingsStore } from "@/stores/settings-store";
+import { ThemeSync, TranslucencySync } from "./AppSync";
 import { useUiStore } from "@/stores/ui-store";
-
-function ThemeSync() {
-  const theme = useSettingsStore((s) => s.settings.general.theme);
-  const { setTheme } = useTheme();
-  useEffect(() => setTheme(theme), [theme, setTheme]);
-  return null;
-}
-
-/** Frosted glass only makes sense where the native vibrancy exists (macOS). */
-const IS_MAC = typeof navigator !== "undefined" && /Mac/i.test(navigator.userAgent);
-
-function TranslucencySync() {
-  const translucent = useSettingsStore((s) => s.settings.general.translucent);
-  useEffect(() => {
-    document.documentElement.classList.toggle("translucent", IS_MAC && translucent);
-  }, [translucent]);
-  return null;
-}
 
 function BackendUnavailable() {
   return (

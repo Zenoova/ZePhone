@@ -123,6 +123,28 @@ pub async fn transfer_call(state: S<'_>, id: String, target: String) -> AppResul
     state.manager.transfer(&id, &target).await
 }
 
+// ------------------------------------------------------------- call window
+
+#[tauri::command]
+pub fn open_call_window(app: AppHandle) {
+    crate::app::call_window::open(&app);
+}
+
+#[tauri::command]
+pub fn close_call_window(app: AppHandle) {
+    crate::app::call_window::close(&app);
+}
+
+#[tauri::command]
+pub fn set_call_window_on_top(app: AppHandle, on_top: bool) {
+    crate::app::call_window::set_always_on_top(&app, on_top);
+}
+
+#[tauri::command]
+pub fn show_main(app: AppHandle) {
+    crate::app::show_main_window(&app);
+}
+
 // --------------------------------------------------------------- recording
 
 #[tauri::command]

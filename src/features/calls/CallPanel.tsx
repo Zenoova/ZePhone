@@ -1,4 +1,4 @@
-import { Grid3x3, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneOff, Play } from "@/components/icons";
+import { CircleDot, Grid3x3, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneOff, Play } from "@/components/icons";
 import { useState, type ReactNode } from "react";
 
 import { VoiceOrb } from "@/components/VoiceOrb";
@@ -86,7 +86,7 @@ export function CallPanel({ call }: { call: Call }) {
       aria-label={`Appel avec ${name}`}
       data-testid="call-panel"
       data-state={call.state}
-      className="relative flex h-full min-h-[30rem] w-full flex-col items-center overflow-hidden px-5 pt-7 pb-[6.5rem]"
+      className="relative flex h-full min-h-[30rem] w-full flex-col items-center overflow-hidden px-5 pt-7 pb-6"
     >
       {/* soft light behind the orbs */}
       <div
@@ -117,6 +117,15 @@ export function CallPanel({ call }: { call: Call }) {
           {CALL_STATE_LABEL[call.state]}
           {onHold && call.heldRemotely && !call.heldLocally && " par le correspondant"}
         </p>
+        {call.recording && (
+          <p
+            role="status"
+            data-testid="rec-indicator"
+            className="text-destructive flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase"
+          >
+            <CircleDot className="size-3 animate-pulse" aria-hidden /> Enregistrement
+          </p>
+        )}
         {(inDialog || (terminal && call.durationSecs > 0)) && (
           <p className="tabular text-xl font-light tracking-wider" aria-label="Durée de l'appel">
             {formatDuration(seconds)}

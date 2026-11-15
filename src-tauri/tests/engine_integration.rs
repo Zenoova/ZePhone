@@ -1086,7 +1086,7 @@ async fn zeaudio_records_both_voices_and_changes_the_volumes_during_a_call() {
         .unwrap()
         .expect("something recorded");
     assert!((2..=3).contains(&m.duration_secs), "{}", m.duration_secs);
-    assert!(m.peaks.iter().any(|&p| p == 255));
+    assert!(m.peaks.contains(&255));
 
     // --- volumes -------------------------------------------------------------------------------
     // What A hears (a.wav, 880 Hz from B) follows the incoming volume; what B hears (b.wav, 440 Hz

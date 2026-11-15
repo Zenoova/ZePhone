@@ -1,6 +1,7 @@
 //! Glue between the telephony core and the desktop shell (Tauri): UI events, native
 //! notifications, tray icon, window behaviour.
 
+pub mod call_window;
 pub mod sink;
 pub mod tray;
 pub mod window;

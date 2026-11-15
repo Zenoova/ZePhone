@@ -1,14 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 import { Toaster } from "@/components/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
-import { IncomingCallDialog } from "@/features/calls/IncomingCallDialog";
 import { ContactsPage } from "@/features/contacts/ContactsPage";
 import { HomePage } from "@/features/home/HomePage";
 import { HistoryPage } from "@/features/history/HistoryPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
-import { useCallsStore } from "@/stores/calls-store";
 import { type Section, useUiStore } from "@/stores/ui-store";
 
 import { EngineBanner } from "./EngineBanner";
@@ -23,10 +21,9 @@ const PAGES: Record<Section, () => React.JSX.Element> = {
   settings: SettingsPage,
 };
 
-/** ⌘1…⌘4 (Ctrl on Windows/Linux) switch sections; a new call brings the keypad page, which then shows the call. */
+/** ⌘1…⌘5 (Ctrl on Windows/Linux) switch sections. */
 function useShellBehaviour() {
   const setSection = useUiStore((s) => s.setSection);
-  const seen = useRef(new Set<string>());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -40,19 +37,6 @@ function useShellBehaviour() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [setSection]);
-
-  useEffect(
-    () =>
-      useCallsStore.subscribe((state) => {
-        for (const call of Object.values(state.calls)) {
-          if (seen.current.has(call.id)) continue;
-          seen.current.add(call.id);
-          // The call screen lives on the keypad page: show it as soon as a call starts.
-          if (call.state !== "incoming") setSection("dialer");
-        }
-      }),
-    [setSection],
-  );
 }
 
 export function AppShell() {
@@ -76,7 +60,6 @@ export function AppShell() {
         </div>
         <StatusBar />
       </div>
-      <IncomingCallDialog />
       <Toaster />
     </TooltipProvider>
   );

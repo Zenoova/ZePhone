@@ -1,18 +1,24 @@
-use std::{collections::HashMap, sync::Mutex};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Mutex,
+};
 
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_notification::NotificationExt;
 
-use super::{events, show_main_window, tray};
+use super::{call_window, events, tray};
 use crate::sip::{
     manager::{EngineInfo, UiSink},
-    types::{AccountStatus, Call, RegistrationState},
+    types::{AccountStatus, Call, CallState, RegistrationState},
 };
 
 /// Forwards manager notifications to the webview and to the OS.
 pub struct TauriSink {
     app: AppHandle,
     states: Mutex<HashMap<String, RegistrationState>>,
+    /// Calls whose window was already opened: a user who closes the call window during a call is not
+    /// pulled back into it by every later update of that call.
+    opened: Mutex<HashSet<String>>,
 }
 
 impl TauriSink {
@@ -20,6 +26,7 @@ impl TauriSink {
         Self {
             app,
             states: Mutex::default(),
+            opened: Mutex::default(),
         }
     }
 
@@ -84,6 +91,10 @@ impl UiSink for TauriSink {
 
     fn call_update(&self, call: &Call) {
         self.emit(events::CALL_UPDATE, call.clone());
+        let live = !matches!(call.state, CallState::Ended | CallState::Failed);
+        if live && self.opened.lock().unwrap().insert(call.id.clone()) {
+            call_window::open(&self.app);
+        }
     }
 
     fn history_changed(&self) {
@@ -95,9 +106,9 @@ impl UiSink for TauriSink {
     }
 
     fn incoming_call(&self, call: &Call, notify: bool) {
-        // Whatever the section the user is on (or even if the window was hidden or
+        // Whatever the section the user is on (or even if the windows were hidden or
         // minimised), the incoming-call UI must be visible.
-        show_main_window(&self.app);
+        call_window::open(&self.app);
         if notify {
             self.notify("Appel entrant", &caller_label(call));
         }
