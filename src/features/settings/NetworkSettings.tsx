@@ -2,7 +2,7 @@ import { RefreshCw, ScrollText } from "@/components/icons";
 import { useState } from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/arc/button/button";
 import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -136,7 +136,7 @@ export function NetworkSettings() {
           description="Dernières lignes de sortie de Baresip (mots de passe masqués)."
         >
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={async () => {
               try {
@@ -154,7 +154,7 @@ export function NetworkSettings() {
           label="Moteur SIP"
           description={engine ? `${engine.name} ${engine.version ?? ""} — ${engine.state}` : "Indisponible"}
         >
-          <Button variant="outline" size="sm" onClick={() => void doRestart()} disabled={restarting}>
+          <Button variant="secondary" size="sm" onClick={() => void doRestart()} disabled={restarting}>
             <RefreshCw className="size-4" aria-hidden /> Redémarrer
           </Button>
         </SettingRow>

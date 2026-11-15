@@ -1,7 +1,7 @@
 import { PhoneForwarded } from "@/components/icons";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/arc/button/button";
 import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,7 +55,7 @@ export function TransferDialog({
             autoComplete="off"
           />
           <div className="flex justify-end gap-2 pt-3">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
             <Button type="submit" disabled={busy || !target.trim()}>

@@ -6,6 +6,7 @@ import { ContactAvatar } from "@/components/ContactAvatar";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Button as ArcButton } from "@/components/arc/button/button";
 import { Input } from "@/components/ui/input";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { contactName } from "@/lib/contacts";
@@ -46,14 +47,14 @@ export function ContactsPage() {
         title="Contacts"
         description="Votre carnet d'adresses local"
         actions={
-          <Button
+          <ArcButton
             onClick={() => {
               setEditing(null);
               setFormOpen(true);
             }}
           >
             <Plus className="size-4" aria-hidden /> Nouveau
-          </Button>
+          </ArcButton>
         }
       />
       <div className="px-6 pb-3">

@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { RegistrationBadge } from "@/components/RegistrationBadge";
 import { Badge } from "@/components/arc/badge/badge";
 import { Button } from "@/components/ui/button";
+import { Button as ArcButton } from "@/components/arc/button/button";
 import { Switch } from "@/components/ui/switch";
 import { TRANSPORT_LABEL } from "@/lib/labels";
 import { useAccountsStore } from "@/stores/accounts-store";
@@ -69,23 +70,23 @@ function AccountCard({
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {account.enabled && (
-          <Button
+          <ArcButton
             size="sm"
-            variant="outline"
+            variant="secondary"
             onClick={() => void (online ? disconnect(account.id) : connect(account.id))}
           >
             {online ? <PlugZap className="size-4" aria-hidden /> : <Plug className="size-4" aria-hidden />}
             {online ? "Déconnecter" : "Connecter"}
-          </Button>
+          </ArcButton>
         )}
         {!account.isDefault && (
-          <Button size="sm" variant="ghost" onClick={() => void setDefault(account.id)}>
+          <ArcButton size="sm" variant="ghost" onClick={() => void setDefault(account.id)}>
             <Star className="size-4" aria-hidden /> Définir par défaut
-          </Button>
+          </ArcButton>
         )}
-        <Button size="sm" variant="ghost" onClick={onEdit}>
+        <ArcButton size="sm" variant="ghost" onClick={onEdit}>
           <Pencil className="size-4" aria-hidden /> Modifier
-        </Button>
+        </ArcButton>
         <Button
           size="sm"
           variant="ghost"
@@ -113,14 +114,14 @@ export function AccountsSettings() {
           <h2 className="text-base font-semibold">Comptes SIP</h2>
           <p className="text-muted-foreground text-sm">Plusieurs comptes peuvent être connectés en même temps.</p>
         </div>
-        <Button
+        <ArcButton
           onClick={() => {
             setEditing(null);
             setFormOpen(true);
           }}
         >
           <Plus className="size-4" aria-hidden /> Ajouter
-        </Button>
+        </ArcButton>
       </div>
 
       {accounts.length === 0 ? (

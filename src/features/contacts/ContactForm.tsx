@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/arc/button/button";
 import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -112,7 +112,7 @@ function ContactFormBody({
         />
       </div>
       <div className="flex justify-end gap-2 pt-3">
-        <Button type="button" variant="outline" onClick={onDone}>
+        <Button type="button" variant="secondary" onClick={onDone}>
           Annuler
         </Button>
         <Button type="submit" disabled={busy || !hasName || !form.number.trim()}>

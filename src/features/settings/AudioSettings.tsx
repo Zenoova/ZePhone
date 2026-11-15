@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { Alert } from "@/features/settings/alert";
 import { Badge } from "@/components/arc/badge/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/arc/button/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { VolumeSliders } from "@/components/VolumeSliders";
@@ -95,7 +95,7 @@ export function AudioSettings() {
           />
         </SettingRow>
         <SettingRow label="Actualiser la liste" description="Après avoir branché un casque ou un micro">
-          <Button variant="outline" size="sm" onClick={() => void loadDevices()}>
+          <Button variant="secondary" size="sm" onClick={() => void loadDevices()}>
             <RefreshCw className="size-4" aria-hidden /> Actualiser
           </Button>
         </SettingRow>
@@ -151,7 +151,7 @@ export function AudioSettings() {
           </div>
           {mic === "notDetermined" && <Button onClick={() => void requestMic()}>Autoriser le microphone</Button>}
           {(mic === "denied" || mic === "restricted") && (
-            <Button variant="outline" onClick={() => void telephony.openMicrophoneSettings()}>
+            <Button variant="secondary" onClick={() => void telephony.openMicrophoneSettings()}>
               Ouvrir les réglages
             </Button>
           )}

@@ -4,6 +4,7 @@ import { toast } from "@yusufceng1z/ding-react";
 
 import { StatusDot } from "@/components/RegistrationBadge";
 import { Button } from "@/components/ui/button";
+import { Button as ArcButton } from "@/components/arc/button/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isOverlayOpen, isShortcut, isTypingTarget } from "@/lib/keyboard";
 import { looksDialable, sanitizeDialInput } from "@/lib/phone";
@@ -120,7 +121,7 @@ export function DialerPage() {
             Ajoutez votre compte SIP (serveur, identifiant, mot de passe) pour passer et recevoir des appels.
           </p>
         </div>
-        <Button onClick={() => openSettings("accounts")}>Ajouter un compte SIP</Button>
+        <ArcButton onClick={() => openSettings("accounts")}>Ajouter un compte SIP</ArcButton>
       </div>
     );
   }

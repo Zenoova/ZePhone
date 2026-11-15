@@ -16,6 +16,7 @@ import { ContactAvatar } from "@/components/ContactAvatar";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Button as ArcButton } from "@/components/arc/button/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -82,9 +83,9 @@ export function HistoryPage() {
         description="Vos appels entrants, sortants, manqués et échoués"
         actions={
           entries.length > 0 && (
-            <Button variant="outline" onClick={() => setConfirmClear(true)}>
+            <ArcButton variant="secondary" onClick={() => setConfirmClear(true)}>
               <Trash2 className="size-4" aria-hidden /> Tout effacer
-            </Button>
+            </ArcButton>
           )
         }
       />

@@ -1,6 +1,6 @@
 import { TriangleAlert, LoaderCircle } from "@/components/icons";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/arc/button/button";
 import { useEngineStore } from "@/stores/engine-store";
 
 /** Visible only when the SIP engine is not healthy. */
@@ -28,7 +28,7 @@ export function EngineBanner() {
         <span className="min-w-0 flex-1">
           {info.state === "failed" ? `Moteur SIP indisponible : ${info.reason}` : "Le moteur SIP est arrêté."}
         </span>
-        <Button size="sm" variant="outline" disabled={restarting} onClick={() => void restart()}>
+        <Button size="sm" variant="secondary" disabled={restarting} onClick={() => void restart()}>
           Redémarrer
         </Button>
       </div>
