@@ -18,6 +18,7 @@
     "sidecar:hd": "bash scripts/build-baresip.sh"
   },
   "dependencies": {
+    "@animateicons/react": "^0.13.0",
     "@tailwindcss/vite": "^4.3.5",
     "@tauri-apps/api": "^2",
     "class-variance-authority": "^0.7.1",
