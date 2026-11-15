@@ -11,6 +11,7 @@ import type {
   HistoryEntry,
   HistoryFilter,
   MicPermission,
+  Recording,
   Settings,
   SettingsApplied,
   Snapshot,
@@ -60,6 +61,16 @@ export const telephony = {
   setCallMute: (id: string, muted: boolean) => call<void>("set_call_mute", { id, muted }),
   sendDtmf: (id: string, digits: string) => call<void>("send_dtmf", { id, digits }),
   transferCall: (id: string, target: string) => call<void>("transfer_call", { id, target }),
+
+  // recording and volumes
+  startRecording: (id: string) => call<void>("start_recording", { id }),
+  stopRecording: () => call<Recording | null>("stop_recording"),
+  listRecordings: () => call<Recording[]>("list_recordings"),
+  deleteRecording: (id: string) => call<void>("delete_recording", { id }),
+  /** Live volume change (percent), not saved: the settings are what makes it last. */
+  setAudioGains: (input: number, output: number) => call<void>("set_audio_gains", { input, output }),
+  /** Brings the call window up (it is opened by the backend when a call starts). */
+  openCallWindow: () => call<void>("open_call_window"),
 
   // contacts
   listContacts: (query?: string) => call<Contact[]>("list_contacts", { query: query ?? null }),

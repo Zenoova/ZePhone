@@ -7,6 +7,7 @@ import { useAccountsStore } from "@/stores/accounts-store";
 import { useCallsStore } from "@/stores/calls-store";
 import { useEngineStore } from "@/stores/engine-store";
 import { useHistoryStore } from "@/stores/history-store";
+import { useRecordingsStore } from "@/stores/recordings-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -31,6 +32,8 @@ export function useTelephonyBootstrap(): void {
         onHistoryChanged: () => void useHistoryStore.getState().load(),
         onAudioError: (message) => toast.error(`Erreur audio : ${message}`),
         onAudioLevel: (l) => pushLevel(l.callId, l.tx, l.db),
+        onRecordingsChanged: () => void useRecordingsStore.getState().load(),
+        onSettingsChanged: (s) => useSettingsStore.getState().adopt(s),
       });
       if (cancelled) {
         unsubscribe();
@@ -48,6 +51,7 @@ export function useTelephonyBootstrap(): void {
       }
       void useSettingsStore.getState().load();
       void useHistoryStore.getState().load();
+      void useRecordingsStore.getState().load();
       void useEngineStore.getState().loadAppInfo();
       void useSettingsStore.getState().refreshMic();
     })();

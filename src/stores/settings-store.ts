@@ -6,7 +6,7 @@ import { errorMessage, telephony } from "@/services/telephony";
 import type { AudioDevices, MicPermission, Settings } from "@/types/telephony";
 
 export const DEFAULT_SETTINGS: Settings = {
-  audio: { inputDevice: null, outputDevice: null },
+  audio: { inputDevice: null, outputDevice: null, inputGain: 100, outputGain: 100 },
   notifications: { incomingCall: true, missedCall: true, ringtone: true },
   general: {
     theme: "system",
@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS: Settings = {
     voiceOrb: DEFAULT_ORB,
   },
   network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
+  recording: { autoRecord: false },
 };
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
@@ -28,6 +29,7 @@ export function mergeSettings(base: Settings, patch: DeepPartial<Settings>): Set
     notifications: { ...base.notifications, ...patch.notifications },
     general: { ...base.general, ...patch.general },
     network: { ...base.network, ...patch.network },
+    recording: { ...base.recording, ...patch.recording },
   } as Settings;
 }
 
@@ -38,6 +40,8 @@ interface SettingsState {
   devices: AudioDevices | null;
   micPermission: MicPermission | null;
   load: () => Promise<void>;
+  /** The settings changed elsewhere (another window saved them): adopt them without saving again. */
+  adopt: (settings: Settings) => void;
   update: (patch: DeepPartial<Settings>) => Promise<boolean>;
   loadDevices: () => Promise<void>;
   refreshMic: () => Promise<void>;
@@ -59,6 +63,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       toast.error(errorMessage(e));
     }
   },
+
+  adopt: (settings) => set({ settings }),
 
   update: async (patch) => {
     const previous = get().settings;

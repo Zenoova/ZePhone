@@ -76,6 +76,8 @@ export interface Call {
   remoteNumber: string;
   remoteName: string | null;
   muted: boolean;
+  /** The call is being recorded locally. */
+  recording: boolean;
   /** We put the call on hold. */
   heldLocally: boolean;
   /** The remote party put the call on hold. */
@@ -136,12 +138,38 @@ export interface ContactInput {
   number: string;
 }
 
+// -------------------------------------------------------------- recording
+
+export interface Recording {
+  id: string;
+  historyId: string | null;
+  fileName: string;
+  /** Absolute path of the audio file (play it with `convertFileSrc`). */
+  path: string;
+  startedAt: string;
+  durationSecs: number;
+  sizeBytes: number;
+  remoteNumber: string;
+  remoteName: string | null;
+  accountLabel: string | null;
+  direction: CallDirection;
+  /** Waveform: loudness across the call, 0-255. */
+  peaks: number[];
+}
+
 // --------------------------------------------------------------- settings
 
 export type Theme = "system" | "light" | "dark";
 
 export interface Settings {
-  audio: { inputDevice: string | null; outputDevice: string | null };
+  audio: {
+    inputDevice: string | null;
+    outputDevice: string | null;
+    /** What the other party hears, in percent of the microphone level (0-200). */
+    inputGain: number;
+    /** What we hear, in percent (0-200). */
+    outputGain: number;
+  };
   notifications: { incomingCall: boolean; missedCall: boolean; ringtone: boolean };
   general: {
     theme: Theme;
@@ -159,6 +187,10 @@ export interface Settings {
     sipTrace: boolean;
     localSipPort: number | null;
     netInterface: string | null;
+  };
+  recording: {
+    /** Record every call as soon as it is answered. */
+    autoRecord: boolean;
   };
 }
 

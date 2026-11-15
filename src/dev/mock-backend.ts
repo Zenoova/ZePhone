@@ -14,6 +14,7 @@ import type {
   Call,
   Contact,
   HistoryEntry,
+  Recording,
   Settings,
 } from "@/types/telephony";
 
@@ -120,7 +121,7 @@ export function installMockBackend(): void {
     h("h5", "incoming", "rejected", "3000", null, 3000, 0),
   ];
   let settings: Settings = {
-    audio: { inputDevice: null, outputDevice: null },
+    audio: { inputDevice: null, outputDevice: null, inputGain: 100, outputGain: 100 },
     notifications: { incomingCall: true, missedCall: true, ringtone: true },
     general: {
       theme: "system",
@@ -132,6 +133,7 @@ export function installMockBackend(): void {
       voiceOrb: "shdr-32",
     },
     network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
+    recording: { autoRecord: false },
   };
   const calls = new Map<string, Call>();
   const devices: AudioDevices = {
@@ -188,6 +190,62 @@ export function installMockBackend(): void {
       emit("audio:level", { callId: c.id, tx: true, db: tx });
     }
   }, 62);
+
+  // Sample recordings for the preview: short tone bursts, as real WAV files the player can read.
+  const toneWav = (secs: number, hz: number): string => {
+    const rate = 8000;
+    const n = rate * secs;
+    const buf = new ArrayBuffer(44 + n * 2);
+    const v = new DataView(buf);
+    const text = (o: number, s: string) => [...s].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
+    text(0, "RIFF");
+    v.setUint32(4, 36 + n * 2, true);
+    text(8, "WAVEfmt ");
+    v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true);
+    v.setUint16(22, 1, true);
+    v.setUint32(24, rate, true);
+    v.setUint32(28, rate * 2, true);
+    v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true);
+    text(36, "data");
+    v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) {
+      const gate = Math.sin(i / rate / 0.9) > -0.3 ? 1 : 0.04; // phrases and pauses
+      v.setInt16(44 + i * 2, Math.sin((2 * Math.PI * hz * i) / rate) * 7000 * gate, true);
+    }
+    return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  };
+  const wave = (secs: number): number[] =>
+    Array.from({ length: 96 }, (_, i) =>
+      Math.round(255 * Math.min(1, 0.15 + Math.abs(Math.sin(i / 7 + secs)) * 0.9 * Math.abs(Math.sin(i / 3)))),
+    );
+  const rec = (
+    id: string,
+    secs: number,
+    number: string,
+    name: string | null,
+    dir: "incoming" | "outgoing",
+    ago: number,
+  ) => ({
+    id,
+    historyId: null,
+    fileName: `${id}.wav`,
+    path: toneWav(secs, 300 + secs * 3),
+    startedAt: new Date(Date.now() - ago * 60_000).toISOString(),
+    durationSecs: secs,
+    sizeBytes: secs * 32_000,
+    remoteNumber: number,
+    remoteName: name,
+    accountLabel: "Bureau",
+    direction: dir,
+    peaks: wave(secs),
+  });
+  let recordings: Recording[] = [
+    rec("r1", 42, "1002", "Bob Martin", "outgoing", 30),
+    rec("r2", 215, "+33612345678", "Alice Durand", "incoming", 60 * 26),
+    rec("r3", 9, "2000", null, "incoming", 60 * 80),
+  ];
 
   const engine = () => ({ name: "baresip", version: "4.13.0", codecs: ["PCMU", "PCMA"], state: "running" as const });
   const setCall = (c: Call) => {
@@ -298,6 +356,7 @@ export function installMockBackend(): void {
         remoteNumber: target,
         remoteName: contact ? `${contact.firstName} ${contact.lastName}`.trim() : null,
         muted: false,
+        recording: false,
         heldLocally: false,
         heldRemotely: false,
         createdAt: now(),
@@ -322,6 +381,23 @@ export function installMockBackend(): void {
     hold_call: (a) => patch(String(a?.id), { state: "onHold", heldLocally: true }),
     resume_call: (a) => patch(String(a?.id), { state: "connected", heldLocally: false }),
     set_call_mute: (a) => patch(String(a?.id), { muted: Boolean(a?.muted) }),
+    start_recording: (a) => patch(String(a?.id), { recording: true }),
+    stop_recording: () => {
+      const c = [...calls.values()].find((x) => x.recording);
+      if (!c) return null;
+      patch(c.id, { recording: false });
+      const r = rec(`r${Date.now()}`, 12, c.remoteNumber, c.remoteName, c.direction, 0);
+      recordings = [r, ...recordings];
+      emit("recordings:changed", null);
+      return r;
+    },
+    list_recordings: () => recordings,
+    delete_recording: (a) => {
+      recordings = recordings.filter((r) => r.id !== a?.id);
+      emit("recordings:changed", null);
+    },
+    set_audio_gains: () => undefined,
+    open_call_window: () => undefined,
     send_dtmf: () => undefined,
     transfer_call: () => undefined,
 
@@ -366,6 +442,7 @@ export function installMockBackend(): void {
     get_settings: () => settings,
     update_settings: (a) => {
       settings = a?.settings as Settings;
+      emit("settings:changed", settings);
       return { settings, restartRequired: false };
     },
     list_audio_devices: () => devices,
@@ -431,6 +508,7 @@ export function installMockBackend(): void {
           remoteNumber: number,
           remoteName: name,
           muted: false,
+          recording: false,
           heldLocally: false,
           heldRemotely: false,
           createdAt: now(),
