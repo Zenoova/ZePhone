@@ -5,6 +5,8 @@ import { Alert } from "@/features/settings/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { VolumeSliders } from "@/components/VolumeSliders";
 import { telephony } from "@/services/telephony";
 import { useEngineStore } from "@/stores/engine-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -13,6 +15,8 @@ import type { AudioDevice } from "@/types/telephony";
 import { SettingRow, SettingsSection } from "./parts";
 
 const SYSTEM_DEFAULT = "__system__";
+/** A selector must return the same value while nothing changes: a fresh `[]` each time would loop. */
+const NO_CODECS: string[] = [];
 
 function DeviceSelect({
   id,
@@ -57,7 +61,7 @@ export function AudioSettings() {
   const devices = useSettingsStore((s) => s.devices);
   const mic = useSettingsStore((s) => s.micPermission);
   const { update, loadDevices, refreshMic, requestMic } = useSettingsStore.getState();
-  const codecs = useEngineStore((s) => s.info?.codecs ?? []);
+  const codecs = useEngineStore((s) => s.info?.codecs ?? NO_CODECS);
 
   useEffect(() => {
     void loadDevices();
@@ -94,6 +98,29 @@ export function AudioSettings() {
           <Button variant="outline" size="sm" onClick={() => void loadDevices()}>
             <RefreshCw className="size-4" aria-hidden /> Actualiser
           </Button>
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Volumes"
+        description="Son entrant : ce que vous entendez. Son sortant : ce que votre correspondant entend de votre micro. Le réglage s'applique tout de suite, y compris pendant un appel."
+      >
+        <VolumeSliders className="px-4 py-4" />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Enregistrement des appels"
+        description="Les enregistrements restent sur ce Mac, dans le dossier de données de ZePhone. Vous les retrouvez dans l'onglet Enregistrements."
+      >
+        <SettingRow
+          label="Enregistrer tous les appels"
+          description="Dès qu'un appel est décroché. Informez votre correspondant : la loi peut exiger son accord."
+        >
+          <Switch
+            checked={settings.recording.autoRecord}
+            onCheckedChange={(v) => void update({ recording: { autoRecord: v } })}
+            aria-label="Enregistrer tous les appels"
+          />
         </SettingRow>
       </SettingsSection>
 
