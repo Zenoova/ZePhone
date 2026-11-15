@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 
 import App from "@/app/App";
 import CallWindowApp from "@/app/CallWindowApp";
+import { isCallWindow } from "@/lib/window";
 
 import "./index.css";
 import "@/components/arc/foundation.css";
@@ -22,8 +23,8 @@ async function boot() {
     const { installMockBackend } = await import("@/dev/mock-backend");
     installMockBackend();
   }
-  // The call window is this same page opened with `?window=call` (see `src-tauri/src/app/call_window.rs`).
-  const Root = new URLSearchParams(window.location.search).get("window") === "call" ? CallWindowApp : App;
+  // The call window is this same page in a window labelled `call` (see `src-tauri/src/app/call_window.rs`).
+  const Root = isCallWindow() ? CallWindowApp : App;
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <ThemeProvider attribute={["class", "data-theme"]} defaultTheme="system" enableSystem disableTransitionOnChange>

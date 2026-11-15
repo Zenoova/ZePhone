@@ -17,19 +17,16 @@ pub fn open(app: &AppHandle) {
             let _ = w.set_focus();
             return;
         }
-        // Same page, other view: `main.tsx` picks the call screen from the query.
-        let built = WebviewWindowBuilder::new(
-            &handle,
-            CALL_WINDOW,
-            WebviewUrl::App("index.html?window=call".into()),
-        )
-        .title("Appel")
-        .inner_size(440.0, 760.0)
-        .min_inner_size(380.0, 600.0)
-        .center()
-        .transparent(true)
-        .focused(true)
-        .build();
+        // Same page, other view: `main.tsx` picks the call screen from the window's label.
+        let built =
+            WebviewWindowBuilder::new(&handle, CALL_WINDOW, WebviewUrl::App("index.html".into()))
+                .title("Appel")
+                .inner_size(440.0, 760.0)
+                .min_inner_size(380.0, 600.0)
+                .center()
+                .transparent(true)
+                .focused(true)
+                .build();
         match built {
             Ok(_) => {
                 if let Some(state) = handle.try_state::<AppState>()
