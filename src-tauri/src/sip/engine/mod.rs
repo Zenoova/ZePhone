@@ -211,6 +211,17 @@ pub trait SipEngine: Send + Sync + 'static {
     /// Silences the incoming-call ringtone (call stays ringing).
     async fn silence_ringtone(&self) -> EngineResult<()>;
 
+    /// Sets the volume of what we send (`input`: the microphone) and of what we hear (`output`: the other
+    /// party), as factors where 1.0 leaves the audio unchanged. Applies to calls in progress and to the
+    /// next ones; an engine restart resets it, so the caller re-applies it.
+    async fn set_gains(&self, input: f32, output: f32) -> EngineResult<()>;
+
+    /// Starts recording the call in progress to two mono WAV files, `<base>-tx.wav` (our microphone) and
+    /// `<base>-rx.wav` (the other party), written as the call goes.
+    async fn start_recording(&self, base: &std::path::Path) -> EngineResult<()>;
+    /// Finishes the files started by [`start_recording`](Self::start_recording): complete when this returns.
+    async fn stop_recording(&self) -> EngineResult<()>;
+
     /// Stores options used at the next (re)start.
     fn set_options(&self, options: EngineOptions);
     /// Recent engine output, secrets redacted (diagnostics).

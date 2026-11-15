@@ -92,6 +92,10 @@ pub const OPTIONAL_CODEC_MODULES: &[&str] = &["opus", "g722"];
 /// Audio-level reports (`VU_TX_REPORT` / `VU_RX_REPORT`) that drive the call screen animation.
 const VUMETER_MODULE: &str = "vumeter";
 
+/// ZePhone's own audio filter (`scripts/baresip-modules/zeaudio`): incoming/outgoing gain and local call
+/// recording. Loaded after the VU meter, so the meter keeps showing the level before the gain.
+const ZEAUDIO_MODULE: &str = "zeaudio";
+
 pub fn render_config(input: &ConfigInput<'_>) -> String {
     let ext = module_ext();
     let driver = audio_driver();
@@ -169,6 +173,9 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     if (input.module_exists)(&format!("{VUMETER_MODULE}.{ext}")) {
         c.push_str(&format!("module\t\t\t{VUMETER_MODULE}.{ext}\n"));
         c.push_str("vumeter_stderr\t\tno\n"); // it would otherwise paint ASCII bars on stderr
+    }
+    if (input.module_exists)(&format!("{ZEAUDIO_MODULE}.{ext}")) {
+        c.push_str(&format!("module\t\t\t{ZEAUDIO_MODULE}.{ext}\n"));
     }
     c.push_str(&format!("module_app\t\tmenu.{ext}\n"));
     c.push_str(&format!("module_app\t\tctrl_tcp.{ext}\n"));

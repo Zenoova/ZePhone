@@ -315,6 +315,32 @@ impl SipEngine for BaresipEngine {
         self.run("stopringing", "").await.map(|_| ())
     }
 
+    async fn set_gains(&self, input: f32, output: f32) -> EngineResult<()> {
+        for (direction, factor) in [("tx", input), ("rx", output)] {
+            if !factor.is_finite() {
+                return Err(EngineError::Invalid("volume invalide".into()));
+            }
+            let factor = factor.clamp(0.0, 4.0);
+            self.run("zegain", &format!("{direction} {factor:.2}"))
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn start_recording(&self, base: &std::path::Path) -> EngineResult<()> {
+        let base = base.to_string_lossy();
+        if base.is_empty() || base.len() > 900 || base.chars().any(char::is_control) {
+            return Err(EngineError::Invalid(
+                "chemin d'enregistrement invalide".into(),
+            ));
+        }
+        self.run("zerec_start", &base).await.map(|_| ())
+    }
+
+    async fn stop_recording(&self) -> EngineResult<()> {
+        self.run("zerec_stop", "").await.map(|_| ())
+    }
+
     async fn set_audio_devices(
         &self,
         input: Option<&str>,

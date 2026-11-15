@@ -34,12 +34,15 @@ sed -i.bak 's/tmr_start(&st->tmr, 500,/tmr_start(\&st->tmr, 60,/' "$SRC/modules/
 rm -f "$SRC/modules/vumeter/vumeter.c.bak"
 grep -c 'tmr_start(&st->tmr, 60,' "$SRC/modules/vumeter/vumeter.c" | grep -qx 2 || { echo "vumeter patch not applied" >&2; exit 1; }
 
+# zeaudio (scripts/baresip-modules/zeaudio): ZePhone's own audio filter — incoming/outgoing gain and local
+# call recording. It is built out of tree through Baresip's APP_MODULES hook.
 cmake -S "$SRC" -B "$WORK/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$BREW" \
-  -DCMAKE_INSTALL_PREFIX="$PREFIX" -DSTATIC=OFF
+  -DCMAKE_INSTALL_PREFIX="$PREFIX" -DSTATIC=OFF \
+  -DAPP_MODULES=zeaudio -DAPP_MODULES_DIR="$ROOT/scripts/baresip-modules"
 cmake --build "$WORK/build" -j"$(sysctl -n hw.ncpu)"
 cmake --install "$WORK/build"
 cp "$SRC/LICENSE" "$PREFIX/LICENSE"   # BSD-3-Clause, shipped with the bundle
 
 echo "Built: $PREFIX"
-ls "$PREFIX/lib/baresip/modules" | grep -E '^(opus|g722|vumeter)\.so$' || true
+ls "$PREFIX/lib/baresip/modules" | grep -E '^(opus|g722|vumeter|zeaudio)\.so$' || true
 BARESIP_PREFIX="$PREFIX" "$ROOT/scripts/prepare-baresip.sh" --force
