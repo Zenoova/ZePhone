@@ -77,7 +77,8 @@ Aucun PBX n'est codé en dur : vous renseignez votre serveur, domaine, identifia
 
 ```
 src/                         React (app/, layouts/, features/{dialer,calls,contacts,history,settings},
-                             components/ui = shadcn, services/telephony = API typée, stores/, hooks/, types/)
+                             components/ui = shadcn, components/icons = icônes Lucide animées (AnimateIcons),
+                             services/telephony = API typée, stores/, hooks/, types/)
 src-tauri/src/
   sip/engine/                trait SipEngine, netstring, parsing des événements Baresip
   sip/engine/baresip/        config, process (cycle de vie), client ctrl_tcp, BaresipEngine (supervision)
