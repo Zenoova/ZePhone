@@ -1,4 +1,6 @@
 import { cn } from "@/lib/utils";
+import { OrbPicker } from "@/components/OrbPicker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { VoiceOrb } from "@/components/VoiceOrb";
 import { isTerminal, useCallsStore } from "@/stores/calls-store";
 import { countUnseenMissed, useHistoryStore } from "@/stores/history-store";
@@ -7,27 +9,34 @@ import { useUiStore } from "@/stores/ui-store";
 import { NAV_ITEMS } from "./nav";
 
 /**
- * The logo is the voice of the person we are talking to — and, between calls, the same living shape
- * at rest. Clicking it brings the keypad page (which shows the call when there is one).
+ * The logo is the voice of the person we are talking to — and, between calls, the same living orb at rest.
+ * Clicking it opens the choice of the voice orb used all over the call screen.
  */
 function SidebarOrb() {
-  const setSection = useUiStore((s) => s.setSection);
-  const callId = useCallsStore((s) => Object.values(s.calls).find((c) => !isTerminal(c))?.id ?? "");
+  const call = useCallsStore((s) => Object.values(s.calls).find((c) => !isTerminal(c)));
+  const callId = call?.id ?? "";
+  const waiting = call !== undefined && call.state !== "connected" && call.state !== "onHold";
   return (
-    <button
-      type="button"
-      onClick={() => setSection("dialer")}
-      aria-label="ZePhone : clavier et appel en cours"
-      title="Clavier / appel en cours"
-      data-testid="sidebar-orb"
-      data-in-call={callId !== ""}
-      className="focus-visible:ring-ring/50 hidden items-center gap-2.5 rounded-2xl px-3 pt-4 pb-3 text-left outline-none focus-visible:ring-[3px] sm:flex sm:justify-center lg:justify-start"
-    >
-      <span className="block size-11 shrink-0">
-        <VoiceOrb callId={callId} source="rx" tone="remote" vivid />
-      </span>
-      <span className="hidden text-lg font-semibold tracking-tight lg:inline">ZePhone</span>
-    </button>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Choisir l'orbe vocal"
+          title="Choisir l'orbe vocal"
+          data-testid="sidebar-orb"
+          data-in-call={callId !== ""}
+          className="focus-visible:ring-ring/50 hidden items-center gap-2.5 rounded-2xl px-3 pt-4 pb-3 text-left outline-none focus-visible:ring-[3px] sm:flex sm:justify-center lg:justify-start"
+        >
+          <span className="block size-11 shrink-0">
+            <VoiceOrb callId={callId} source="rx" tone="remote" vivid waiting={waiting} />
+          </span>
+          <span className="hidden text-lg font-semibold tracking-tight lg:inline">ZePhone</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="right" align="start" sideOffset={8} className="glass glass-dense w-80">
+        <OrbPicker />
+      </PopoverContent>
+    </Popover>
   );
 }
 

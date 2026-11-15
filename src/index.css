@@ -138,6 +138,11 @@
     inset 0 1px 0 color-mix(in oklab, white 35%, transparent);
 }
 
+/* Denser glass for sheets that carry text and controls (popovers). */
+.glass-dense {
+  background: color-mix(in oklab, var(--background) 84%, transparent);
+}
+
 /* Dev-only UI preview (`/?mock`): something colourful behind the glass, standing in for the vibrancy. */
 html[data-preview] {
   background: linear-gradient(135deg, #4f6bff 0%, #b06cff 48%, #ff8fb1 100%);
