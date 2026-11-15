@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
 import { IncomingCallDialog } from "@/features/calls/IncomingCallDialog";
@@ -77,7 +77,7 @@ export function AppShell() {
         <StatusBar />
       </div>
       <IncomingCallDialog />
-      <Toaster position="top-center" richColors closeButton />
+      <Toaster />
     </TooltipProvider>
   );
 }

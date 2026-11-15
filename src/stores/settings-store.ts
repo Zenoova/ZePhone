@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 import { create } from "zustand";
 
 import { DEFAULT_ORB } from "@/lib/voice-orbs";

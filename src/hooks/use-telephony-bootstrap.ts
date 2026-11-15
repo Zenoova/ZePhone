@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { pushLevel } from "@/lib/audio-levels";
 import { isTauri, subscribeTelephony, telephony } from "@/services/telephony";

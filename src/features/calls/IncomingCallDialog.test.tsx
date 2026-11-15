@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn() } }));
 
 import { makeCall } from "@/test/fixtures";
 import { useCallsStore } from "@/stores/calls-store";

@@ -7,7 +7,7 @@ const { invoke, toast, playDtmfTone } = vi.hoisted(() => ({
   playDtmfTone: vi.fn(),
 }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
-vi.mock("sonner", () => ({ toast }));
+vi.mock("@yusufceng1z/ding-react", () => ({ toast }));
 vi.mock("@/lib/dtmf-tones", () => ({ playDtmfTone: (...a: unknown[]) => playDtmfTone(...a) }));
 
 import { makeAccount, makeCall, makeHistory, makeStatus } from "@/test/fixtures";

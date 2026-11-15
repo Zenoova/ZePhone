@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { invoke, playMuteSound } = vi.hoisted(() => ({ invoke: vi.fn(), playMuteSound: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn() } }));
 vi.mock("@/lib/ui-sounds", () => ({ playMuteSound: (...a: unknown[]) => playMuteSound(...a) }));
 
 import { makeCall } from "@/test/fixtures";

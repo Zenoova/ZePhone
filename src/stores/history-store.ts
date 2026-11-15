@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 import { create } from "zustand";
 
 import { errorMessage, telephony } from "@/services/telephony";

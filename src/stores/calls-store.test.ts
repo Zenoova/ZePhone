@@ -5,7 +5,7 @@ const { invoke, toast } = vi.hoisted(() => ({
   toast: { error: vi.fn(), success: vi.fn(), warning: vi.fn() },
 }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
-vi.mock("sonner", () => ({ toast }));
+vi.mock("@yusufceng1z/ding-react", () => ({ toast }));
 
 import { makeCall } from "@/test/fixtures";
 

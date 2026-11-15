@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { invoke, toast } = vi.hoisted(() => ({ invoke: vi.fn(), toast: { error: vi.fn() } }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
-vi.mock("sonner", () => ({ toast }));
+vi.mock("@yusufceng1z/ding-react", () => ({ toast }));
 
 import { DEFAULT_SETTINGS, mergeSettings, useSettingsStore } from "./settings-store";
 

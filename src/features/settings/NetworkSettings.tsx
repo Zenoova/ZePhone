@@ -1,6 +1,6 @@
 import { RefreshCw, ScrollText } from "@/components/icons";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";

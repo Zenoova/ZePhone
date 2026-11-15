@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn(), info: vi.fn() } }));
+vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn(), info: vi.fn() } }));
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAccountsStore } from "@/stores/accounts-store";

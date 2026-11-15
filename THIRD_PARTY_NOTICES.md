@@ -42,7 +42,7 @@ are MIT and/or Apache-2.0 licensed. List them with `cargo install cargo-license 
 
 React, Vite, Tailwind CSS, Zustand, Radix UI primitives, shadcn/ui components (MIT, copied into `src/components/ui`),
 `@animateicons/react` (MIT, https://animateicons.in — animated Lucide icons; the underlying Lucide drawings are ISC and MIT),
-`motion` (MIT, bundled with it), `sonner`, `next-themes`, `class-variance-authority`, `clsx`, `tailwind-merge` — MIT/ISC.
+`motion` (MIT, bundled with it), `@yusufceng1z/ding-react` (MIT, https://ding.yusufcengiz.dev — the alerts), `next-themes`, `class-variance-authority`, `clsx`, `tailwind-merge` — MIT/ISC.
 List them with `npx license-checker --summary`.
 
 ### Joly UI Dock (navigation)

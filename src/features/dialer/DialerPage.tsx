@@ -1,6 +1,6 @@
 import { Delete, Phone, UserPlus } from "@/components/icons";
 import { useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@yusufceng1z/ding-react";
 
 import { StatusDot } from "@/components/RegistrationBadge";
 import { Button } from "@/components/ui/button";
