@@ -1,14 +1,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useContactsStore } from "@/stores/contacts-store";
@@ -43,7 +36,10 @@ export function ContactFormDialog({
   // The dialog content is remounted on every open (see `key` below), so state starts fresh.
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        title={contact ? "Modifier le contact" : "Nouveau contact"}
+        description="Le numéro peut être un numéro de téléphone, un poste ou une adresse SIP."
+      >
         <ContactFormBody
           key={contact?.id ?? "new"}
           contact={contact}
@@ -92,10 +88,6 @@ function ContactFormBody({
       }}
       className="space-y-4"
     >
-      <DialogHeader>
-        <DialogTitle>{contact ? "Modifier le contact" : "Nouveau contact"}</DialogTitle>
-        <DialogDescription>Le numéro peut être un numéro de téléphone, un poste ou une adresse SIP.</DialogDescription>
-      </DialogHeader>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="c-first">Prénom</Label>
@@ -119,14 +111,14 @@ function ContactFormBody({
           placeholder="1002 · +33 6 12 34 56 78 · sip:bob@example.com"
         />
       </div>
-      <DialogFooter>
+      <div className="flex justify-end gap-2 pt-3">
         <Button type="button" variant="outline" onClick={onDone}>
           Annuler
         </Button>
         <Button type="submit" disabled={busy || !hasName || !form.number.trim()}>
           Enregistrer
         </Button>
-      </DialogFooter>
+      </div>
     </form>
   );
 }

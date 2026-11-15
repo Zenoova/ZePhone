@@ -2,14 +2,7 @@ import { PhoneForwarded } from "@/components/icons";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { sanitizeDialInput } from "@/lib/phone";
@@ -41,11 +34,10 @@ export function TransferDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Transférer l'appel</DialogTitle>
-          <DialogDescription>Saisissez le poste ou le numéro vers lequel transférer cet appel.</DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        title="Transférer l'appel"
+        description="Saisissez le poste ou le numéro vers lequel transférer cet appel."
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -62,14 +54,14 @@ export function TransferDialog({
             placeholder="Poste, numéro ou adresse SIP"
             autoComplete="off"
           />
-          <DialogFooter className="pt-3">
+          <div className="flex justify-end gap-2 pt-3">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Annuler
             </Button>
             <Button type="submit" disabled={busy || !target.trim()}>
               <PhoneForwarded className="size-4" aria-hidden /> Transférer
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

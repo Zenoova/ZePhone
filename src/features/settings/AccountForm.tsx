@@ -2,14 +2,7 @@ import { useState } from "react";
 
 import { PasswordInput } from "@/components/PasswordInput";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,7 +24,11 @@ export function AccountFormDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        title={account ? "Modifier le compte SIP" : "Ajouter un compte SIP"}
+        description="Renseignez les informations fournies par votre opérateur VoIP ou votre administrateur PBX."
+        style={{ width: "min(calc(100vw - 2rem), 640px)" }}
+      >
         <AccountFormBody key={account?.id ?? "new"} account={account} onDone={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
@@ -81,13 +78,6 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
       }}
       className="space-y-5"
     >
-      <DialogHeader>
-        <DialogTitle>{account ? "Modifier le compte SIP" : "Ajouter un compte SIP"}</DialogTitle>
-        <DialogDescription>
-          Renseignez les informations fournies par votre opérateur VoIP ou votre administrateur PBX.
-        </DialogDescription>
-      </DialogHeader>
-
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="a-label" label="Nom du compte" hint="Facultatif. Par défaut : identifiant@domaine">
           <Input id="a-label" value={form.label} onChange={text("label")} placeholder="Bureau" autoFocus />
@@ -219,14 +209,14 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
         </div>
       </details>
 
-      <DialogFooter>
+      <div className="flex justify-end gap-2 pt-3">
         <Button type="button" variant="outline" onClick={onDone}>
           Annuler
         </Button>
         <Button type="submit" disabled={busy || !valid}>
           {account ? "Enregistrer" : "Ajouter et connecter"}
         </Button>
-      </DialogFooter>
+      </div>
     </form>
   );
 }

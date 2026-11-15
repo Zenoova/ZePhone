@@ -1,16 +1,7 @@
-import type { ReactNode } from "react";
+import { Button } from "@/components/arc/button/button";
+import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
+/** A yes/no question (a deletion, mostly) in an Arc dialog: it only closes on a choice or on Escape. */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -23,28 +14,23 @@ export function ConfirmDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description: ReactNode;
+  description: string;
   confirmLabel?: string;
   onConfirm: () => void;
   destructive?: boolean;
 }) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Annuler</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className={destructive ? "bg-destructive hover:bg-destructive/90 text-white" : undefined}
-          >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent title={title} description={description}>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Annuler
+          </Button>
+          <Button variant={destructive ? "danger" : "primary"} onClick={onConfirm}>
             {confirmLabel}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

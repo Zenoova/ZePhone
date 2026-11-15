@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/arc/dialog/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { telephony } from "@/services/telephony";
@@ -161,11 +161,11 @@ export function NetworkSettings() {
       </SettingsSection>
 
       <Dialog open={logOpen} onOpenChange={setLogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Journal du moteur SIP</DialogTitle>
-            <DialogDescription>Les mots de passe sont masqués automatiquement.</DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          title="Journal du moteur SIP"
+          description="Les mots de passe sont masqués automatiquement."
+          style={{ width: "min(calc(100vw - 2rem), 720px)" }}
+        >
           <pre
             data-selectable
             className="bg-muted max-h-96 overflow-auto rounded-lg p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap"
