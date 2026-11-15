@@ -45,6 +45,13 @@ React, Vite, Tailwind CSS, Zustand, Radix UI primitives, shadcn/ui components (M
 `motion` (MIT, bundled with it), `@yusufceng1z/ding-react` (MIT, https://ding.yusufcengiz.dev — the alerts), `next-themes`, `class-variance-authority`, `clsx`, `tailwind-merge` — MIT/ISC.
 List them with `npx license-checker --summary`.
 
+### Arc UI, Sona UI (components)
+
+`src/components/arc/` holds components of [Arc UI](https://uiarc.dev) (free tier, MIT); `src/components/ui/fluid-slider.tsx`
+is the Fluid Slider of [Sona UI](https://www.sonaui.com) (MIT). Both use `motion` (MIT); the slider uses Base UI
+(`@base-ui/react`, MIT). The changes made to the copied files are listed in `src/components/arc/README.md` and at the
+top of `fluid-slider.tsx`.
+
 ### Joly UI Dock (navigation)
 
 `src/components/ui/dock.tsx` is adapted from the Dock of [Joly UI](https://www.jolyui.dev/docs/components/navigation/dock),

@@ -3,6 +3,7 @@ import {
   BellIcon,
   CheckIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   ChevronUpIcon,
   CircleAlertIcon,
@@ -46,6 +47,14 @@ import {
   UsersIcon,
   Volume2Icon,
   XIcon,
+  AppWindowIcon,
+  AudioLinesIcon,
+  BugIcon,
+  CircleDotIcon,
+  CopyIcon,
+  FolderOpenIcon,
+  MenuIcon,
+  PinIcon,
 } from "@animateicons/react/lucide";
 import {
   type ComponentProps,
@@ -125,6 +134,7 @@ function createIcon(Base: AnimatedIcon, name: string): AppIcon {
 export const Bell = createIcon(BellIcon, "Bell");
 export const Check = createIcon(CheckIcon, "Check");
 export const ChevronDown = createIcon(ChevronDownIcon, "ChevronDown");
+export const ChevronLeft = createIcon(ChevronLeftIcon, "ChevronLeft");
 export const ChevronRight = createIcon(ChevronRightIcon, "ChevronRight");
 export const ChevronUp = createIcon(ChevronUpIcon, "ChevronUp");
 export const Circle = createIcon(CircleIcon, "Circle");
@@ -170,3 +180,11 @@ export const UserRound = createIcon(UserRoundIcon, "UserRound");
 export const Users = createIcon(UsersIcon, "Users");
 export const Volume2 = createIcon(Volume2Icon, "Volume2");
 export const X = createIcon(XIcon, "X");
+export const AppWindow = createIcon(AppWindowIcon, "AppWindow");
+export const AudioLines = createIcon(AudioLinesIcon, "AudioLines");
+export const Bug = createIcon(BugIcon, "Bug");
+export const CircleDot = createIcon(CircleDotIcon, "CircleDot");
+export const Copy = createIcon(CopyIcon, "Copy");
+export const FolderOpen = createIcon(FolderOpenIcon, "FolderOpen");
+export const Menu = createIcon(MenuIcon, "Menu");
+export const Pin = createIcon(PinIcon, "Pin");

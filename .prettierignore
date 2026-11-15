@@ -6,3 +6,4 @@ package-lock.json
 .baresip-build
 
 src/components/orbs
+src/components/arc
