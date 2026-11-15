@@ -189,7 +189,7 @@ export interface Settings {
     netInterface: string | null;
   };
   recording: {
-    /** Record every call as soon as it is answered. */
+    /** Record every call as soon as it is answered (there is no record button). */
     autoRecord: boolean;
   };
 }

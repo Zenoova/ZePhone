@@ -110,16 +110,16 @@ export function AudioSettings() {
 
       <SettingsSection
         title="Enregistrement des appels"
-        description="Les enregistrements restent sur ce Mac, dans le dossier de données de ZePhone. Vous les retrouvez dans l'onglet Enregistrements."
+        description="Les enregistrements restent sur ce Mac, dans le dossier de données de ZePhone. Vous les retrouvez dans l'onglet Enregistrements du dock."
       >
         <SettingRow
-          label="Enregistrer tous les appels"
-          description="Dès qu'un appel est décroché. Informez votre correspondant : la loi peut exiger son accord."
+          label="Enregistrer automatiquement les appels"
+          description="Chaque appel est enregistré dès qu'il est décroché. Désactivez-le si vous ne le souhaitez pas : informer votre correspondant peut être une obligation légale."
         >
           <Switch
             checked={settings.recording.autoRecord}
             onCheckedChange={(v) => void update({ recording: { autoRecord: v } })}
-            aria-label="Enregistrer tous les appels"
+            aria-label="Enregistrer automatiquement les appels"
           />
         </SettingRow>
       </SettingsSection>

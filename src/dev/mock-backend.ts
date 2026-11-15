@@ -133,7 +133,7 @@ export function installMockBackend(): void {
       voiceOrb: "shdr-32",
     },
     network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
-    recording: { autoRecord: false },
+    recording: { autoRecord: true },
   };
   const calls = new Map<string, Call>();
   const devices: AudioDevices = {
@@ -381,16 +381,6 @@ export function installMockBackend(): void {
     hold_call: (a) => patch(String(a?.id), { state: "onHold", heldLocally: true }),
     resume_call: (a) => patch(String(a?.id), { state: "connected", heldLocally: false }),
     set_call_mute: (a) => patch(String(a?.id), { muted: Boolean(a?.muted) }),
-    start_recording: (a) => patch(String(a?.id), { recording: true }),
-    stop_recording: () => {
-      const c = [...calls.values()].find((x) => x.recording);
-      if (!c) return null;
-      patch(c.id, { recording: false });
-      const r = rec(`r${Date.now()}`, 12, c.remoteNumber, c.remoteName, c.direction, 0);
-      recordings = [r, ...recordings];
-      emit("recordings:changed", null);
-      return r;
-    },
     list_recordings: () => recordings,
     delete_recording: (a) => {
       recordings = recordings.filter((r) => r.id !== a?.id);

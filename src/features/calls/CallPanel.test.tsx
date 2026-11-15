@@ -157,9 +157,9 @@ describe("CallPanel", () => {
       expect(invoke).toHaveBeenLastCalledWith("send_dtmf", { id: "call1", digits: "4" });
     });
 
-    it("says when the microphone is muted", () => {
+    it("shows a muted microphone on its button only, with no text about it", () => {
       show(makeCall({ state: "connected", muted: true, connectedAt: new Date().toISOString() }));
-      expect(screen.getByText("Micro coupé")).toBeInTheDocument();
+      expect(screen.queryByText("Micro coupé")).toBeNull();
       expect(screen.getByRole("button", { name: "Réactiver le micro" })).toHaveAttribute("aria-pressed", "true");
     });
 

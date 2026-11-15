@@ -1,4 +1,4 @@
-import { CircleDot, Grid3x3, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneOff, Play } from "@/components/icons";
+import { Grid3x3, Mic, MicOff, Pause, Phone, PhoneForwarded, PhoneOff, Play } from "@/components/icons";
 import { useState, type ReactNode } from "react";
 
 import { VoiceOrb } from "@/components/VoiceOrb";
@@ -117,15 +117,6 @@ export function CallPanel({ call }: { call: Call }) {
           {CALL_STATE_LABEL[call.state]}
           {onHold && call.heldRemotely && !call.heldLocally && " par le correspondant"}
         </p>
-        {call.recording && (
-          <p
-            role="status"
-            data-testid="rec-indicator"
-            className="text-destructive flex items-center gap-1.5 text-xs font-semibold tracking-wide uppercase"
-          >
-            <CircleDot className="size-3 animate-pulse" aria-hidden /> Enregistrement
-          </p>
-        )}
         {(inDialog || (terminal && call.durationSecs > 0)) && (
           <p className="tabular text-xl font-light tracking-wider" aria-label="Durée de l'appel">
             {formatDuration(seconds)}
@@ -153,11 +144,6 @@ export function CallPanel({ call }: { call: Call }) {
             />
           )}
         </div>
-        {call.muted && !terminal && (
-          <p role="status" className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
-            <MicOff className="size-3.5" aria-hidden /> Micro coupé
-          </p>
-        )}
       </div>
 
       {incoming && (

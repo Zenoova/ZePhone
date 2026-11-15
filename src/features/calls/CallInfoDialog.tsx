@@ -32,7 +32,6 @@ export function CallInfoDialog({
     ["Motif", call.reason ?? "—"],
     ["Micro coupé", call.muted ? "oui" : "non"],
     ["En attente", call.heldLocally ? "par nous" : call.heldRemotely ? "par le correspondant" : "non"],
-    ["Enregistrement", call.recording ? "en cours" : "non"],
   ];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

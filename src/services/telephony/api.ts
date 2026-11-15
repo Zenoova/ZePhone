@@ -63,8 +63,6 @@ export const telephony = {
   transferCall: (id: string, target: string) => call<void>("transfer_call", { id, target }),
 
   // recording and volumes
-  startRecording: (id: string) => call<void>("start_recording", { id }),
-  stopRecording: () => call<Recording | null>("stop_recording"),
   listRecordings: () => call<Recording[]>("list_recordings"),
   deleteRecording: (id: string) => call<void>("delete_recording", { id }),
   /** Live volume change (percent), not saved: the settings are what makes it last. */

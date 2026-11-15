@@ -4,17 +4,16 @@ import { useState } from "react";
 import { Button } from "@/components/arc/button/button";
 import DropdownMenu from "@/components/arc/dropdown-menu/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/arc/popover/popover";
-import { AppWindow, CircleDot, Copy, Menu, Pin, ScrollText, Info, Volume2 } from "@/components/icons";
+import { AppWindow, Copy, Menu, Pin, ScrollText, Info, Volume2 } from "@/components/icons";
 import { VolumeSliders } from "@/components/VolumeSliders";
 import { telephony } from "@/services/telephony";
 import type { Call } from "@/types/telephony";
 
 import { CallInfoDialog } from "./CallInfoDialog";
 import { EngineLogDialog } from "./EngineLogDialog";
-import { canRecord, toggleRecording } from "./recording";
 
 /**
- * Top right of the call: record, the volumes, and the menu of options — the developer ones (call details,
+ * Top right of the call: the volumes, and the menu of options — the developer ones (call details,
  * engine log, call id) and a few others (keep the window on top, bring up the main window).
  */
 export function CallToolbar({ call }: { call: Call }) {
@@ -39,18 +38,6 @@ export function CallToolbar({ call }: { call: Call }) {
 
   return (
     <div className="absolute top-3 right-3 z-20 flex items-center gap-1" data-testid="call-toolbar">
-      <Button
-        variant="ghost"
-        size="sm"
-        aria-label={call.recording ? "Arrêter l'enregistrement" : "Enregistrer l'appel"}
-        aria-pressed={call.recording}
-        title={call.recording ? "Arrêter l'enregistrement" : "Enregistrer l'appel"}
-        disabled={!canRecord(call) && !call.recording}
-        onClick={() => void toggleRecording(call)}
-      >
-        <CircleDot className={call.recording ? "text-destructive size-4 animate-pulse" : "size-4"} />
-      </Button>
-
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="sm" aria-label="Volume du son" title="Volume du son">

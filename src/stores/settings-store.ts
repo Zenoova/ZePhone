@@ -18,7 +18,7 @@ export const DEFAULT_SETTINGS: Settings = {
     voiceOrb: DEFAULT_ORB,
   },
   network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
-  recording: { autoRecord: false },
+  recording: { autoRecord: true },
 };
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };

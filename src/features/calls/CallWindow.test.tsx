@@ -41,7 +41,7 @@ describe("CallWindow", () => {
     const names = within(screen.getByTestId("call-toolbar"))
       .getAllByRole("button")
       .map((b) => b.getAttribute("aria-label"));
-    expect(names).toEqual(["Enregistrer l'appel", "Volume du son", "Options de l'appel"]);
+    expect(names).toEqual(["Volume du son", "Options de l'appel"]);
   });
 
   it("an incoming call rings in this window, with its answer and reject buttons", () => {
@@ -94,32 +94,12 @@ describe("CallWindow", () => {
 });
 
 describe("the toolbar", () => {
-  it("starts the recording of an established call, and shows when it is on", async () => {
-    useCallsStore.setState({ calls: { call1: connected() } });
-    show();
-    fireEvent.click(screen.getByRole("button", { name: "Enregistrer l'appel" }));
-    expect(invoke).toHaveBeenCalledWith("start_recording", { id: "call1" });
-
-    act(() => useCallsStore.setState({ calls: { call1: connected({ recording: true }) } }));
-    expect(screen.getByTestId("rec-indicator")).toBeInTheDocument();
-    invoke.mockResolvedValueOnce({ id: "r1" });
-    fireEvent.click(screen.getByRole("button", { name: "Arrêter l'enregistrement" }));
-    await waitFor(() => expect(toast.success).toHaveBeenCalled());
-    expect(invoke).toHaveBeenCalledWith("stop_recording", undefined);
-  });
-
-  it("says so when nothing was recorded", async () => {
+  it("has no record button and says nothing about recording: it is automatic", () => {
     useCallsStore.setState({ calls: { call1: connected({ recording: true }) } });
     show();
-    invoke.mockResolvedValueOnce(null);
-    fireEvent.click(screen.getByRole("button", { name: "Arrêter l'enregistrement" }));
-    await waitFor(() => expect(toast.info).toHaveBeenCalled());
-  });
-
-  it("cannot start a recording before the call is established", () => {
-    useCallsStore.setState({ calls: { call1: makeCall({ state: "ringing" }) } });
-    show();
-    expect(screen.getByRole("button", { name: "Enregistrer l'appel" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /enregistr/i })).toBeNull();
+    expect(screen.queryByText(/enregistr/i)).toBeNull();
+    expect(screen.queryByTestId("rec-indicator")).toBeNull();
   });
 
   it("opens the options: developer ones and a few others", async () => {
