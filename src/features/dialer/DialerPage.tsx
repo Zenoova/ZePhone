@@ -28,7 +28,6 @@ export function DialerPage() {
   const setDialValue = useUiStore((s) => s.setDialValue);
   const dialAccountId = useUiStore((s) => s.dialAccountId);
   const setDialAccount = useUiStore((s) => s.setDialAccount);
-  const openSettings = useUiStore((s) => s.openSettings);
   const setSection = useUiStore((s) => s.setSection);
   const dialing = useCallsStore((s) => s.dialing);
   const dial = useCallsStore((s) => s.dial);
@@ -121,7 +120,7 @@ export function DialerPage() {
             Ajoutez votre compte SIP (serveur, identifiant, mot de passe) pour passer et recevoir des appels.
           </p>
         </div>
-        <ArcButton onClick={() => openSettings("accounts")}>Ajouter un compte SIP</ArcButton>
+        <ArcButton onClick={() => setSection("accounts")}>Ajouter un compte SIP</ArcButton>
       </div>
     );
   }

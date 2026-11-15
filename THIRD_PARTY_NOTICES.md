@@ -47,6 +47,11 @@ React, Vite, Tailwind CSS, Zustand, Radix UI primitives, shadcn/ui components (M
 `motion` (MIT, bundled with it), `@yusufceng1z/ding-react` (MIT, https://ding.yusufcengiz.dev — the alerts), `next-themes`, `class-variance-authority`, `clsx`, `tailwind-merge` — MIT/ISC.
 List them with `npx license-checker --summary`.
 
+### Blobatar (account avatars)
+
+`blobatar` and `@blobatar/react` (MIT, [blobatar.dev](https://blobatar.dev)) draw the small face of each SIP account locally
+from its address; nothing is fetched.
+
 ### Detent (voice note)
 
 `src/components/detent/` is the free Voice note of [Detent](https://detentui.com/components/voicenote) (MIT, Copyright (c)

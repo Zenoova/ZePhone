@@ -38,6 +38,7 @@ describe("NavDock", () => {
       "Contacts",
       "Historique",
       "Enregistrements",
+      "Comptes",
       "Paramètres",
     ]);
   });

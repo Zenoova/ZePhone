@@ -5,6 +5,7 @@ import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
 import { ContactsPage } from "@/features/contacts/ContactsPage";
 import { HomePage } from "@/features/home/HomePage";
 import { HistoryPage } from "@/features/history/HistoryPage";
+import { AccountsPage } from "@/features/accounts/AccountsPage";
 import { RecordingsPage } from "@/features/recordings/RecordingsPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { type Section, useUiStore } from "@/stores/ui-store";
@@ -19,10 +20,11 @@ const PAGES: Record<Section, () => React.JSX.Element> = {
   contacts: ContactsPage,
   history: HistoryPage,
   recordings: RecordingsPage,
+  accounts: AccountsPage,
   settings: SettingsPage,
 };
 
-/** ⌘1…⌘5 (Ctrl on Windows/Linux) switch sections. */
+/** ⌘1…⌘6 (Ctrl on Windows/Linux) switch sections. */
 function useShellBehaviour() {
   const setSection = useUiStore((s) => s.setSection);
 
