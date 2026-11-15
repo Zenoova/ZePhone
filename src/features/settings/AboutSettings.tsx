@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/arc/badge/badge";
 import { useEngineStore } from "@/stores/engine-store";
 
 import { SettingsSection } from "./parts";
@@ -39,7 +39,7 @@ export function AboutSettings() {
 
       <SettingsSection title="Moteur SIP">
         <Row k="Moteur" v={engine ? `${engine.name} ${engine.version ?? ""}` : "—"} />
-        <Row k="État" v={<Badge variant="secondary">{engine?.state ?? "—"}</Badge>} />
+        <Row k="État" v={<Badge tone="neutral">{engine?.state ?? "—"}</Badge>} />
         {engine && "reason" in engine && <Row k="Détail" v={engine.reason} />}
         <Row k="Codecs" v={engine?.codecs.join(", ") || "—"} />
       </SettingsSection>

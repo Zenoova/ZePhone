@@ -8,7 +8,6 @@ const { invoke, toast } = vi.hoisted(() => ({
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
 vi.mock("@yusufceng1z/ding-react", () => ({ toast }));
 
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCallsStore } from "@/stores/calls-store";
 import { DEFAULT_SETTINGS, useSettingsStore } from "@/stores/settings-store";
 import { makeCall } from "@/test/fixtures";
@@ -17,9 +16,9 @@ import { CallWindow } from "./CallWindow";
 
 const show = () =>
   render(
-    <TooltipProvider>
+    <>
       <CallWindow />
-    </TooltipProvider>,
+    </>,
   );
 
 const connected = (over = {}) => makeCall({ state: "connected", connectedAt: new Date().toISOString(), ...over });

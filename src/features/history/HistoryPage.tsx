@@ -17,7 +17,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { formatDateTime, formatDurationHuman } from "@/lib/format";
 import { RESULT_LABEL } from "@/lib/labels";

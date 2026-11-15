@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { RegistrationBadge } from "@/components/RegistrationBadge";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/arc/badge/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { TRANSPORT_LABEL } from "@/lib/labels";
@@ -50,8 +50,8 @@ function AccountCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="truncate font-semibold">{account.label}</h3>
             {account.isDefault && (
-              <Badge variant="secondary" className="gap-1">
-                <Star className="size-3" aria-hidden /> Par défaut
+              <Badge tone="neutral" icon={<Star className="size-3" aria-hidden />}>
+                Par défaut
               </Badge>
             )}
             <RegistrationBadge state={state} />

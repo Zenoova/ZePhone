@@ -1,16 +1,16 @@
 import { type AppIcon, CircleAlert, CircleCheck, CircleDashed, LoaderCircle, PlugZap } from "@/components/icons";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeTone } from "@/components/arc/badge/badge";
 import { REGISTRATION_LABEL } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { RegistrationState } from "@/types/telephony";
 
-const STYLE: Record<RegistrationState, string> = {
-  registered: "border-success/30 bg-success/10 text-success",
-  connecting: "border-warning/40 bg-warning/15 text-warning-foreground dark:text-warning",
-  error: "border-destructive/30 bg-destructive/10 text-destructive",
-  disconnected: "border-border bg-muted text-muted-foreground",
-  unconfigured: "border-border bg-muted text-muted-foreground",
+const TONE: Record<RegistrationState, BadgeTone> = {
+  registered: "success",
+  connecting: "warning",
+  error: "danger",
+  disconnected: "neutral",
+  unconfigured: "neutral",
 };
 
 const ICON: Record<RegistrationState, AppIcon> = {
@@ -24,8 +24,13 @@ const ICON: Record<RegistrationState, AppIcon> = {
 export function RegistrationBadge({ state, className }: { state: RegistrationState; className?: string }) {
   const Icon = ICON[state];
   return (
-    <Badge variant="outline" className={cn("gap-1.5 font-medium", STYLE[state], className)} data-state={state}>
-      <Icon className={cn("size-3", state === "connecting" && "animate-spin")} aria-hidden />
+    <Badge
+      tone={TONE[state]}
+      outline
+      icon={<Icon className={cn("size-3", state === "connecting" && "animate-spin")} aria-hidden />}
+      className={className}
+      data-state={state}
+    >
       {REGISTRATION_LABEL[state]}
     </Badge>
   );

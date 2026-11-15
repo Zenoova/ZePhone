@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 
 import { Toaster } from "@/components/Toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
 import { ContactsPage } from "@/features/contacts/ContactsPage";
 import { HomePage } from "@/features/home/HomePage";
@@ -47,7 +46,7 @@ export function AppShell() {
   useShellBehaviour();
 
   return (
-    <TooltipProvider delayDuration={300}>
+    <>
       <div className="flex h-full flex-col">
         {/* The dock floats over the bottom of the page: what scrolls shows through its glass. */}
         <div className="relative min-h-0 flex-1">
@@ -63,6 +62,6 @@ export function AppShell() {
         <StatusBar />
       </div>
       <Toaster />
-    </TooltipProvider>
+    </>
   );
 }

@@ -2,7 +2,7 @@ import { TriangleAlert, CircleCheck, Mic, RefreshCw } from "@/components/icons";
 import { useEffect } from "react";
 
 import { Alert } from "@/features/settings/alert";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/arc/badge/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -163,7 +163,7 @@ export function AudioSettings() {
           <div className="flex flex-wrap gap-2">
             {codecs.length === 0 && <span className="text-muted-foreground text-sm">Moteur non démarré</span>}
             {codecs.map((c) => (
-              <Badge key={c} variant="secondary">
+              <Badge key={c} tone="neutral">
                 {c}
               </Badge>
             ))}

@@ -5,7 +5,6 @@ const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
 vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn() } }));
 
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { makeCall } from "@/test/fixtures";
 import type { Call } from "@/types/telephony";
 import { useCallsStore } from "@/stores/calls-store";
@@ -15,9 +14,9 @@ import { CallPanel } from "./CallPanel";
 function show(call: Call) {
   useCallsStore.setState({ calls: { [call.id]: call } });
   return render(
-    <TooltipProvider>
+    <>
       <CallPanel call={call} />
-    </TooltipProvider>,
+    </>,
   );
 }
 
