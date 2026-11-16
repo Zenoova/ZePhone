@@ -104,6 +104,16 @@ async fn world() -> Option<World> {
         o.audio_override = Some(audio.clone());
         o
     }));
+    // What the engine is on at the start (the router tells the manager in the application): without it, a switch
+    // of one role would put the other one on the machine's real default device.
+    let (src, player) = ("440".to_string(), a_rx.display().to_string());
+    mgr.set_audio_names(Arc::new(move || {
+        [
+            Some(src.clone()),
+            Some(player.clone()),
+            Some(player.clone()),
+        ]
+    }));
     mgr.start().await.ok()?;
     mgr.save_account(AccountInput {
         id: None,
