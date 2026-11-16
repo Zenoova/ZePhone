@@ -2,14 +2,7 @@ import { create } from "zustand";
 
 export type Section = "dialer" | "contacts" | "history" | "recordings" | "settings";
 export type SettingsTab =
-  | "accounts"
-  | "directory"
-  | "audio"
-  | "network"
-  | "notifications"
-  | "shortcuts"
-  | "general"
-  | "about";
+  "accounts" | "directory" | "audio" | "network" | "notifications" | "shortcuts" | "general" | "about";
 
 /** Where the window was brought forward by a shortcut or the command line: the page that should take the keyboard. */
 export type FocusTarget = "dialer" | "search";

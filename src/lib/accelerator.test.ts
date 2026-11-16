@@ -18,7 +18,10 @@ describe("recording a combination", () => {
       accelerator: "CommandOrControl+Alt+Shift+M",
     });
     // A French keyboard types "&" on the Digit1 key: the physical key is what counts.
-    expect(recordKey(keys("Digit1", { metaKey: true }), true)).toEqual({ kind: "done", accelerator: "CommandOrControl+1" });
+    expect(recordKey(keys("Digit1", { metaKey: true }), true)).toEqual({
+      kind: "done",
+      accelerator: "CommandOrControl+1",
+    });
   });
 
   it("tells ⌘ from Control on a Mac, and Ctrl from the Windows key elsewhere", () => {

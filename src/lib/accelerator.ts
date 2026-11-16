@@ -55,7 +55,10 @@ export function mainKey(code: string): string | null {
 }
 
 /** `mac`: ⌘ is the portable "CommandOrControl" and the Control key is a modifier of its own. Elsewhere, the reverse. */
-export function heldModifiers(e: Pick<KeyboardEvent, "ctrlKey" | "altKey" | "shiftKey" | "metaKey">, mac: boolean): string[] {
+export function heldModifiers(
+  e: Pick<KeyboardEvent, "ctrlKey" | "altKey" | "shiftKey" | "metaKey">,
+  mac: boolean,
+): string[] {
   const out: string[] = [];
   if (mac) {
     if (e.metaKey) out.push("CommandOrControl");

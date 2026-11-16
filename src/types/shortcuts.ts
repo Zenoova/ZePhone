@@ -1,14 +1,7 @@
 /** Types shared with the Rust backend (`src-tauri/src/shortcuts/mod.rs`). */
 
 export type ShortcutAction =
-  | "answer"
-  | "reject"
-  | "hangup"
-  | "toggleMute"
-  | "toggleHold"
-  | "showDialer"
-  | "showSearch"
-  | "toggleDnd";
+  "answer" | "reject" | "hangup" | "toggleMute" | "toggleHold" | "showDialer" | "showSearch" | "toggleDnd";
 
 /**
  * Where a combination stands. `failed` means it is saved but the system could not register it: it does nothing,

@@ -23,7 +23,16 @@ describe("SettingsPage", () => {
   it("uses the same tabs as the history page, without the accounts (they have a page of their own)", () => {
     render(<SettingsPage />);
     const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
-    expect(tabs).toEqual(["Comptes SIP", "Annuaire", "Audio", "Réseau", "Notifications", "Raccourcis", "Général", "À propos"]);
+    expect(tabs).toEqual([
+      "Comptes SIP",
+      "Annuaire",
+      "Audio",
+      "Réseau",
+      "Notifications",
+      "Raccourcis",
+      "Général",
+      "À propos",
+    ]);
     expect(screen.getByRole("tab", { name: "Audio" })).toHaveAttribute("data-state", "active");
   });
 
