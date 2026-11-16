@@ -1,11 +1,13 @@
 pub mod app;
 pub mod audio;
 pub mod commands;
+pub mod control;
 pub mod database;
 pub mod directory;
 pub mod error;
 pub mod recording;
 pub mod security;
+pub mod shortcuts;
 pub mod sip;
 
 use std::{
@@ -22,13 +24,15 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use crate::{
     app::{
-        AppState, MAIN_WINDOW, directory_events::TauriDirectoryEvents, show_main_window,
-        sink::TauriSink, tray,
+        AppState, MAIN_WINDOW, directory_events::TauriDirectoryEvents, shell::TauriShell,
+        show_main_window, sink::TauriSink, tray,
     },
+    control::{controller::Controller, socket},
     database::Database,
     directory::{connectors::RealConnectorFactory, service::DirectoryService},
     error::{AppError, AppResult},
     security::secrets::KeyringStore,
+    shortcuts::{ShortcutService, tauri_backend::TauriHotkeys},
     sip::{
         engine::{
             SipEngine,
@@ -96,12 +100,20 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     directory.start();
     // A call from somebody the address book does not know is named by the company directory, when it is sure.
     manager.set_caller_lookup(directory.clone());
+    // One executor for everything that drives calls from outside the window: shortcuts, tray menu, command line.
+    let controller = Controller::new(manager.clone(), Arc::new(TauriShell::new(handle.clone())));
+    let shortcuts = ShortcutService::new(db.clone(), Arc::new(TauriHotkeys::new(handle.clone())));
+    shortcuts.start();
     app.manage(AppState {
         manager: manager.clone(),
         directory,
         db,
+        controller: controller.clone(),
+        shortcuts,
+        control_server: std::sync::Mutex::new(None),
         shutting_down: AtomicBool::new(false),
     });
+    start_control_socket(handle.clone(), controller);
 
     tray::setup(&handle, settings.general.show_tray_icon)?;
     app::window::apply_appearance(&handle, &settings.general);
@@ -132,6 +144,35 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     });
     Ok(())
+}
+
+/// Opens the private socket `zephone ctl` talks to. Without it the application works the same: only the command
+/// line is unavailable.
+fn start_control_socket(app: AppHandle, controller: Arc<Controller>) {
+    tauri::async_runtime::spawn(async move {
+        let path = match socket::socket_path() {
+            Ok(p) => p,
+            Err(e) => return log::warn!("control socket not started: {e}"),
+        };
+        match socket::Server::start(path, controller).await {
+            Ok(server) => {
+                if let Some(state) = app.try_state::<AppState>() {
+                    *state.control_server.lock().unwrap() = Some(server);
+                }
+            }
+            Err(e) => log::warn!("control socket not started: {e}"),
+        }
+    });
+}
+
+/// Frees what other programs must be able to use again: the keyboard combinations and the control socket.
+fn release_system_resources(app: &AppHandle) {
+    if let Some(state) = app.try_state::<AppState>() {
+        state.shortcuts.stop();
+        if let Some(server) = state.control_server.lock().unwrap().take() {
+            server.stop();
+        }
+    }
 }
 
 /// SIGTERM / SIGINT / SIGHUP (kill, Ctrl-C in dev, terminal closed) go through the normal
@@ -191,6 +232,7 @@ fn on_run_event(app: &AppHandle, event: RunEvent) {
             };
             if !state.shutting_down.swap(true, Ordering::SeqCst) {
                 api.prevent_exit();
+                release_system_resources(app);
                 let manager = state.manager.clone();
                 let handle = app.clone();
                 tauri::async_runtime::spawn(async move {
@@ -202,6 +244,7 @@ fn on_run_event(app: &AppHandle, event: RunEvent) {
         // ⌘Q / Dock "Quit" on macOS terminate the process without going through
         // `ExitRequested`: do the same cleanup synchronously here. `shutdown()` is idempotent.
         RunEvent::Exit => {
+            release_system_resources(app);
             if let Some(state) = app.try_state::<AppState>() {
                 let manager = state.manager.clone();
                 // Never park the main thread on the async runtime without a hard bound: a task that
@@ -239,6 +282,25 @@ pub fn run() {
                         file_name: Some("zephone".into()),
                     }),
                 ])
+                .build(),
+        )
+        .plugin(
+            // Keyboard shortcuts that work in any application. What a press means is decided by the controller.
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    let Some(state) = app.try_state::<AppState>() else {
+                        return;
+                    };
+                    let pressed =
+                        event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed;
+                    if let Some(action) =
+                        state
+                            .shortcuts
+                            .on_event(shortcut.id(), pressed, std::time::Instant::now())
+                    {
+                        app::control::run_shortcut(app, action);
+                    }
+                })
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
@@ -306,6 +368,11 @@ pub fn run() {
             commands::directory::directory_delete_group,
             commands::directory::directory_group_add,
             commands::directory::directory_group_remove,
+            commands::shortcuts_get,
+            commands::shortcuts_set,
+            commands::shortcuts_set_enabled,
+            commands::shortcuts_reset,
+            commands::shortcuts_capture,
             commands::get_microphone_permission,
             commands::request_microphone_permission,
             commands::open_microphone_settings,

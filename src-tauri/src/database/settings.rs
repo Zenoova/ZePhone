@@ -16,6 +16,26 @@ impl Database {
             .unwrap_or_default())
     }
 
+    /// One text value of the settings table, for a part of the settings that has its own key.
+    pub fn get_setting_text(&self, key: &str) -> AppResult<Option<String>> {
+        self.with(|c| {
+            let mut stmt = c.prepare("SELECT value FROM settings WHERE key = ?1")?;
+            let mut rows = stmt.query_map([key], |r| r.get::<_, String>(0))?;
+            rows.next().transpose()
+        })
+    }
+
+    pub fn set_setting_text(&self, key: &str, value: &str) -> AppResult<()> {
+        self.with(|c| {
+            c.execute(
+                "INSERT INTO settings (key, value) VALUES (?1, ?2)
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                [key, value],
+            )
+            .map(|_| ())
+        })
+    }
+
     pub fn save_settings(&self, s: &Settings) -> AppResult<()> {
         let json = serde_json::to_string(s)
             .map_err(|e| crate::error::AppError::Database(e.to_string()))?;

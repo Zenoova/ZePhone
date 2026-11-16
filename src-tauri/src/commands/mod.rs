@@ -13,6 +13,7 @@ use crate::{
     database::HistoryFilter,
     error::{AppError, AppResult},
     recording::Recording,
+    shortcuts::{ShortcutAction, ShortcutsView},
     sip::{
         manager::{EngineInfo, SettingsApplied, Snapshot},
         stats::CallStatsSample,
@@ -229,6 +230,7 @@ pub async fn update_settings(
 
     // Desktop-shell settings take effect immediately.
     tray::set_visible(&app, settings.general.show_tray_icon);
+    tray::set_do_not_disturb(&app, settings.general.do_not_disturb);
     crate::app::window::apply_appearance(&app, &settings.general);
     let autostart = app.autolaunch();
     let enabled = autostart.is_enabled().unwrap_or(false);
@@ -303,6 +305,42 @@ pub async fn list_audio_devices() -> AppResult<AudioDevices> {
     tauri::async_runtime::spawn_blocking(audio::list_devices)
         .await
         .map_err(|e| AppError::Other(e.to_string()))
+}
+
+// -------------------------------------------------------------- shortcuts
+
+#[tauri::command]
+pub fn shortcuts_get(state: S) -> ShortcutsView {
+    state.shortcuts.view()
+}
+
+/// Sets the combination of one action (`None`: remove it) and whether it is on.
+#[tauri::command]
+pub fn shortcuts_set(
+    state: S,
+    action: ShortcutAction,
+    accelerator: Option<String>,
+    enabled: bool,
+) -> AppResult<ShortcutsView> {
+    state.shortcuts.set(action, accelerator.as_deref(), enabled)
+}
+
+/// The master switch: every shortcut at once.
+#[tauri::command]
+pub fn shortcuts_set_enabled(state: S, enabled: bool) -> AppResult<ShortcutsView> {
+    state.shortcuts.set_master(enabled)
+}
+
+/// Back to the defaults: one action, or all of them.
+#[tauri::command]
+pub fn shortcuts_reset(state: S, action: Option<ShortcutAction>) -> AppResult<ShortcutsView> {
+    state.shortcuts.reset(action)
+}
+
+/// While the settings record a combination, the shortcuts are paused so that pressing one cannot run its action.
+#[tauri::command]
+pub fn shortcuts_capture(state: S, active: bool) -> ShortcutsView {
+    state.shortcuts.set_capture(active)
 }
 
 #[tauri::command]

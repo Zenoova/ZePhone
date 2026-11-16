@@ -10,7 +10,7 @@ use super::{call_window, events, tray};
 use crate::sip::{
     manager::{EngineInfo, UiSink},
     stats::CallStatsSample,
-    types::{AccountStatus, Call, CallState, RegistrationState},
+    types::{AccountStatus, Call, CallState, RegistrationState, Settings},
 };
 
 /// Forwards manager notifications to the webview and to the OS.
@@ -138,5 +138,10 @@ impl UiSink for TauriSink {
 
     fn audio_error(&self, message: &str) {
         self.emit(events::AUDIO_ERROR, message.to_owned());
+    }
+
+    fn settings_changed(&self, settings: &Settings) {
+        self.emit(events::SETTINGS_CHANGED, settings.clone());
+        tray::set_do_not_disturb(&self.app, settings.general.do_not_disturb);
     }
 }
