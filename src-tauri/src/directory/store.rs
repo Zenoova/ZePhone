@@ -701,8 +701,8 @@ mod tests {
             .unwrap();
         let a = contact_id(&src, "a");
         let g = s.create_group("Clients").unwrap();
-        s.set_favorite(&[a.clone()], true).unwrap();
-        s.add_to_group(&g.id, &[a.clone()]).unwrap();
+        s.set_favorite(std::slice::from_ref(&a), true).unwrap();
+        s.add_to_group(&g.id, std::slice::from_ref(&a)).unwrap();
 
         // the person changed number and department in the source
         let mut moved = person("a", "Ada", "999");
@@ -773,8 +773,8 @@ mod tests {
             .unwrap();
         let a = contact_id(&src, "a");
         let g = s.create_group("Clients").unwrap();
-        s.set_favorite(&[a.clone()], true).unwrap();
-        s.add_to_group(&g.id, &[a.clone()]).unwrap();
+        s.set_favorite(std::slice::from_ref(&a), true).unwrap();
+        s.add_to_group(&g.id, std::slice::from_ref(&a)).unwrap();
 
         assert_eq!(s.clear_cache(&src).unwrap(), 1);
         assert!(s.all_contacts().unwrap().is_empty());
@@ -853,13 +853,14 @@ mod tests {
         let g = s.create_group("  Clients  ").unwrap();
         assert_eq!(g.name, "Clients");
         s.add_to_group(&g.id, &[a.clone(), b.clone()]).unwrap();
-        s.add_to_group(&g.id, &[a.clone()]).unwrap(); // twice: still once
+        s.add_to_group(&g.id, std::slice::from_ref(&a)).unwrap(); // twice: still once
         assert_eq!(s.groups().unwrap()[0].member_count, 2);
 
         s.rename_group(&g.id, "Grands comptes").unwrap();
         assert_eq!(s.groups().unwrap()[0].name, "Grands comptes");
 
-        s.remove_from_group(&g.id, &[b.clone()]).unwrap();
+        s.remove_from_group(&g.id, std::slice::from_ref(&b))
+            .unwrap();
         assert_eq!(s.members(&g.id).unwrap(), HashSet::from([a]));
 
         s.delete_group(&g.id).unwrap();
