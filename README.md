@@ -1,3 +1,5 @@
+<p align="center"><img src="src-tauri/icons/source/zephone-logo.svg" alt="Logo de ZePhone" width="128" /></p>
+
 # ZePhone
 
 Softphone SIP desktop universel — **Tauri 2 + React + Rust + Baresip**.
@@ -297,6 +299,16 @@ Le code Rust est portable (pilote audio, extension des modules, chemins, trousse
 - **Un seul client `ctrl_tcp`** à la fois (limitation de Baresip) et **pas d'authentification** sur ce canal (voir Sécurité).
 - Build universelle macOS, notarisation, Windows, Linux : documentés, non exécutés.
 - Mot de passe SIP contenant `"` : non supporté (limitation de la syntaxe d'adresse de Baresip).
+
+## Logo
+
+Le logo reprend la marque **Zenoova** (deux formes qui se recouvrent, l'une en contour, l'autre pleine, avec un fin
+filet là où elles se croisent), mais les deux ronds sont remplacés par deux des avatars des comptes SIP
+([Blobatar](https://blobatar.dev)), en noir et blanc seulement : une version claire (celle de l'application) et une
+version sombre. Les visages sont dessinés à partir de noms fixes, pas d'un compte : le logo est le même pour tous.
+`node scripts/make-logo.mjs` régénère les SVG ; les icônes de toutes tailles s'en déduisent avec
+`npx tauri icon src-tauri/icons/source/zephone-logo-1024.png` (le PNG s'obtient avec n'importe quel outil de
+rastérisation SVG).
 
 ## Licences
 

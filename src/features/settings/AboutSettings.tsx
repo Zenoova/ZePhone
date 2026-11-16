@@ -21,9 +21,7 @@ export function AboutSettings() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <div className="bg-primary text-primary-foreground flex size-14 items-center justify-center rounded-2xl text-2xl font-bold">
-          Z
-        </div>
+        <img src="/zephone-icon.svg" alt="Logo de ZePhone" width={56} height={56} className="size-14 shrink-0" />
         <div>
           <h2 className="text-xl font-semibold">ZePhone</h2>
           <p className="text-muted-foreground text-sm">Softphone SIP universel · version {app?.version ?? "—"}</p>
