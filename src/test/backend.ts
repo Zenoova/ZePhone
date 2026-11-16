@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import type { vi } from "vitest";
 
 type Handler = (args: Record<string, unknown> | undefined) => unknown;
 
