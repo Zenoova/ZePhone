@@ -384,6 +384,9 @@ impl SipEngine for BaresipEngine {
             return Ok(()); // picked up at next start
         }
         let driver = config::audio_driver();
+        // The end-to-end tests replace the sound card by synthetic drivers; the "device name" they pass is then a
+        // frequency (source) and a file (player). Never set by the application.
+        let synthetic = self.inner.settings.lock().unwrap().audio_override.is_some();
         // The `auplay`/`ausrc` commands only accept real device names (the literal "default"
         // is valid in the config file but not in these commands): resolve "system default"
         // to the name of the current default device.
@@ -393,7 +396,12 @@ impl SipEngine for BaresipEngine {
         for (cmd, dev) in [("auplay", player), ("ausrc", source)] {
             let Some(dev) = dev else { continue };
             let dev = config::sanitize_device(Some(&dev));
-            let resp = self.run(cmd, &format!("{driver},{dev}")).await?;
+            let target = match (synthetic, cmd) {
+                (true, "auplay") => format!("aufile,{dev}"),
+                (true, _) => format!("ausine,{dev}"),
+                (false, _) => format!("{driver},{dev}"),
+            };
+            let resp = self.run(cmd, &target).await?;
             // Baresip answers "ok" even when the device is unknown, with a message.
             if resp.data.contains("no such") || resp.data.contains("Format should be") {
                 let msg = resp
