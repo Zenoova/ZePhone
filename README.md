@@ -1,325 +1,325 @@
-<p align="center"><img src="src-tauri/icons/source/zephone-logo.svg" alt="Logo de ZePhone" width="128" /></p>
+<p align="center"><img src="src-tauri/icons/source/zephone-logo.svg" alt="ZePhone logo" width="128" /></p>
 
 # ZePhone
 
-Softphone SIP desktop universel — **Tauri 2 + React + Rust + Baresip**.
-macOS en priorité ; l'architecture est prête pour Windows et Linux.
+Universal SIP desktop softphone — **Tauri 2 + React + Rust + Baresip**.
+macOS first; the architecture is ready for Windows and Linux.
 
-ZePhone n'est pas un simulateur : la signalisation SIP et l'audio (RTP/SRTP) sont assurés par
-[Baresip](https://github.com/baresip/baresip), embarqué dans l'application comme _sidecar_ Tauri.
-Aucun PBX n'est codé en dur : vous renseignez votre serveur, domaine, identifiants, port et transport
+ZePhone is not a simulator: SIP signalling and audio (RTP/SRTP) are handled by
+[Baresip](https://github.com/baresip/baresip), embedded in the application as a Tauri _sidecar_.
+No PBX is hard-coded: you enter your server, domain, credentials, port and transport
 (UDP, TCP, TLS).
 
-> **Statut honnête** : le moteur, les comptes, les appels (sortants/entrants), l'audio bidirectionnel, DTMF,
-> attente, transfert, l'historique et les contacts sont testés automatiquement contre le **vrai** Baresip
-> (voir [Tests](#tests)). Ce qui ne peut pas être validé sans matériel/serveur réel est listé dans
-> [Limites connues](#limites-connues).
+> **Honest status**: the engine, accounts, calls (outgoing/incoming), two-way audio, DTMF,
+> hold, transfer, history and contacts are tested automatically against the **real** Baresip
+> (see [Tests](#tests)). What cannot be validated without real hardware or a real server is listed in
+> [Known limits](#known-limits).
 
-## Sommaire
+## Contents
 
-- [Fonctionnalités](#fonctionnalités)
+- [Features](#features)
 - [Architecture](#architecture)
-- [Choix du moteur : processus Baresip vs libbaresip](#choix-du-moteur)
-- [Prérequis](#prérequis)
-- [Lancer en développement](#lancer-en-développement)
-- [Construire l'application macOS (.app / .dmg)](#construire-lapplication-macos)
-- [Utiliser ZePhone avec votre PBX](#utiliser-zephone-avec-votre-pbx)
+- [Choosing the engine: Baresip process vs libbaresip](#choosing-the-engine)
+- [Requirements](#requirements)
+- [Running in development](#running-in-development)
+- [Building the macOS application (.app / .dmg)](#building-the-macos-application)
+- [Using ZePhone with your PBX](#using-zephone-with-your-pbx)
 - [Tests](#tests)
-- [Sécurité](#sécurité)
-- [Windows et Linux](#windows-et-linux)
-- [Limites connues](#limites-connues)
-- [Licences](#licences)
+- [Security](#security)
+- [Windows and Linux](#windows-and-linux)
+- [Known limits](#known-limits)
+- [Logo](#logo)
+- [Licenses](#licenses)
 
-## Fonctionnalités
+## Features
 
-| Domaine         | Ce qui est opérationnel                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Comptes         | **Dans le dock, à côté de l'orbe vocal** : l'icône est le petit visage ([blobatar](https://blobatar.dev), dessiné localement depuis l'adresse du compte) du compte connecté ; elle ouvre une liste simple (visage, nom, disponibilité, interrupteur — grisé si désactivé) avec un bouton pour **ajouter un compte SIP**. La liste détaillée est dans Paramètres → Comptes SIP. **Plusieurs comptes sont connectés en même temps** (un agent SIP par compte dans le moteur) et reçoivent chacun leurs appels simultanément — répondre à un deuxième appel met le premier en attente (vérifié avec deux vrais moteurs) ; ajout/modification/suppression, ajout/modification/suppression, compte par défaut, activation, connexion/déconnexion, proxy sortant, intervalle d'enregistrement, SRTP. Statut en temps réel **issu des événements SIP** (Non configuré · Connexion en cours · Enregistré · Déconnecté · Erreur) avec le code SIP (401, 403, 404, 408, 503…). Un challenge 401 suivi d'une authentification réussie n'est **pas** un échec.                                                                           |
-| Fenêtre d'appel | **Les appels s'ouvrent dans une fenêtre à part** (la fenêtre principale reste libre : clavier, contacts, historique). La voix du correspondant est un orbe vivant (niveau audio **réel** mesuré par Baresip ; « réfléchit » pendant la sonnerie, « parle » quand la voix est là), micro coupé = mention « Micro coupé », commandes alignées (micro, attente, clavier, transfert, raccrocher), pavé DTMF en verre flouté. **En haut à droite : les volumes, et un menu d'options** (garder au premier plan, ouvrir ZePhone, et pour les développeurs : informations de l'appel, journal du moteur SIP, copier l'identifiant d'appel). La fenêtre se ferme seule à la fin de l'appel. |
-| Appels sortants | Clavier, adresse SIP libre, appel depuis un contact ou l'historique, compte par défaut (rien n'est affiché au-dessus du clavier avec un seul compte ; avec plusieurs, une flèche à côté d'« Appeler » permet d'appeler avec un autre compte), progression réelle (initialisation → composition → sonnerie distante → connecté), durée, micro coupé, attente/reprise, DTMF (RFC 4733), transfert aveugle (REFER), raccrochage.                                                                                                                                                                                                                    |
-| Appels entrants | Sonnerie (Baresip), fenêtre d'appel entrant par-dessus n'importe quelle section, notification native, accepter/refuser (603), appel manqué, réception fenêtre fermée (icône dans la barre des menus).                                                                                                                                                                                                                                                                                    |
-| Audio           | Sélection micro/sortie (noms CoreAudio), périphériques USB/Bluetooth, G.711 PCMA/PCMU, **G.722 et Opus** (build Baresip personnalisée, `npm run sidecar:hd`), SRTP ; les codecs large bande sont préférés, G.711 reste le repli universel. Permission micro macOS (`NSMicrophoneUsageDescription`, entitlement `audio-input`).                                                                                                                                                           |
-| Volumes         | Deux curseurs ([Fluid Slider](https://www.sonaui.com/docs/fluid-slider) de Sona UI) : **son entrant** (ce que vous entendez) et **son sortant** (ce que votre correspondant entend de votre micro), de 0 à 200 %. Dans la fenêtre d'appel et dans Paramètres → Audio ; appliqués **en direct** pendant l'appel par le module `zeaudio` de Baresip, mémorisés ensuite. |
-| Enregistrement  | **Automatique** : chaque appel décroché est enregistré **localement**, sans bouton ni mention pendant l'appel (désactivable dans Paramètres → Audio). Les deux voix sont écrites par le module `zeaudio`, puis mixées en un WAV mono (≤ 16 kHz) dans le dossier de données de l'app ; l'onglet **Enregistrements** les liste avec le lecteur [Voice note](https://detentui.com/components/voicenote) de Detent (pleine largeur, forme d'onde, vitesse, lecture). Rien ne quitte le Mac. |
-| Statistiques avancées | Dans la fenêtre d'appel : menu ⋮ → **Statistiques avancées**. Six graphiques mis à jour chaque seconde (gigue et aller-retour, incidents du son reçu — paquets en retard, perdus, débordements, vidages —, régularité des blocs audio vers le haut-parleur et depuis le micro, mémoire tampon, débit, temps de traitement du filtre audio), des chiffres clés et une **lecture en mots** (« le trou est dans le flux reçu », « le réseau est propre : c'est cet ordinateur »…). Mesures prises par Baresip et par `zeaudio` ; rien ne quitte le Mac. |
-| Historique      | Entrants/sortants/manqués/refusés/échoués, durée réelle mesurée, compte, résultat ; rappel en un clic, suppression, recherche, filtres, badge « manqués non lus ».                                                                                                                                                                                                                                                                                                                       |
-| Annuaire d'entreprise | L'onglet **Annuaire** réunit vos contacts locaux, un **annuaire LDAP / Active Directory** et **Microsoft 365** (annuaire de l'organisation **et**, séparément, vos contacts Outlook personnels) : recherche instantanée insensible aux accents et aux séparateurs de numéros, filtres par source, service, groupe et favoris, fiche avec tous les numéros (professionnel, mobile, poste interne, SIP) **chacun appelable, copiable ou transférable**, groupes personnels. Fiches d'entreprise en lecture seule, mémoire locale, synchronisation planifiée, une panne n'efface jamais l'annuaire. Les appels (entrants comme sortants) sont **nommés** par l'annuaire quand le numéro n'appartient qu'à une seule personne. Les **contacts du Mac** (application Contacts) peuvent s'y ajouter, en lecture seule et après votre autorisation. Configuration, droits et limites : [`docs/DIRECTORY.md`](docs/DIRECTORY.md). |
-| Raccourcis et commande externe | **Raccourcis globaux** configurables (décrocher, refuser, raccrocher, micro, attente, afficher le clavier, chercher un contact, « Ne pas déranger »), actifs dans toutes les applications même fenêtre réduite ; une page de réglages avec capture au clavier, détection des doublons, combinaisons refusées expliquées et état « actif / non activé » ; une **ligne de commande** `zephone ctl` (socket privé de l'utilisateur, sans port réseau) qui pilote l'instance déjà ouverte avec des réponses structurées ; un exemple **Stream Deck**. Les raccourcis, le menu de la barre des menus et la ligne de commande passent par le même exécuteur, qui choisit l'appel visé par une règle documentée et ne raccroche jamais « tout ». Règles, sécurité et limites : [`docs/CONTROL.md`](docs/CONTROL.md). |
-| Casques et périphériques audio | **Microphone, sortie des conversations et sonnerie choisis séparément** (suivre le système, un casque précis retrouvé par son identifiant, un périphérique de secours), avec **le périphérique réellement utilisé** affiché tel que le moteur l'a confirmé et les choix absents signalés sans être effacés. Branchements et débranchements suivis sur le système (attente d'un instant de calme, délai de grâce de 2,5 s) : **un appel n'est jamais coupé**, et **ne passe jamais tout seul sur des haut-parleurs publics sans autorisation** ; micro coupé et attente conservés. **Boutons du casque** (page Téléphonie HID : décrocher, raccrocher, micro, attente) interprétés selon l'état réel des appels, sans jamais refuser un appel ni agir sans appel de ZePhone ; désactivables sans toucher à l'audio. Accès rapide aux périphériques pendant un appel et **diagnostic audio** (tests lancés par vous, jamais pendant un appel). Les trois niveaux (audio, boutons, extras) et ce qui n'a **pas** pu être essayé faute de casque : [`docs/HEADSETS.md`](docs/HEADSETS.md). |
-| Contacts locaux | Prénom, nom, société, numéro/URI SIP, ajout/édition/suppression depuis l'annuaire ; le nom du contact s'affiche sur les appels entrants/sortants.                                                                                                                                                                                                                                                                                                                                 |
-| Paramètres      | comptes SIP (liste détaillée), audio (volumes, enregistrement), réseau (port SIP local, interface, CA TLS perso, trace SIP, redémarrage moteur, journal), notifications, général (thème clair/sombre/auto, démarrage à l'ouverture de session, démarrage réduit, icône barre des menus, rester actif à la fermeture), à propos.                                                                                                                                                                                                          |
-| Robustesse      | Moteur supervisé et redémarré automatiquement (back-off), PBX injoignable ou mauvais identifiants sans plantage, aucun processus orphelin (voir [Sécurité](#sécurité)).                                                                                                                                                                                                                                                                                                                  |
+| Area                           | What works                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accounts                       | **In the dock, next to the voice orb**: the icon is the small face ([blobatar](https://blobatar.dev), drawn locally from the account address) of the connected account; it opens a simple list (face, name, availability, switch — greyed out when disabled) with a button to **add a SIP account**. The detailed list is in Settings → SIP accounts. **Several accounts are connected at the same time** (one SIP agent per account in the engine) and each receives its calls simultaneously — answering a second call puts the first on hold (verified with two real engines); add/edit/delete, default account, enabling, connect/disconnect, outbound proxy, registration interval, SRTP. Real-time status **derived from SIP events** (Not configured · Connecting · Registered · Disconnected · Error) with the SIP code (401, 403, 404, 408, 503…). A 401 challenge followed by a successful authentication is **not** a failure.                                                                      |
+| Call window                    | **Calls open in a separate window** (the main window stays free: keypad, contacts, history). The voice of the other party is a living orb (**real** audio level measured by Baresip; it "thinks" while ringing and "speaks" when the voice is there), a muted microphone shows a "Mic muted" notice, aligned controls (microphone, hold, keypad, transfer, hang up), DTMF pad in frosted glass. **Top right: the volumes, and an options menu** (keep on top, open ZePhone, and for developers: call information, SIP engine log, copy the call ID). The window closes by itself when the call ends.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Outgoing calls                 | Keypad, free-form SIP address, calling from a contact or from the history, default account (nothing is shown above the keypad with a single account; with several, an arrow next to "Call" lets you call with another account), real progress (initializing → dialing → remote ringing → connected), duration, mute, hold/resume, DTMF (RFC 4733), blind transfer (REFER), hang up.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Incoming calls                 | Ringtone (Baresip), incoming-call window over any section, native notification, accept/decline (603), missed call, reception with the window closed (menu bar icon).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Audio                          | Microphone/output selection (CoreAudio names), USB/Bluetooth devices, G.711 PCMA/PCMU, **G.722 and Opus** (custom Baresip build, `npm run sidecar:hd`), SRTP; wideband codecs are preferred, G.711 remains the universal fallback. macOS microphone permission (`NSMicrophoneUsageDescription`, `audio-input` entitlement).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Volumes                        | Two sliders ([Fluid Slider](https://www.sonaui.com/docs/fluid-slider) by Sona UI): **incoming sound** (what you hear) and **outgoing sound** (what the other party hears from your microphone), from 0 to 200%. In the call window and in Settings → Audio; applied **live** during the call by Baresip's `zeaudio` module, and remembered afterwards.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Recording                      | **Automatic**: every answered call is recorded **locally**, with no button or notice during the call (can be turned off in Settings → Audio). Both voices are written by the `zeaudio` module, then mixed into one mono WAV (≤ 16 kHz) in the app's data folder; the **Recordings** tab lists them with Detent's [Voice note](https://detentui.com/components/voicenote) player (full width, waveform, speed, playback). Nothing leaves the Mac.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Advanced statistics            | In the call window: ⋮ menu → **Advanced statistics**. Six charts updated every second (jitter and round trip, incidents of the received sound — late, lost, overflowed and flushed packets —, regularity of the audio blocks to the speaker and from the microphone, buffer, bitrate, audio filter processing time), key figures and a **plain-words reading** ("the gap is in the received stream", "the network is clean: it is this computer"…). Measurements are taken by Baresip and by `zeaudio`; nothing leaves the Mac.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| History                        | Incoming/outgoing/missed/declined/failed, real measured duration, account, result; one-click call back, deletion, search, filters, "unread missed calls" badge.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Enterprise directory           | The **Directory** tab brings together your local contacts, an **LDAP / Active Directory directory** and **Microsoft 365** (the organization's directory **and**, separately, your personal Outlook contacts): instant search that ignores accents and number separators, filters by source, department, group and favorites, a card with every number (work, mobile, internal extension, SIP) **each one callable, copyable or transferable**, personal groups. Company records are read-only, cached locally and synchronized on a schedule; an outage never empties the directory. Calls (incoming and outgoing) are **named** by the directory when the number belongs to only one person. **Mac contacts** (the Contacts app) can be added, read-only and after your permission. Setup, rights and limits: [`docs/DIRECTORY.md`](docs/DIRECTORY.md).                                                                                                                                                       |
+| Shortcuts and external control | Configurable **global shortcuts** (answer, decline, hang up, mute, hold, show the keypad, search a contact, "Do not disturb"), active in all applications even with the window minimized; a settings page with keyboard capture, duplicate detection, refused combinations explained and an "active / not enabled" state; a **command line** `zephone ctl` (private per-user socket, no network port) that drives the already-open instance with structured answers; a **Stream Deck** example. Shortcuts, the menu bar menu and the command line all go through the same executor, which picks the targeted call by a documented rule and never hangs up "everything". Rules, security and limits: [`docs/CONTROL.md`](docs/CONTROL.md).                                                                                                                                                                                                                                                                      |
+| Headsets and audio devices     | **Microphone, conversation output and ringtone chosen separately** (follow the system, a specific headset found again by its identifier, a fallback device), with the **device actually in use** shown as the engine confirmed it and missing choices flagged without being erased. Plugging and unplugging are followed on the system (wait for a moment of calm, 2.5 s grace period): **a call is never cut**, and **never moves to public speakers on its own without permission**; mute and hold are kept. **Headset buttons** (HID Telephony page: answer, hang up, mute, hold) interpreted according to the real state of the calls, never declining a call or acting without a ZePhone call; they can be turned off without touching the audio. Quick access to devices during a call and an **audio diagnostic** (tests started by you, never during a call). The three levels (audio, buttons, extras) and what could **not** be tried for lack of a headset: [`docs/HEADSETS.md`](docs/HEADSETS.md). |
+| Local contacts                 | First name, last name, company, SIP number/URI, add/edit/delete from the directory; the contact's name is shown on incoming/outgoing calls.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Settings                       | SIP accounts (detailed list), audio (volumes, recording), network (local SIP port, interface, custom TLS CA, SIP trace, engine restart, log), notifications, general (light/dark/auto theme, start at login, start minimized, menu bar icon, keep running when closed), about.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Robustness                     | Engine supervised and restarted automatically (back-off), unreachable PBX or wrong credentials without crashing, no orphan process (see [Security](#security)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## Architecture
 
 ```
 ┌──────────────────────── ZePhone.app ─────────────────────────┐
-│  Webview (React + TS strict + Tailwind + shadcn/ui + Zustand)  │
-│    stores ◄── events ──┐         ▲ invoke (commandes typées)    │
+│  Webview (React + strict TS + Tailwind + shadcn/ui + Zustand)  │
+│    stores ◄── events ──┐         ▲ invoke (typed commands)      │
 │                         │         │                             │
 │  Rust (Tauri 2)         │         │                             │
-│   commands/ ───────► SipManager ◄─┘  (toute la logique d'appel) │
-│                        │  ▲  │   ├─ SQLite (comptes*, contacts, │
-│                        │  │  │   │   historique, réglages)      │
-│                        │  │  │   └─ Keychain (mots de passe)    │
+│   commands/ ───────► SipManager ◄─┘  (all the call logic)       │
+│                        │  ▲  │   ├─ SQLite (accounts*, contacts,│
+│                        │  │  │   │   history, settings)         │
+│                        │  │  │   └─ Keychain (passwords)        │
 │                        ▼  │  ▼                                   │
-│                    trait SipEngine  ◄── implémentable : FFI, autre│
+│                    trait SipEngine  ◄── replaceable: FFI, other  │
 │                        │                                         │
-│                BaresipEngine (supervise le sidecar)              │
+│                BaresipEngine (supervises the sidecar)            │
 └────────────────────────┼─────────────────────────────────────────┘
-                         │ ctrl_tcp (JSON/netstring) 127.0.0.1:<port aléatoire>
+                         │ ctrl_tcp (JSON/netstring) 127.0.0.1:<random port>
                     ┌────▼─────┐  RTP/SRTP, SIP (UDP/TCP/TLS)
-                    │ baresip  │◄──────────────────────────────► PBX / opérateur
-                    └──────────┘  CoreAudio ◄──► micro / haut-parleurs
+                    │ baresip  │◄──────────────────────────────► PBX / carrier
+                    └──────────┘  CoreAudio ◄──► microphone / speakers
 ```
 
-\* sans mots de passe.
+\* without passwords.
 
-- **Le frontend ne connaît pas SIP** : il envoie des intentions (`dial`, `answer_call`, `hold_call`…) et
-  reçoit de l'état (`account:status`, `call:update`, `engine:state`, `history:changed`).
-- **La logique d'appel est en Rust** (`src-tauri/src/sip/manager.rs`) : un appel entrant est traité
-  (sonnerie, notification, historique) même si la webview est masquée ou rechargée.
-- **Machines à états pures et testées** : `sip/registration.rs`, `sip/calls.rs`.
-- **Abstraction moteur** : `sip/engine/mod.rs` (`trait SipEngine`, événements neutres). Remplacer Baresip
-  par `libbaresip` en FFI ou par une autre pile ne touche ni le manager, ni les commandes, ni l'UI.
+- **The frontend knows nothing about SIP**: it sends intents (`dial`, `answer_call`, `hold_call`…) and
+  receives state (`account:status`, `call:update`, `engine:state`, `history:changed`).
+- **The call logic is in Rust** (`src-tauri/src/sip/manager.rs`): an incoming call is handled
+  (ringtone, notification, history) even if the webview is hidden or reloaded.
+- **Pure, tested state machines**: `sip/registration.rs`, `sip/calls.rs`.
+- **Engine abstraction**: `sip/engine/mod.rs` (`trait SipEngine`, neutral events). Replacing Baresip
+  with `libbaresip` over FFI or with another stack touches neither the manager, nor the commands, nor the UI.
 
 ```
 src/                         React (app/, layouts/, features/{dialer,calls,contacts,history,recordings,settings},
-                             components/arc = Arc UI, components/ui = shadcn (champs de formulaire, dock, slider Sona),
-                             components/detent = lecteur Voice note, components/orbs = orbes OrbKit,
-                             components/icons = icônes Lucide animées (AnimateIcons),
-                             services/telephony = API typée, stores/, hooks/, types/)
+                             components/arc = Arc UI, components/ui = shadcn (form fields, dock, Sona slider),
+                             components/detent = Voice note player, components/orbs = OrbKit orbs,
+                             components/icons = animated Lucide icons (AnimateIcons),
+                             services/telephony = typed API, stores/, hooks/, types/)
 src-tauri/src/
-  sip/engine/                trait SipEngine, netstring, parsing des événements Baresip
-  sip/engine/baresip/        config, process (cycle de vie), client ctrl_tcp, BaresipEngine (supervision)
+  sip/engine/                trait SipEngine, netstring, parsing of Baresip events
+  sip/engine/baresip/        config, process (lifecycle), ctrl_tcp client, BaresipEngine (supervision)
   sip/{manager,calls,registration,diagnostics,uri,types}.rs
   database/                  SQLite + migrations (PRAGMA user_version)
-  security/                  Keychain (keyring), masquage des secrets dans les logs
-  audio/                     liste des périphériques (cpal), permission micro macOS (objc2)
-  recording/                 mixage des deux voix d'un appel en un WAV (streaming), forme d'onde
-  app/, commands/            glue Tauri : événements, tray, notifications, API invoke
-  tests/                     tests d'intégration contre le vrai Baresip
-scripts/baresip-modules/     zeaudio : filtre audio de ZePhone pour Baresip (volumes, enregistrement)
-scripts/prepare-baresip.sh   prépare le sidecar relocalisable pour le bundle
+  security/                  Keychain (keyring), masking of secrets in logs
+  audio/                     device list (cpal), macOS microphone permission (objc2)
+  recording/                 mixing of the two voices of a call into a WAV (streaming), waveform
+  app/, commands/            Tauri glue: events, tray, notifications, invoke API
+  tests/                     integration tests against the real Baresip
+scripts/baresip-modules/     zeaudio: ZePhone's audio filter for Baresip (volumes, recording)
+scripts/prepare-baresip.sh   prepares the relocatable sidecar for the bundle
 ```
 
-## Choix du moteur
+## Choosing the engine
 
-|                                 | A — `libbaresip` (FFI C)                                                                                                                            | B — processus Baresip piloté (`ctrl_tcp`) ✅                                               |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Intégration                     | bindgen + édition de liens de libre/libbaresip/OpenSSL/modules dans le binaire Rust ; threading (« libre n'est pas thread-safe ») à gérer à la main | binaire autonome embarqué comme _sidecar_ Tauri                                            |
-| Stabilité                       | un crash C emporte toute l'application                                                                                                              | un crash du moteur est isolé et le moteur est **redémarré** par le superviseur             |
-| Mise en route / packaging macOS | chaîne de build C complexe                                                                                                                          | `scripts/prepare-baresip.sh` relocalise binaire + dylibs + modules                         |
-| Latence de commande             | appel direct                                                                                                                                        | boucle locale TCP, négligeable pour du contrôle d'appel (l'audio ne transite pas par Rust) |
-| Évolution                       | —                                                                                                                                                   | l'abstraction `SipEngine` permet de passer à (A) plus tard sans réécrire le reste          |
+|                                   | A — `libbaresip` (C FFI)                                                                                                              | B — driven Baresip process (`ctrl_tcp`) ✅                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Integration                       | bindgen + linking libre/libbaresip/OpenSSL/modules into the Rust binary; threading ("libre is not thread-safe") to be handled by hand | self-contained binary embedded as a Tauri _sidecar_                               |
+| Stability                         | a C crash takes down the whole application                                                                                            | an engine crash is isolated and the engine is **restarted** by the supervisor     |
+| Getting started / macOS packaging | complex C build chain                                                                                                                 | `scripts/prepare-baresip.sh` relocates binary + dylibs + modules                  |
+| Command latency                   | direct call                                                                                                                           | local TCP loop, negligible for call control (the audio does not go through Rust)  |
+| Evolution                         | —                                                                                                                                     | the `SipEngine` abstraction allows moving to (A) later without rewriting the rest |
 
-**Décision : B pour la v1.** Un seul processus Baresip pour toute la durée de vie de l'app (jamais un
-processus par appel), supervisé, arrêté proprement, et contrôlé via le module `ctrl_tcp`
-(framing netstring `<len>:<json>,` — vérifié dans le code de Baresip 4.13, pas seulement dans la doc).
+**Decision: B for v1.** A single Baresip process for the whole life of the app (never one process per call),
+supervised, stopped cleanly, and controlled through the `ctrl_tcp` module (netstring framing `<len>:<json>,` —
+checked in Baresip 4.13's code, not only in the docs).
 
-Points vérifiés dans les sources de Baresip 4.13 (et non supposés) :
+Points checked in the Baresip 4.13 sources (not assumed):
 
-- `ctrl_tcp` écoute **0.0.0.0:4444 par défaut, sans authentification** : ZePhone force
-  `127.0.0.1:<port libre aléatoire>` à chaque démarrage ;
-- une seule connexion cliente ; les événements ont `"event": true` (la doc dit `"true"` : les deux sont acceptés) ;
-- `REGISTER_OK/FAIL` portent `"<code> <raison>"` ; seul le résultat **final** de la transaction est notifié
-  (le 401 intermédiaire n'est jamais un échec) ;
-- `CALL_HOLD/CALL_RESUME` ne sont émis que pour les mises en attente **distantes** : l'état « en attente »
-  local est suivi côté Rust ;
-- Baresip ignore les adresses loopback pour les appels sauf si `net_interface` les désigne explicitement.
+- `ctrl_tcp` listens on **0.0.0.0:4444 by default, without authentication**: ZePhone forces
+  `127.0.0.1:<random free port>` at each start;
+- a single client connection; events have `"event": true` (the docs say `"true"`: both are accepted);
+- `REGISTER_OK/FAIL` carry `"<code> <reason>"`; only the **final** result of the transaction is reported
+  (the intermediate 401 is never a failure);
+- `CALL_HOLD/CALL_RESUME` are only emitted for **remote** holds: the local "on hold" state is tracked on the
+  Rust side;
+- Baresip ignores loopback addresses for calls unless `net_interface` names them explicitly.
 
-## Prérequis
+## Requirements
 
-macOS 11+ (Apple Silicon ou Intel), Xcode Command Line Tools, Node 20+, Rust stable.
+macOS 11+ (Apple Silicon or Intel), Xcode Command Line Tools, Node 20+, stable Rust.
 
 ```bash
 brew install baresip rustup
 rustup default stable
-rustup target add x86_64-apple-darwin   # facultatif : build Intel / universelle
+rustup target add x86_64-apple-darwin   # optional: Intel / universal build
 npm install
 ```
 
-Pour embarquer **G.722 et Opus** (absents de la bouteille Homebrew de Baresip) :
+To embed **G.722 and Opus** (missing from Baresip's Homebrew bottle):
 
 ```bash
 brew install cmake pkgconf opus spandsp
-npm run sidecar:hd        # compile Baresip depuis les sources (tag = version de libre) puis prépare le sidecar
+npm run sidecar:hd        # builds Baresip from source (tag = libre version) then prepares the sidecar
 ```
 
-Homebrew n'est utilisé **que pour développer** : l'application packagée embarque Baresip, libre, OpenSSL
-(et Opus/spandsp avec la build HD) sans rien demander à l'utilisateur final.
+Homebrew is used **only to develop**: the packaged application embeds Baresip, libre and OpenSSL
+(and Opus/spandsp with the HD build) without asking anything of the end user.
 
-## Lancer en développement
+## Running in development
 
 ```bash
 npm run tauri dev
 ```
 
-`npm run sidecar` (appelé automatiquement avant `dev` et `build`) copie Baresip depuis Homebrew (ou
-`BARESIP_PREFIX=/chemin`) vers `src-tauri/binaries/` et `src-tauri/resources/` en réécrivant les
-chemins de bibliothèques (`@rpath`), puis signe ad hoc. Pour recréer : `npm run sidecar -- --force`.
+`npm run sidecar` (called automatically before `dev` and `build`) copies Baresip from Homebrew (or
+`BARESIP_PREFIX=/path`) to `src-tauri/binaries/` and `src-tauri/resources/`, rewriting the library
+paths (`@rpath`), then signs ad hoc. To recreate: `npm run sidecar -- --force`.
 
-Aperçu de l'interface **sans backend** (relecture visuelle uniquement, aucune communication SIP) :
-`npm run dev` puis ouvrir <http://localhost:1420/?mock>.
+Preview of the interface **without a backend** (visual review only, no SIP communication):
+`npm run dev` then open <http://localhost:1420/?mock>.
 
-## Construire l'application macOS
+## Building the macOS application
 
 ```bash
 npm run tauri build                          # .app + .dmg (macOS)
-npm run tauri build -- --bundles app         # .app seulement
-npm run tauri build -- --target universal-apple-darwin   # Apple Silicon + Intel (voir ci-dessous)
+npm run tauri build -- --bundles app         # .app only
+npm run tauri build -- --target universal-apple-darwin   # Apple Silicon + Intel (see below)
 ```
 
-Sorties : `src-tauri/target/release/bundle/macos/ZePhone.app` et
+Outputs: `src-tauri/target/release/bundle/macos/ZePhone.app` and
 `src-tauri/target/release/bundle/dmg/ZePhone_<version>_<arch>.dmg`.
 
-Contenu du bundle : `Contents/MacOS/{zephone,baresip}`, `Contents/Frameworks/{libbaresip,libre,libssl,libcrypto}.dylib`,
-`Contents/Resources/engine/{modules,sounds,licenses}`. Le `Info.plist` contient `NSMicrophoneUsageDescription` ;
-`Entitlements.plist` accorde `audio-input` (hardened runtime) et `disable-library-validation` (Baresip charge ses
-modules par `dlopen`).
+Bundle contents: `Contents/MacOS/{zephone,baresip}`, `Contents/Frameworks/{libbaresip,libre,libssl,libcrypto}.dylib`,
+`Contents/Resources/engine/{modules,sounds,licenses}`. `Info.plist` contains `NSMicrophoneUsageDescription`;
+`Entitlements.plist` grants `audio-input` (hardened runtime) and `disable-library-validation` (Baresip loads its
+modules with `dlopen`).
 
-**Signature / notarisation** : le build local est signé _ad hoc_ (`signingIdentity: "-"`). Pour distribuer,
-renseignez votre identité Developer ID et les variables `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID`
-(voir la doc Tauri) ; **l'ensemble des Mach-O du bundle (sidecar, dylibs, modules) doit être signé avec la même
-identité**. Au premier lancement d'une app non notarisée, Gatekeeper demande une confirmation
-(clic droit › Ouvrir).
+**Signing / notarization**: the local build is signed _ad hoc_ (`signingIdentity: "-"`). To distribute,
+provide your Developer ID identity and the `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID` variables
+(see the Tauri docs); **all the Mach-O files in the bundle (sidecar, dylibs, modules) must be signed with the same
+identity**. On the first launch of a non-notarized app, Gatekeeper asks for confirmation
+(right-click › Open).
 
-**Build universel** : `prepare-baresip.sh` prépare l'architecture de la machine hôte. Pour un binaire universel, produisez
-un Baresip/libre/OpenSSL `x86_64` (ex. via un Homebrew Rosetta) et fusionnez avec `lipo`, ou publiez deux builds
-séparés (un `.dmg` par architecture) — non réalisé ici.
+**Universal build**: `prepare-baresip.sh` prepares the architecture of the host machine. For a universal binary, produce
+an `x86_64` Baresip/libre/OpenSSL (e.g. with a Rosetta Homebrew) and merge with `lipo`, or publish two separate builds
+(one `.dmg` per architecture) — not done here.
 
-## Utiliser ZePhone avec votre PBX
+## Using ZePhone with your PBX
 
-1. Ouvrez ZePhone → **Paramètres › Comptes SIP › Ajouter**.
-2. Renseignez : _Serveur SIP_ (`sip.example.com`), _Port_ (`5060` / `5061`), _Transport_, _Domaine_ (si différent),
-   _Identifiant_, _Identifiant d'authentification_ (si différent), _Mot de passe_ (saisi dans l'application,
-   stocké dans le Trousseau, jamais en clair).
-3. **Ajouter et connecter** : le statut passe à _Enregistré_ (ou affiche le code SIP de l'erreur).
-4. Composez un numéro dans **Clavier** et appelez ; autorisez le micro à la première demande.
+1. Open ZePhone → **Settings › SIP accounts › Add**.
+2. Fill in: _SIP server_ (`sip.example.com`), _Port_ (`5060` / `5061`), _Transport_, _Domain_ (if different),
+   _Username_, _Authentication username_ (if different), _Password_ (typed in the application,
+   stored in the Keychain, never in clear text).
+3. **Add and connect**: the status becomes _Registered_ (or shows the SIP code of the error).
+4. Dial a number on the **Keypad** and call; allow the microphone at the first prompt.
 
-Limitation de la syntaxe de compte Baresip : un mot de passe ne peut pas contenir le caractère `"` (refusé avec un
-message clair).
+Limitation of Baresip's account syntax: a password cannot contain the `"` character (refused with a clear
+message).
 
 ## Tests
 
 ```bash
-# Rust : unitaires (états, parsing, validation, base, manager scripté) — ne nécessitent rien
+# Rust: unit tests (states, parsing, validation, database, scripted manager) — need nothing
 cd src-tauri && cargo test --lib
 
-# Rust : bout en bout contre le VRAI Baresip (nécessite `npm run sidecar` ; modules de test ausine/aufile du Baresip local)
+# Rust: end to end against the REAL Baresip (needs `npm run sidecar`; ausine/aufile test modules of the local Baresip)
 npm run test:e2e
 
-# Rust : interopérabilité contre un VRAI PBX (FreeSWITCH lancé à la volée, loopback, mot de passe aléatoire, nettoyé ensuite)
+# Rust: interoperability against a REAL PBX (FreeSWITCH started on the fly, loopback, random password, cleaned up afterwards)
 brew install freeswitch && npm run test:pbx
 
 # Frontend
 npm run typecheck && npm run lint && npm test && npm run build
 ```
 
-Ce que couvrent les tests d'intégration (aucun mock du moteur) :
+What the integration tests cover (no engine mock):
 
-- démarrage du sidecar, version/codecs (dont Opus et G.722 s'ils sont embarqués), port de contrôle **sur loopback uniquement**,
-  aucun fichier `accounts` ;
-- arrêt sans processus orphelin ; redémarrage automatique après `SIGKILL` du moteur ;
-- enregistrement via un registrar de test avec **challenge Digest 401** (puis 200), mot de passe erroné → **401**,
-  403, 503, connexion TCP refusée ; aucun mot de passe dans les journaux ;
-- **appel réel entre deux instances Baresip** avec RTP : un sinus 440 Hz et un sinus 880 Hz sont émis, reçus et écrits
-  en WAV des deux côtés (audio bidirectionnel mesuré, en Opus), DTMF, attente/reprise, muet, raccrochage, refus 603 ;
-- **statistiques d'appel** (`zestats`) : codec, paquets dans les deux sens, mémoire tampon de gigue et régularité des blocs audio lus sur deux moteurs réels pendant un appel ; l'enregistrement des deux côtés ne retient jamais les threads audio (temps du filtre mesuré, aucun échantillon perdu) ;
-- **annuaire d'entreprise** : lecture LDAP contre un **vrai OpenLDAP** (`slapd` sur loopback, LDAPS avec certificat jetable et vérification, StartTLS, pagination, droits d'accès, mauvais mot de passe, panne puis reprise, suppression et mise à jour suivies, favoris et groupes conservés) ; le connecteur Microsoft contre un **service de substitution** local (OAuth + PKCE, Graph, delta, limitation de débit) — voir ce que cela ne prouve pas dans [`docs/DIRECTORY.md`](docs/DIRECTORY.md) ;
-- **périphériques audio et casques** : changement de micro, de sortie, pendant l'attente, après un micro coupé et avec un périphérique refusé, **en plein appel réel** entre deux moteurs Baresip (le signal est mesuré : le muet reste muet, la nouvelle source est bien celle qu'entend l'autre côté, la nouvelle sortie reçoit bien la voix) — `tests/audio_e2e.rs` ; les logiques de choix, de débranchement et d'interprétation des boutons sont simulées et le disent — voir ce qui n'a pas été essayé sans casque dans [`docs/HEADSETS.md`](docs/HEADSETS.md) ;
-- **commande externe** : les actions (décrocher, refuser, raccrocher, micro, attente, composer, « Ne pas déranger ») pilotées uniquement par l'exécuteur commun et par la socket privée sur de **vrais appels** entre deux moteurs Baresip, avec l'état confirmé par le moteur (`tests/control_e2e.rs`) ; le raccourci global réellement pressé depuis le système est décrit dans [`docs/CONTROL.md`](docs/CONTROL.md) ;
-- `SipManager` complet (moteur réel + SQLite) : statuts, appel sortant/entrant, manqué, refusé, historique, nom de contact,
-  notifications ;
-- **FreeSWITCH (PBX tiers réel)** : enregistrement Digest, mauvais mot de passe → `403 Forbidden`, appel sortant vers un poste par
-  son numéro, audio dans les deux sens relayé par le PBX, DTMF, attente/reprise, appel entrant avec nom du contact, **transfert aveugle (REFER)**
-  vers un 3e poste, appel manqué ;
-- les noms de périphériques audio listés par l'UI sont acceptés par Baresip (CoreAudio) et un nom inconnu est refusé.
+- sidecar start, version/codecs (including Opus and G.722 if embedded), control port **on loopback only**,
+  no `accounts` file;
+- shutdown without orphan processes; automatic restart after the engine is `SIGKILL`ed;
+- registration through a test registrar with a **Digest 401 challenge** (then 200), wrong password → **401**,
+  403, 503, TCP connection refused; no password in the logs;
+- **a real call between two Baresip instances** with RTP: a 440 Hz sine and an 880 Hz sine are sent, received and written
+  to WAV on both sides (two-way audio measured, in Opus), DTMF, hold/resume, mute, hang up, 603 decline;
+- **call statistics** (`zestats`): codec, packets in both directions, jitter buffer and regularity of the audio blocks read on two real engines during a call; recording on both sides never holds up the audio threads (filter time measured, no sample lost);
+- **enterprise directory**: LDAP reading against a **real OpenLDAP** (`slapd` on loopback, LDAPS with a throwaway certificate and verification, StartTLS, paging, access rights, wrong password, outage then recovery, deletion and update followed, favorites and groups kept); the Microsoft connector against a local **stand-in service** (OAuth + PKCE, Graph, delta, rate limiting) — see what this does not prove in [`docs/DIRECTORY.md`](docs/DIRECTORY.md);
+- **audio devices and headsets**: changing the microphone, the output, during hold, after a mute and with a refused device, **in the middle of a real call** between two Baresip engines (the signal is measured: mute stays muted, the new source is the one the other side hears, the new output does receive the voice) — `tests/audio_e2e.rs`; the logic for choosing, unplugging and interpreting buttons is simulated and says so — see what was not tried without a headset in [`docs/HEADSETS.md`](docs/HEADSETS.md);
+- **external control**: the actions (answer, decline, hang up, mute, hold, dial, "Do not disturb") driven only by the common executor and by the private socket on **real calls** between two Baresip engines, with the state confirmed by the engine (`tests/control_e2e.rs`); the global shortcut actually pressed from the system is described in [`docs/CONTROL.md`](docs/CONTROL.md);
+- a full `SipManager` (real engine + SQLite): statuses, outgoing/incoming call, missed, declined, history, contact name,
+  notifications;
+- **FreeSWITCH (real third-party PBX)**: Digest registration, wrong password → `403 Forbidden`, outgoing call to an extension by
+  its number, audio in both directions relayed by the PBX, DTMF, hold/resume, incoming call with the contact's name, **blind transfer (REFER)**
+  to a 3rd extension, missed call;
+- the audio device names listed by the UI are accepted by Baresip (CoreAudio) and an unknown name is refused.
 
-Vérifié à la main sur l'application packagée (debug et release) : démarrage, lancement du sidecar, connexion `127.0.0.1`, fichiers en
-`0600/0700`, quitter via ⌘Q (événement Apple) / `SIGTERM` / `SIGKILL` **sans processus orphelin** ; `.dmg` vérifié (`hdiutil verify`)
-et signature ad hoc valide après montage.
+Checked by hand on the packaged application (debug and release): start, sidecar launch, `127.0.0.1` connection, files in
+`0600/0700`, quitting with ⌘Q (Apple event) / `SIGTERM` / `SIGKILL` **without an orphan process**; `.dmg` verified (`hdiutil verify`)
+and ad hoc signature valid after mounting.
 
-## Sécurité
+## Security
 
-- Mots de passe SIP : **Trousseau macOS** (`keyring`) — pas de colonne mot de passe en base, `SecretString` côté Rust,
-  masquage systématique (`auth_pass=***`) dans les journaux et messages d'erreur.
-- Aucun fichier de configuration contenant des identifiants : les comptes sont créés en mémoire dans Baresip via
-  le socket de contrôle local. Le dossier moteur est `0700`, les fichiers `0600`.
-- `ctrl_tcp` : `127.0.0.1` uniquement, port aléatoire, **jamais exposé au frontend** (capacités Tauri minimales :
-  `core:default`, pas de plugin shell/fs/http pour la webview). Limite connue : `ctrl_tcp` n'a pas
-  d'authentification ; un processus local du même utilisateur pourrait s'y connecter.
-- Validation stricte des entrées avant tout envoi au moteur (`sip/uri.rs`) : espaces, `;`, `"`, `<>`, retours à la ligne refusés.
-- Vérification des certificats TLS **toujours activée** (`sip_verify_server yes`) ; CA système, plus un fichier PEM optionnel.
-- CSP stricte dans la webview ; aucune télémétrie.
-- Cycle de vie du moteur : arrêt gracieux (hangup → désenregistrement → `quit`), nettoyage sur ⌘Q, `SIGTERM/INT/HUP`,
-  chien de garde pour `SIGKILL`/plantage (macOS/Linux), nettoyage d'une instance périmée au démarrage suivant.
-- Baresip ouvre des écouteurs SIP (UDP/TCP) sur les interfaces locales pour recevoir des appels, comme tout softphone ;
-  c'est inhérent à la réception d'appels (utilisez un pare-feu ou « Interface locale » dans Réseau pour restreindre).
+- SIP passwords: **macOS Keychain** (`keyring`) — no password column in the database, `SecretString` on the Rust side,
+  systematic masking (`auth_pass=***`) in logs and error messages.
+- No configuration file containing credentials: accounts are created in memory in Baresip through
+  the local control socket. The engine folder is `0700`, the files `0600`.
+- `ctrl_tcp`: `127.0.0.1` only, random port, **never exposed to the frontend** (minimal Tauri capabilities:
+  `core:default`, no shell/fs/http plugin for the webview). Known limit: `ctrl_tcp` has no
+  authentication; a local process of the same user could connect to it.
+- Strict validation of inputs before anything is sent to the engine (`sip/uri.rs`): spaces, `;`, `"`, `<>` and line breaks are refused.
+- TLS certificate verification **always on** (`sip_verify_server yes`); system CAs, plus an optional PEM file.
+- Strict CSP in the webview; no telemetry.
+- Engine lifecycle: graceful stop (hangup → unregister → `quit`), cleanup on ⌘Q, `SIGTERM/INT/HUP`,
+  watchdog for `SIGKILL`/crash (macOS/Linux), cleanup of a stale instance at the next start.
+- Baresip opens SIP listeners (UDP/TCP) on the local interfaces to receive calls, like any softphone;
+  this is inherent to receiving calls (use a firewall or "Local interface" in Network to restrict it).
 
-## Windows et Linux
+## Windows and Linux
 
-Le code Rust est portable (pilote audio, extension des modules, chemins, trousseau et watchdog sélectionnés par
-`cfg`). Il reste à fournir le sidecar pour chaque plateforme :
+The Rust code is portable (audio driver, module extension, paths, keychain and watchdog selected by
+`cfg`). What remains is providing the sidecar for each platform:
 
-1. **Obtenir/compiler Baresip** pour la cible (Windows : MSVC/vcpkg ou MSYS2 ; Linux : paquet `baresip` ou build CMake) avec les modules
-   `g711`, `auconv`, `auresamp`, `srtp`, `menu`, `ctrl_tcp`, le pilote audio de la plateforme (`winwave`/`wasapi` ; `alsa`/`pulse`/`pipewire`) et si possible `g722`, `opus`.
-2. **Nommer le binaire** `src-tauri/binaries/baresip-<triple>` (`x86_64-pc-windows-msvc.exe`, `x86_64-unknown-linux-gnu`…, voir `rustc -vV`),
-   copier les modules dans `src-tauri/resources/baresip/{modules,sounds,licenses}` et les bibliothèques partagées à côté du binaire
-   (`.dll`) ou en `rpath` (`$ORIGIN/../lib/zephone`).
-3. **Pilote audio** : adapter `audio_driver()` dans `src-tauri/src/sip/engine/baresip/config.rs` si besoin (`winwave` est le défaut Windows).
-4. **Linux** : dépendances de build `libwebkit2gtk-4.1-dev`, `libdbus-1-dev`, `libasound2-dev` ; le trousseau passe par Secret Service.
-5. **Windows** : le chien de garde anti-orphelin n'est pas implémenté (utiliser un _Job Object_ `KILL_ON_JOB_CLOSE`) ; le nettoyage
-   normal (fermeture, Ctrl-C) fonctionne.
-6. `tauri build` produit alors `.msi`/`.exe` (Windows) et `.deb`/`.AppImage` (Linux).
+1. **Get/build Baresip** for the target (Windows: MSVC/vcpkg or MSYS2; Linux: `baresip` package or CMake build) with the modules
+   `g711`, `auconv`, `auresamp`, `srtp`, `menu`, `ctrl_tcp`, the platform's audio driver (`winwave`/`wasapi`; `alsa`/`pulse`/`pipewire`) and if possible `g722`, `opus`.
+2. **Name the binary** `src-tauri/binaries/baresip-<triple>` (`x86_64-pc-windows-msvc.exe`, `x86_64-unknown-linux-gnu`…, see `rustc -vV`),
+   copy the modules to `src-tauri/resources/baresip/{modules,sounds,licenses}` and the shared libraries next to the binary
+   (`.dll`) or in `rpath` (`$ORIGIN/../lib/zephone`).
+3. **Audio driver**: adapt `audio_driver()` in `src-tauri/src/sip/engine/baresip/config.rs` if needed (`winwave` is the Windows default).
+4. **Linux**: build dependencies `libwebkit2gtk-4.1-dev`, `libdbus-1-dev`, `libasound2-dev`; the keychain goes through Secret Service.
+5. **Windows**: the anti-orphan watchdog is not implemented (use a `KILL_ON_JOB_CLOSE` _Job Object_); normal
+   cleanup (closing, Ctrl-C) works.
+6. `tauri build` then produces `.msi`/`.exe` (Windows) and `.deb`/`.AppImage` (Linux).
 
-**Cette partie n'a pas été exécutée ici** (machine macOS uniquement).
+**This part has not been run here** (macOS machine only).
 
-## Limites connues
+## Known limits
 
-- **Enregistrer un appel peut exiger l'accord de l'autre personne** (selon le pays) : l'enregistrement est automatique mais purement local, et désactivable dans Paramètres → Audio ; à vous d'informer vos correspondants. Un seul appel est enregistré à la fois ; les fichiers sont des WAV mono (≈ 115 Mo par heure à 16 kHz), non compressés.
-- **Vérifié avec le vrai moteur, pas dans la vraie fenêtre** : l'enregistrement des deux voix et les volumes sont testés avec deux Baresip réels (voix synthétiques, fichiers complets, amplitude divisée par 2 à 50 %, silence à 0 %) ; l'ouverture de la fenêtre d'appel, le lecteur d'enregistrements et le menu n'ont été vus que dans l'aperçu navigateur (`npm run dev`, `/?mock`, `/?mock&window=call`) — les tester avec un vrai appel.
-- **Composants** : les composants d'[Arc UI](https://uiarc.dev) (dialogues, boutons standard, interrupteurs, pastilles, onglets — les mêmes dans l'historique et les paramètres —, menu, popover) sont utilisés partout où leur API le permet ; les champs de formulaire (saisie, liste déroulante, étiquette), les boutons à style sur mesure (boutons d'appel, icônes) et le dock restent en shadcn / composants maison. Les alertes utilisent [Ding](https://ding.yusufcengiz.dev).
-- **Orbes OrbKit** : seuls les 14 orbes sous licence MIT sont embarqués. Les 19 autres sont des portages de shaders de @XorDev, réservés à un usage **non commercial** avec attribution : ils ne sont pas inclus (voir `src/components/orbs/README.md` pour les ajouter dans un build personnel). Les orbes sont des shaders WebGL : le plus lourd (volumétrique) coûte du GPU, la résolution est plafonnée à 1,5× ; WebGL n'a été vérifié que dans l'aperçu navigateur, pas dans la fenêtre WKWebView de l'app.
-- **Fond translucide** : il utilise l'API privée `macOSPrivateApi` de Tauri (fenêtre transparente + `NSVisualEffectView`), incompatible avec le Mac App Store ; ce n'est pas le matériau « Liquid Glass » natif de macOS 26 mais l'effet de transparence classique. Sur Windows/Linux il est ignoré.
-
-- **Coupures de voix** : le module `zeaudio` n'écrit plus sur le disque ni ne prend de verrou dans les threads audio (c'était un défaut réel, mesuré : le filtre pouvait retenir un bloc de 20 ms pendant plus de 10 ms). Les statistiques avancées disent où se situe une coupure (flux reçu, mémoire tampon, blocs audio de ce Mac) ; elles ne voient ni le service distant avant son envoi, ni le haut-parleur après la lecture.
-- **Contacts du Mac** : la lecture est écrite avec le framework Contacts d'Apple et testée sans toucher à aucun contact ; elle n'a pas été exercée sur de vrais contacts (elle demande votre autorisation dans l'application installée). Seul macOS est pris en charge pour l'instant (iOS, Android, Windows, Linux : voir [`docs/DIRECTORY.md`](docs/DIRECTORY.md)).
-- **Annuaire d'entreprise** : le connecteur LDAP est vérifié contre un vrai OpenLDAP, pas contre un Active Directory ; le connecteur **Microsoft 365 est implémenté mais n'a pas pu être validé sans un vrai locataire** (il faut une inscription d'application, un compte et, pour l'annuaire complet, le consentement d'un administrateur) — il est testé contre un service de substitution. Aucune présence (disponibilité) n'est affichée : ZePhone n'en reçoit pas. LDAP relit tout à chaque synchronisation (pas de delta) ; les contacts modifiés dans une source sont en lecture seule.
-- **Non vérifié sans matériel/serveur réel** : la capture/lecture sur le micro et les haut-parleurs réels pendant un appel
-  (les tests utilisent des sources/puits audio synthétiques ; la sélection des périphériques CoreAudio et la permission micro
-  sont, elles, vérifiées) ; l'affichage de l'invite micro et l'attribution TCC au sous-processus Baresip sur un **premier lancement
-  propre**, la notification native macOS, la sonnerie sur le haut-parleur, un opérateur VoIP réel, TLS avec un vrai certificat.
-- **Codecs** : la bouteille Homebrew de Baresip ne fournit que G.711 ; Opus et G.722 viennent de `npm run sidecar:hd`. G.722 s'appuie
-  sur **spandsp (LGPL-2.1, liée dynamiquement, projet non maintenu)** : voir `THIRD_PARTY_NOTICES.md`. Sans ces modules l'application
-  retombe automatiquement sur G.711.
-- **Transfert** : transfert aveugle (REFER) ; pas de transfert supervisé dans l'interface. Un appel sortant à la fois en cours d'établissement.
-- **NAT** : pas de STUN/TURN/ICE configurable dans l'UI v1 (modules disponibles dans Baresip).
-- **Vidéo, messagerie instantanée, présence, BLF** : hors périmètre.
-- **Un seul client `ctrl_tcp`** à la fois (limitation de Baresip) et **pas d'authentification** sur ce canal (voir Sécurité).
-- Build universelle macOS, notarisation, Windows, Linux : documentés, non exécutés.
-- Mot de passe SIP contenant `"` : non supporté (limitation de la syntaxe d'adresse de Baresip).
+- **Recording a call may require the other person's consent** (depending on the country): recording is automatic but purely local, and can be turned off in Settings → Audio; it is up to you to inform the people you talk to. Only one call is recorded at a time; the files are mono WAVs (≈ 115 MB per hour at 16 kHz), uncompressed.
+- **Checked with the real engine, not in the real window**: recording of both voices and the volumes are tested with two real Baresip engines (synthetic voices, complete files, amplitude divided by 2 at 50%, silence at 0%); the opening of the call window, the recordings player and the menu have only been seen in the browser preview (`npm run dev`, `/?mock`, `/?mock&window=call`) — test them with a real call.
+- **Components**: [Arc UI](https://uiarc.dev) components (dialogs, standard buttons, switches, badges, tabs — the same in history and settings —, menu, popover) are used wherever their API allows; form fields (input, dropdown, label), custom-styled buttons (call buttons, icons) and the dock stay in shadcn / in-house components. Notifications use [Ding](https://ding.yusufcengiz.dev).
+- **OrbKit orbs**: only the 14 MIT-licensed orbs are embedded. The other 19 are ports of @XorDev shaders, reserved for **non-commercial** use with attribution: they are not included (see `src/components/orbs/README.md` to add them in a personal build). The orbs are WebGL shaders: the heaviest (volumetric) costs GPU, the resolution is capped at 1.5×; WebGL has only been checked in the browser preview, not in the app's WKWebView window.
+- **Translucent background**: it uses Tauri's private `macOSPrivateApi` API (transparent window + `NSVisualEffectView`), incompatible with the Mac App Store; it is not the native "Liquid Glass" material of macOS 26 but the classic transparency effect. It is ignored on Windows/Linux.
+- **Voice dropouts**: the `zeaudio` module no longer writes to disk or takes a lock in the audio threads (that was a real, measured defect: the filter could hold a 20 ms block for more than 10 ms). Advanced statistics say where a dropout is (received stream, buffer, this Mac's audio blocks); they see neither the remote service before it sends, nor the speaker after playback.
+- **Mac contacts**: reading is written with Apple's Contacts framework and tested without touching any contact; it has not been exercised on real contacts (it asks for your permission in the installed application). Only macOS is supported for now (iOS, Android, Windows, Linux: see [`docs/DIRECTORY.md`](docs/DIRECTORY.md)).
+- **Enterprise directory**: the LDAP connector is checked against a real OpenLDAP, not against an Active Directory; the **Microsoft 365 connector is implemented but could not be validated without a real tenant** (it needs an application registration, an account and, for the full directory, an administrator's consent) — it is tested against a stand-in service. No presence (availability) is shown: ZePhone does not receive any. LDAP rereads everything at each synchronization (no delta); contacts changed in a source are read-only.
+- **Not verified without real hardware/server**: capture/playback on the real microphone and speakers during a call
+  (the tests use synthetic audio sources/sinks; the selection of CoreAudio devices and the microphone permission
+  are verified, though); the display of the microphone prompt and the TCC attribution to the Baresip subprocess on a **clean first
+  launch**, the native macOS notification, the ringtone on the speaker, a real VoIP carrier, TLS with a real certificate.
+- **Codecs**: Baresip's Homebrew bottle only provides G.711; Opus and G.722 come from `npm run sidecar:hd`. G.722 relies
+  on **spandsp (LGPL-2.1, dynamically linked, unmaintained project)**: see `THIRD_PARTY_NOTICES.md`. Without these modules the application
+  automatically falls back to G.711.
+- **Transfer**: blind transfer (REFER); no attended transfer in the interface. One outgoing call at a time while it is being set up.
+- **NAT**: no configurable STUN/TURN/ICE in the v1 UI (modules are available in Baresip).
+- **Video, instant messaging, presence, BLF**: out of scope.
+- **A single `ctrl_tcp` client** at a time (Baresip limitation) and **no authentication** on this channel (see Security).
+- Universal macOS build, notarization, Windows, Linux: documented, not run.
+- SIP password containing `"`: not supported (limitation of Baresip's address syntax).
 
 ## Logo
 
-Le logo reprend la marque **Zenoova** (deux formes qui se recouvrent, l'une en contour, l'autre pleine, avec un fin
-filet là où elles se croisent), mais les deux ronds sont remplacés par deux des avatars des comptes SIP
-([Blobatar](https://blobatar.dev)), en noir et blanc seulement : une version claire (celle de l'application) et une
-version sombre. Les visages sont dessinés à partir de noms fixes, pas d'un compte : le logo est le même pour tous.
-`node scripts/make-logo.mjs` régénère les SVG ; les icônes de toutes tailles s'en déduisent avec
-`npx tauri icon src-tauri/icons/source/zephone-logo-1024.png` (le PNG s'obtient avec n'importe quel outil de
-rastérisation SVG).
+The logo takes up the **Zenoova** mark (two overlapping shapes, one outlined, the other solid, with a thin
+line where they cross), but the two circles are replaced by two of the SIP account avatars
+([Blobatar](https://blobatar.dev)), in black and white only: a light version (the application's) and a
+dark version. The faces are drawn from fixed names, not from an account: the logo is the same for everyone.
+`node scripts/make-logo.mjs` regenerates the SVGs; icons of all sizes are derived from it with
+`npx tauri icon src-tauri/icons/source/zephone-logo-1024.png` (the PNG can be obtained with any SVG
+rasterizing tool).
 
-## Licences
+## Licenses
 
-ZePhone embarque :
+ZePhone embeds:
 
-- **Baresip** et **libre** — BSD-3-Clause ;
-- **OpenSSL** (`libssl`/`libcrypto`) — Apache-2.0 ;
-- Baresip y est compilé avec **deux changements d'une ligne** (`scripts/build-baresip.sh`) : le module `vumeter` rapporte les niveaux audio toutes les 60 ms au lieu de 500 ms, et la mémoire tampon de gigue garde ses compteurs (perdus, en retard, vidages…) dans la build de production, où Baresip les désactive, plus le module maison `zeaudio` (`scripts/baresip-modules/zeaudio`, BSD-3) ;
-- **Opus** (BSD-3-Clause) et **spandsp** pour G.722 (LGPL-2.1, dynamique), plus leurs dépendances (libtiff, libjpeg-turbo, libwebp, xz, zstd) ;
-- G.711 est intégré à Baresip.
+- **Baresip** and **libre** — BSD-3-Clause;
+- **OpenSSL** (`libssl`/`libcrypto`) — Apache-2.0;
+- Baresip is built with **two one-line changes** (`scripts/build-baresip.sh`): the `vumeter` module reports audio levels every 60 ms instead of 500 ms, and the jitter buffer keeps its counters (lost, late, flushes…) in the production build, where Baresip disables them, plus the in-house `zeaudio` module (`scripts/baresip-modules/zeaudio`, BSD-3);
+- **Opus** (BSD-3-Clause) and **spandsp** for G.722 (LGPL-2.1, dynamic), plus their dependencies (libtiff, libjpeg-turbo, libwebp, xz, zstd);
+- G.711 is built into Baresip.
 
-Les textes de licence se trouvent dans `Contents/Resources/engine/licenses/` du bundle (`MANIFEST.txt` liste les versions).
-Voir aussi [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). **Aucune licence n'est encore déclarée pour le code de ZePhone lui-même.** Les dépendances Rust/JS (Tauri, React, shadcn/ui, Radix, Tailwind, rusqlite,
-keyring, cpal…) sont sous licences MIT / Apache-2.0.
+The license texts are in the bundle's `Contents/Resources/engine/licenses/` (`MANIFEST.txt` lists the versions).
+See also [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). **No license is declared yet for ZePhone's own code.** The Rust/JS dependencies (Tauri, React, shadcn/ui, Radix, Tailwind, rusqlite,
+keyring, cpal…) are under MIT / Apache-2.0 licenses.

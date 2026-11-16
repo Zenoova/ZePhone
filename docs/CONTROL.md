@@ -1,185 +1,185 @@
-# Raccourcis globaux et commande externe
+# Global shortcuts and external control
 
-ZePhone se pilote sans remettre la fenêtre au premier plan : par des **raccourcis clavier globaux**, par le **menu de la barre des menus**, et par la **ligne de commande** `zephone ctl` (utilisable depuis un Stream Deck, un script, Raccourcis, Alfred…).
+ZePhone can be driven without bringing its window to the front: with **global keyboard shortcuts**, with the **menu bar menu**, and with the **command line** `zephone ctl` (usable from a Stream Deck, a script, Shortcuts, Alfred…).
 
-Les trois passent par **le même exécuteur**, celui qui vérifie que l'action a un sens à cet instant, choisit l'appel visé et appelle les mêmes fonctions que les boutons de l'interface. Ils ne peuvent donc pas se contredire.
+All three go through **the same executor**, which checks that the action makes sense at that moment, picks the targeted call and calls the same functions as the interface buttons. They therefore cannot contradict each other.
 
-## 1. Raccourcis globaux
+## 1. Global shortcuts
 
-*Réglages → Raccourcis.* Ils fonctionnent dans toutes les applications, y compris quand ZePhone est réduit dans la barre des menus, tant que ZePhone est lancé.
+_Settings → Shortcuts._ They work in all applications, including when ZePhone is minimized to the menu bar, as long as ZePhone is running.
 
-| Action | Défaut (macOS) | Ce qu'elle demande |
-|---|---|---|
-| Décrocher | ⌥⇧⌘A | décrocher l'appel entrant |
-| Refuser l'appel entrant | ⌥⇧⌘D | refuser (603) |
-| Raccrocher | ⌥⇧⌘H | raccrocher **un** appel |
-| Couper / réactiver le micro | ⌥⇧⌘M | basculer le micro de l'appel visé |
-| Mettre en attente / reprendre | ⌥⇧⌘P | basculer l'attente de l'appel visé |
-| Afficher le clavier | ⌥⇧⌘N | affiche la fenêtre, prête à composer |
-| Rechercher un contact | ⌥⇧⌘F | affiche la fenêtre sur la recherche de l'annuaire |
-| Ne pas déranger | ⌥⇧⌘Z | bascule « Ne pas déranger » |
+| Action                       | Default (macOS) | What it asks for                           |
+| ---------------------------- | --------------- | ------------------------------------------ |
+| Answer                       | ⌥⇧⌘A            | answer the incoming call                   |
+| Decline the incoming call    | ⌥⇧⌘D            | decline (603)                              |
+| Hang up                      | ⌥⇧⌘H            | hang up **one** call                       |
+| Mute / unmute the microphone | ⌥⇧⌘M            | toggle the microphone of the targeted call |
+| Put on hold / resume         | ⌥⇧⌘P            | toggle hold on the targeted call           |
+| Show the keypad              | ⌥⇧⌘N            | shows the window, ready to dial            |
+| Search for a contact         | ⌥⇧⌘F            | shows the window on the directory search   |
+| Do not disturb               | ⌥⇧⌘Z            | toggles "Do not disturb"                   |
 
-Pour chaque action, la page montre son nom, sa combinaison, sa portée (« Global »), son état, et permet de **modifier** (capture directement au clavier), **supprimer**, **désactiver** ou **rétablir** la combinaison par défaut, ainsi que de tout désactiver d'un coup. Les raccourcis qui ne marchent que fenêtre au premier plan (⌘1 à ⌘4, `/` dans l'annuaire) sont listés à part.
+For each action, the page shows its name, its combination, its scope ("Global"), its status, and lets you **edit** (captured straight from the keyboard), **remove**, **disable** or **restore** the default combination, as well as disable everything at once. Shortcuts that only work with the window in front (⌘1 to ⌘4, `/` in the directory) are listed separately.
 
-### États d'un raccourci
+### Shortcut statuses
 
-| État | Sens |
-|---|---|
-| **Actif** | enregistré auprès du système : le presser, où que vous soyez, lance l'action |
-| **Non activé** | la combinaison est enregistrée dans vos réglages, **mais le système l'a refusée** (combinaison invalide ou réservée, ou déjà prise là où le système signale le conflit). Elle ne fait rien. Le motif est affiché. **Sur macOS, le système ne signale pas qu'une autre application utilise déjà la même combinaison** (constaté : un second programme peut enregistrer la même combinaison sans erreur, et la plus récente reçoit l'événement). Un raccourci « Actif » qui ne réagit pas est donc peut-être pris par une autre application : changez-le. |
-| Désactivé | éteint par vous ; la combinaison est gardée |
-| Non attribué | aucune combinaison |
-| En pause | pendant que vous enregistrez une combinaison |
+| Status            | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Active**        | registered with the system: pressing it, wherever you are, runs the action                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Not activated** | the combination is saved in your settings, **but the system refused it** (invalid or reserved combination, or already taken where the system reports the conflict). It does nothing. The reason is shown. **On macOS, the system does not report that another application already uses the same combination** (observed: a second program can register the same combination without an error, and the most recent one receives the event). An "Active" shortcut that does not react may therefore be taken by another application: change it. |
+| Disabled          | turned off by you; the combination is kept                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Unassigned        | no combination                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Paused            | while you are recording a combination                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
-### Règles
+### Rules
 
-- **Pas de touche seule.** Une combinaison comporte au moins Ctrl, Option/Alt ou ⌘ (Maj seul ne compte pas) : une lettre tapée dans un autre logiciel ne doit jamais lancer une action téléphonique. Seules F13 à F24, que nul ne tape par accident, sont acceptées seules.
-- **Option/Alt seul est refusé sur une touche de saisie** : il sert à écrire des accents et des symboles (sur macOS) ; le prendre globalement gênerait la frappe.
-- **Les combinaisons que le système garde** (⌘Q, ⌘Tab, ⌘Espace, ⌘H, ⌘M, ⌃⌘Q, ⇧⌘3/4/5 ; Alt+F4, Alt+Tab, Ctrl+Alt+Suppr sur Windows) sont refusées avec la raison.
-- **Pas de doublon** entre deux actions, quelle que soit l'écriture (`cmd+option+shift+a` = `CommandOrControl+Alt+Shift+A`). Le message nomme l'action qui possède déjà la combinaison.
-- **Pendant l'enregistrement d'une combinaison, aucun raccourci n'est actif** : presser une combinaison existante pour la réutiliser ne lance pas son action. L'enregistrement s'arrête seul si la fenêtre perd le focus ou si la page est quittée.
-- **Une pression, une action.** Une touche maintenue répète sa pression ; seule la première compte, la suivante n'est prise qu'après le relâchement (ou après deux secondes sans événement, si un relâchement s'était perdu), et jamais moins d'un quart de seconde après la précédente.
-- **Libération.** Modifier, supprimer ou désactiver une combinaison la libère immédiatement auprès du système ; quitter ZePhone libère toutes les combinaisons.
-- **Persistance.** Les préférences sont enregistrées (SQLite, clé `shortcuts`) et ré-enregistrées auprès du système à chaque lancement.
+- **No bare key.** A combination includes at least Ctrl, Option/Alt or ⌘ (Shift alone does not count): a letter typed in another program must never trigger a phone action. Only F13 to F24, which nobody types by accident, are accepted alone.
+- **Option/Alt alone is refused on a typing key**: it is used to write accents and symbols (on macOS); taking it globally would get in the way of typing.
+- **Combinations the system keeps** (⌘Q, ⌘Tab, ⌘Space, ⌘H, ⌘M, ⌃⌘Q, ⇧⌘3/4/5; Alt+F4, Alt+Tab, Ctrl+Alt+Delete on Windows) are refused, with the reason.
+- **No duplicates** between two actions, however it is written (`cmd+option+shift+a` = `CommandOrControl+Alt+Shift+A`). The message names the action that already owns the combination.
+- **While a combination is being recorded, no shortcut is active**: pressing an existing combination to reuse it does not run its action. Recording stops by itself if the window loses focus or the page is left.
+- **One press, one action.** A held key repeats its press; only the first counts, the next one is only taken after the release (or after two seconds without an event, if a release was lost), and never less than a quarter of a second after the previous one.
+- **Release.** Changing, removing or disabling a combination releases it with the system immediately; quitting ZePhone releases all the combinations.
+- **Persistence.** Preferences are saved (SQLite, key `shortcuts`) and registered with the system again at each launch.
 
-### Autorisations
+### Permissions
 
-**macOS : aucune.** Les raccourcis globaux utilisent l'enregistrement de touches d'accès rapide du système : ZePhone est seulement prévenu quand *l'une de ses propres combinaisons* est pressée, il ne lit pas le clavier. Aucune autorisation « Accessibilité » ou « Surveillance de l'entrée » n'est demandée ni nécessaire.
+**macOS: none.** Global shortcuts use the system's hot-key registration: ZePhone is only told when _one of its own combinations_ is pressed, it does not read the keyboard. No "Accessibility" or "Input Monitoring" permission is requested or needed.
 
-Si vous déclenchez ces raccourcis **depuis un Stream Deck** (action *Hotkey*), c'est l'application Stream Deck qui envoie des frappes : macOS lui demandera *Réglages Système → Confidentialité et sécurité → Accessibilité*. Cette autorisation concerne Stream Deck, pas ZePhone, et elle est inutile avec l'option « Open » décrite plus bas.
+If you trigger these shortcuts **from a Stream Deck** (_Hotkey_ action), it is the Stream Deck application that sends the keystrokes: macOS will ask it for _System Settings → Privacy & Security → Accessibility_. This permission concerns Stream Deck, not ZePhone, and it is unnecessary with the "Open" option described below.
 
-Windows et Linux : le même code s'appuie sur les mécanismes de ces systèmes, **non testés** (ZePhone n'y est pas encore construit). Sur Windows, Ctrl+Alt équivaut à AltGr sur de nombreux claviers : préférez d'autres combinaisons.
+Windows and Linux: the same code relies on those systems' mechanisms, **untested** (ZePhone is not built there yet). On Windows, Ctrl+Alt is equivalent to AltGr on many keyboards: prefer other combinations.
 
-## 2. Quel appel est visé ?
+## 2. Which call is targeted?
 
-Une commande peut **nommer son appel** (`--call <id>`). Sinon, la règle est la même pour les raccourcis, le menu et la ligne de commande :
+A command can **name its call** (`--call <id>`). Otherwise, the rule is the same for shortcuts, the menu and the command line:
 
-| Action | Appels candidats | Sans identifiant |
-|---|---|---|
-| Décrocher, Refuser | appels **entrants** en attente | un seul → lui. **Plusieurs → rien n'est fait** (ambigu) |
-| Raccrocher | appels en cours d'établissement ou établis (jamais un appel entrant qui sonne : c'est « Refuser ») | un seul → lui ; plusieurs → **celui qui n'est pas en attente** s'il est seul à ne pas l'être ; sinon ambigu |
-| Micro | appels établis | idem |
-| Attente (mettre) | appels établis | idem : l'appel actif |
-| Attente (reprendre) | appels établis | un seul → lui ; plusieurs → **celui qui est en attente** s'il est seul ; sinon ambigu |
+| Action          | Candidate calls                                                                      | Without an identifier                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| Answer, Decline | **incoming** calls waiting                                                           | only one → that one. **Several → nothing is done** (ambiguous)                                                        |
+| Hang up         | calls being set up or established (never a ringing incoming call: that is "Decline") | only one → that one; several → **the one that is not on hold** if it is the only one that is not; otherwise ambiguous |
+| Mute            | established calls                                                                    | same                                                                                                                  |
+| Hold (put on)   | established calls                                                                    | same: the active call                                                                                                 |
+| Hold (resume)   | established calls                                                                    | only one → that one; several → **the one that is on hold** if it is the only one; otherwise ambiguous                 |
 
-- **Raccrocher ne devient jamais « tout raccrocher ».** Il n'existe aucune commande pour cela.
-- **Aucun candidat** → la commande ne fait rien (état `unavailable`) : « décrocher » sans appel entrant ne déclenche rien d'autre, « attente » ne touche pas un appel qui sonne.
-- **Ambigu** → rien n'est fait. La réponse liste les appels candidats pour que l'appelant en nomme un. Depuis un raccourci, ZePhone se met au premier plan et le dit dans une notification.
-- Les requêtes qui agissent sur des appels sont traitées **une à la fois** : deux bascules rapprochées lisent chacune l'état laissé par la précédente.
-- L'interface affiche **l'état confirmé par le moteur d'appel**, pas celui demandé. Si le moteur refuse, l'état reste celui qu'il confirme et la réponse est `failed`.
+- **Hang up never becomes "hang up everything".** No command exists for that.
+- **No candidate** → the command does nothing (state `unavailable`): "answer" without an incoming call triggers nothing else, "hold" does not touch a ringing call.
+- **Ambiguous** → nothing is done. The answer lists the candidate calls so the caller can name one. From a shortcut, ZePhone comes to the front and says so in a notification.
+- Requests that act on calls are handled **one at a time**: two toggles close together each read the state left by the previous one.
+- The interface shows **the state confirmed by the call engine**, not the requested one. If the engine refuses, the state stays the one it confirms and the answer is `failed`.
 
-## 3. Ne pas déranger
+## 3. Do not disturb
 
-*Réglages → Notifications*, raccourci, ou menu de la barre des menus. Activé, tout **nouvel appel entrant est refusé immédiatement** (486 *Busy Here*), avant toute sonnerie, fenêtre ou notification. L'appelant entend « occupé » (son serveur peut le diriger vers une messagerie). L'appel apparaît dans l'historique comme **manqué**, sans notification. Les appels que vous passez ne sont pas touchés ; un appel déjà en cours de sonnerie n'est pas refusé rétroactivement.
+_Settings → Notifications_, shortcut, or menu bar menu. When on, every **new incoming call is declined immediately** (486 _Busy Here_), before any ringtone, window or notification. The caller hears "busy" (their server may route them to voicemail). The call appears in the history as **missed**, without a notification. Calls you make are not affected; a call that is already ringing is not declined retroactively.
 
-## 4. Commande externe : `zephone ctl`
+## 4. External command: `zephone ctl`
 
-Le même exécutable que l'application, lancé avec `ctl`, parle à l'instance **déjà ouverte** puis s'arrête. Il ne lance jamais ZePhone ni une seconde fenêtre.
+The same executable as the application, started with `ctl`, talks to the instance that is **already open** and then exits. It never starts ZePhone or a second window.
 
 ```bash
 Z=/Applications/ZePhone.app/Contents/MacOS/zephone
 
 $Z ctl dial 1002                    # extension
-$Z ctl dial "+33 1 23 45 67 89"     # numéro
-$Z ctl dial sip:bob@example.com     # adresse SIP
-$Z ctl dial 1002 --account <id>     # avec un compte précis (défaut : le compte par défaut)
-$Z ctl answer                       # décrocher l'appel entrant
-$Z ctl reject                       # le refuser
-$Z ctl hangup                       # raccrocher (un seul appel, règle ci-dessus)
-$Z ctl hangup --call <id>           # raccrocher cet appel
-$Z ctl mute            # bascule      $Z ctl mute on   $Z ctl mute off     # explicite
-$Z ctl hold            # bascule      $Z ctl hold on   $Z ctl hold off
-$Z ctl dnd             # bascule      $Z ctl dnd on    $Z ctl dnd off
-$Z ctl show | dialer | search       # fenêtre, clavier, recherche de contacts
-$Z ctl status --pretty              # état de l'application et des appels
+$Z ctl dial "+33 1 23 45 67 89"     # number
+$Z ctl dial sip:bob@example.com     # SIP address
+$Z ctl dial 1002 --account <id>     # with a specific account (default: the default account)
+$Z ctl answer                       # answer the incoming call
+$Z ctl reject                       # decline it
+$Z ctl hangup                       # hang up (a single call, rule above)
+$Z ctl hangup --call <id>           # hang up this call
+$Z ctl mute            # toggle      $Z ctl mute on   $Z ctl mute off     # explicit
+$Z ctl hold            # toggle      $Z ctl hold on   $Z ctl hold off
+$Z ctl dnd             # toggle      $Z ctl dnd on    $Z ctl dnd off
+$Z ctl show | dialer | search       # window, keypad, contact search
+$Z ctl status --pretty              # state of the application and the calls
 ```
 
-Les numéros, extensions internes, adresses SIP et règles de numérotation sont **ceux du clavier de l'application** : la même validation est appliquée.
+Numbers, internal extensions, SIP addresses and dialing rules are **those of the application's keypad**: the same validation is applied.
 
-**Commandes explicites.** `mute on` / `mute off`, `hold on` / `hold off`, `dnd on` / `dnd off` mènent l'appel à cet état. **Les répéter ne change rien de plus** : `mute on` sur un appel déjà muet répond `ok` avec `"changed": false` et n'envoie aucune requête au moteur. Les formes sans argument (bascules) sont faites pour le clavier.
+**Explicit commands.** `mute on` / `mute off`, `hold on` / `hold off`, `dnd on` / `dnd off` bring the call to that state. **Repeating them changes nothing more**: `mute on` on a call that is already muted answers `ok` with `"changed": false` and sends no request to the engine. The forms without an argument (toggles) are made for the keyboard.
 
-### Réponse
+### Answer
 
-Une ligne de JSON sur la sortie standard (`--pretty` pour l'indenter) :
+One line of JSON on standard output (`--pretty` to indent it):
 
 ```json
-{"status":"ok","message":"Micro coupé","changed":true,"settled":true,
+{"status":"ok","message":"Microphone muted","changed":true,"settled":true,
  "call":{"id":"…","state":"connected","muted":true,"heldLocally":false, …}}
 ```
 
-| `status` | Code de sortie | Sens |
-|---|---|---|
-| `ok` | 0 | accepté |
-| `failed` | 1 | le moteur a refusé ou échoué |
-| `invalid` | 2 | commande ou paramètre invalide |
-| `notFound` | 3 | l'appel (ou le compte) nommé n'existe pas |
-| `ambiguous` | 4 | plusieurs appels conviennent ; `candidates` les liste. Rien n'a été fait |
-| `unavailable` | 5 | rien à faire dans l'état actuel (pas d'appel entrant, rien en attente…) |
-| `disconnected` | 6 | ZePhone n'est pas lancé, le moteur est arrêté ou aucun compte n'est connecté |
+| `status`       | Exit code | Meaning                                                                  |
+| -------------- | --------- | ------------------------------------------------------------------------ |
+| `ok`           | 0         | accepted                                                                 |
+| `failed`       | 1         | the engine refused or failed                                             |
+| `invalid`      | 2         | invalid command or parameter                                             |
+| `notFound`     | 3         | the named call (or account) does not exist                               |
+| `ambiguous`    | 4         | several calls fit; `candidates` lists them. Nothing was done             |
+| `unavailable`  | 5         | nothing to do in the current state (no incoming call, nothing on hold…)  |
+| `disconnected` | 6         | ZePhone is not running, the engine is stopped or no account is connected |
 
-**Accepté n'est pas terminé.** `settled` distingue les deux : pour le micro et l'attente, la réponse n'est envoyée qu'après la confirmation du moteur (`settled: true`, `call` montre l'état confirmé). Pour décrocher, raccrocher, refuser et composer, le moteur *accepte* la demande tout de suite mais l'appel ne change d'état que lorsque l'autre côté suit : `settled: false`. Relisez `ctl status` pour le résultat final.
+**Accepted is not finished.** `settled` tells the two apart: for the microphone and hold, the answer is only sent after the engine's confirmation (`settled: true`, `call` shows the confirmed state). For answering, hanging up, declining and dialing, the engine _accepts_ the request right away but the call only changes state when the other side follows: `settled: false`. Read `ctl status` again for the final result.
 
-`ctl status` renvoie, dans `app` : `engineRunning`, `doNotDisturb`, `accounts` (avec `connected`) et `calls` (état, `muted`, `heldLocally`, `heldRemotely`…).
+`ctl status` returns, in `app`: `engineRunning`, `doNotDisturb`, `accounts` (with `connected`) and `calls` (state, `muted`, `heldLocally`, `heldRemotely`…).
 
-### Sécurité
+### Security
 
-- **Pas de port réseau.** La commande passe par un **socket Unix** (`~/Library/Application Support/app.zephone.softphone/control.sock` sur macOS), de mode `0600` : seul votre utilisateur peut s'y connecter, et ZePhone vérifie en plus l'identité de l'utilisateur de chaque connexion. Une page web ne peut pas ouvrir un socket Unix : aucune page ne peut piloter ZePhone, et il n'y a ni jeton ni en-tête à protéger.
-- Seules les commandes ci-dessus existent. Rien n'est exécuté, aucun fichier n'est lu ; un champ inconnu (`{"cmd":"hangup","all":true}`) est refusé.
-- Les paramètres sont validés strictement (longueurs, caractères d'identifiant, destinataire) avant d'atteindre le moteur ; une requête dépasse 4 Ko → refusée.
-- Les journaux notent le nom de la commande et son résultat, **jamais le numéro composé**.
-- Un socket laissé par un plantage est remplacé ; un fichier qui n'est pas un socket n'est jamais supprimé ; une seconde instance ne vole pas le socket de la première.
-- Pour un autre langage que le shell : une requête = une ligne JSON envoyée au socket, une réponse = une ligne JSON. `ZEPHONE_CONTROL_SOCKET` remplace le chemin (utile si le chemin par défaut dépasse la limite de 100 octets).
+- **No network port.** The command goes through a **Unix socket** (`~/Library/Application Support/app.zephone.softphone/control.sock` on macOS), mode `0600`: only your user can connect to it, and ZePhone also checks the identity of the user of each connection. A web page cannot open a Unix socket: no page can drive ZePhone, and there is no token or header to protect.
+- Only the commands above exist. Nothing is executed, no file is read; an unknown field (`{"cmd":"hangup","all":true}`) is refused.
+- Parameters are strictly validated (lengths, identifier characters, recipient) before reaching the engine; a request over 4 KB is refused.
+- The logs record the name of the command and its result, **never the number dialed**.
+- A socket left behind by a crash is replaced; a file that is not a socket is never deleted; a second instance does not steal the first one's socket.
+- For a language other than the shell: one request = one line of JSON sent to the socket, one answer = one line of JSON. `ZEPHONE_CONTROL_SOCKET` replaces the path (useful if the default path exceeds the 100-byte limit).
 
-Windows : le socket Unix n'existe pas ; un tube nommé serait le choix naturel. **Non fait.**
+Windows: the Unix socket does not exist; a named pipe would be the natural choice. **Not done.**
 
 ## 5. Stream Deck
 
-Deux façons, sans plugin à installer.
+Two ways, with no plugin to install.
 
-### Option A — action « Hotkey » (la plus simple)
+### Option A — "Hotkey" action (the simplest)
 
-Dans Stream Deck, glissez **Système → Raccourci clavier (Hotkey)** sur une touche et enregistrez la combinaison de l'action (par défaut ⌥⇧⌘H pour raccrocher, ⌥⇧⌘A pour décrocher, ⌥⇧⌘M pour le micro, ⌥⇧⌘N pour afficher le clavier). Rien d'autre à configurer côté ZePhone. Limites : ce sont des **bascules** (micro, attente), et macOS demande l'autorisation Accessibilité à l'application Stream Deck.
+In Stream Deck, drag **System → Hotkey** onto a key and record the action's combination (by default ⌥⇧⌘H to hang up, ⌥⇧⌘A to answer, ⌥⇧⌘M for the microphone, ⌥⇧⌘N to show the keypad). Nothing else to configure on the ZePhone side. Limits: these are **toggles** (microphone, hold), and macOS asks the Stream Deck application for the Accessibility permission.
 
-### Option B — action « Open » + commande explicite
+### Option B — "Open" action + explicit command
 
-`integrations/streamdeck/make-buttons.sh` fabrique une petite application par action (micro coupé / actif, décrocher, raccrocher, afficher…) qui lance `zephone ctl …` et se ferme. Aucune autorisation, aucun secret.
+`integrations/streamdeck/make-buttons.sh` makes a small application per action (microphone muted / active, answer, hang up, show…) that runs `zephone ctl …` and quits. No permission, no secret.
 
 ```bash
-integrations/streamdeck/make-buttons.sh                       # crée ~/Documents/ZePhone Stream Deck/
+integrations/streamdeck/make-buttons.sh                       # creates ~/Documents/ZePhone Stream Deck/
 integrations/streamdeck/make-buttons.sh --app /Applications/ZePhone.app --out ~/StreamDeckZePhone
 ```
 
-Dans Stream Deck : **Système → Ouvrir (Open)**, puis choisissez l'application voulue (`ZePhone - Hang up.app`, `ZePhone - Mute ON.app`, `ZePhone - Show.app`…).
+In Stream Deck: **System → Open**, then choose the wanted application (`ZePhone - Hang up.app`, `ZePhone - Mute ON.app`, `ZePhone - Show.app`…).
 
-Boutons créés : *Answer, Decline, Hang up, Mute (toggle), Mute ON, Mute OFF, Hold (toggle), Do not disturb (toggle), Show, Dialer, Search contacts.*
+Buttons created: _Answer, Decline, Hang up, Mute (toggle), Mute ON, Mute OFF, Hold (toggle), Do not disturb (toggle), Show, Dialer, Search contacts._
 
-### Ce que les touches affichent
+### What the keys show
 
-**Les touches Stream Deck n'affichent pas l'état du micro ni de l'appel.** Les actions d'origine de Stream Deck n'ont aucun moyen de lire `ctl status`, et aucun plugin n'est fourni : une icône de micro barré ne saurait pas si le micro est vraiment coupé. Pour ne jamais avoir de doute, utilisez deux touches distinctes **Mute ON** / **Mute OFF** (explicites : les presser plusieurs fois ne change rien de plus) et regardez la fenêtre ou la barre des menus pour l'état réel. Un plugin Stream Deck qui interrogerait `zephone ctl status` toutes les secondes pourrait afficher l'état confirmé ; il n'est pas écrit.
+**Stream Deck keys do not show the state of the microphone or of the call.** Stream Deck's stock actions have no way to read `ctl status`, and no plugin is provided: a crossed-out microphone icon would not know whether the microphone is really muted. To never have any doubt, use two separate keys **Mute ON** / **Mute OFF** (explicit: pressing them several times changes nothing more) and look at the window or the menu bar for the real state. A Stream Deck plugin that polled `zephone ctl status` every second could show the confirmed state; it is not written.
 
-## 6. Ce qui est vérifié, et ce qui ne l'est pas
+## 6. What is verified, and what is not
 
-### Tests automatiques
+### Automated tests
 
-| Vérifié | Où |
-|---|---|
-| Choix de l'appel visé, idempotence des commandes explicites, aucun effet de bord sans appel compatible, deux bascules simultanées sans lecture périmée, validation des commandes | `control::*` |
-| Décrocher, refuser, raccrocher, micro, attente, composer, « Ne pas déranger » sur de **vrais appels** (deux moteurs Baresip réels), état confirmé par le moteur, 486 reçu par l'appelant, un second appel sortant refusé pendant l'établissement du premier | `tests/control_e2e.rs` |
-| Socket : mode `0600`, requêtes refusées (commande inconnue, champ en trop, HTTP, UTF-8 invalide, trop long), remplacement d'un socket périmé, pas de vol d'un socket vivant, aucun fichier ordinaire supprimé | `control::socket` |
-| Combinaisons : lecture, refus (touche seule, Alt seul, réservées), doublons, libération à la modification/désactivation, conservation au redémarrage, pause pendant l'enregistrement, anti-répétition (touche maintenue, rebond, relâchement perdu) | `shortcuts::*` |
-| Page de réglages : capture au clavier, aucune action pendant l'enregistrement, motif du refus, supprimer, désactiver, rétablir | tests du composant |
-| Les commandes de contrôle ne lisent jamais le Trousseau | test du gestionnaire |
+| Verified                                                                                                                                                                                                                                       | Where                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| Choice of the targeted call, idempotence of explicit commands, no side effect without a compatible call, two simultaneous toggles without a stale read, validation of the commands                                                             | `control::*`           |
+| Answer, decline, hang up, microphone, hold, dial, "Do not disturb" on **real calls** (two real Baresip engines), state confirmed by the engine, 486 received by the caller, a second outgoing call refused while the first one is being set up | `tests/control_e2e.rs` |
+| Socket: mode `0600`, refused requests (unknown command, extra field, HTTP, invalid UTF-8, too long), replacement of a stale socket, no theft of a live socket, no ordinary file deleted                                                        | `control::socket`      |
+| Combinations: reading, refusal (bare key, Alt alone, reserved), duplicates, release on change/disable, kept across restarts, pause during recording, anti-repeat (held key, bounce, lost release)                                              | `shortcuts::*`         |
+| Settings page: keyboard capture, no action during recording, reason for the refusal, remove, disable, restore                                                                                                                                  | component tests        |
+| Control commands never read the Keychain                                                                                                                                                                                                       | handler test           |
 
-### Dans le système réel (application packagée, macOS, Apple Silicon)
+### In the real system (packaged application, macOS, Apple Silicon)
 
-- l'application démarre avec un profil vierge, crée le socket en `srw-------`, et **`zephone ctl status`, `answer`, `hangup`, `mute`, `hold`, `dnd` répondent** avec les bons états et codes (`unavailable` sans appel, `disconnected` tant que le moteur démarre, `ok`/`changed` corrects, répétitions explicites sans effet) ;
-- **un défaut a été trouvé ainsi et corrigé** : la commande `status` lisait le Trousseau (pour savoir si un mot de passe existe) ; quand macOS attendait une réponse à sa fenêtre d'autorisation, la commande ne répondait plus, et l'application, qui lisait aussi le Trousseau sur son fil principal, ne répondait plus non plus (SIGTERM sans effet). Les commandes de contrôle ne touchent plus au Trousseau et ces lectures ne s'exécutent plus sur le fil principal ;
-- les **boutons générés pour Stream Deck**, lancés par le système comme le fait l'action « Open », basculent « Ne pas déranger » dans l'application réelle, dans les deux sens, et **ne lancent jamais ZePhone** quand il est fermé ;
-- à la fermeture, le socket est supprimé, aucun processus ne reste (ZePhone ni moteur).
+- the application starts with a blank profile, creates the socket as `srw-------`, and **`zephone ctl status`, `answer`, `hangup`, `mute`, `hold`, `dnd` answer** with the right states and codes (`unavailable` without a call, `disconnected` while the engine starts, correct `ok`/`changed`, explicit repetitions without effect);
+- **a defect was found this way and fixed**: the `status` command read the Keychain (to know whether a password exists); when macOS was waiting for an answer to its authorization window, the command no longer answered, and the application, which also read the Keychain on its main thread, no longer answered either (SIGTERM had no effect). Control commands no longer touch the Keychain and these reads no longer run on the main thread;
+- the **buttons generated for Stream Deck**, launched by the system the way the "Open" action does, toggle "Do not disturb" in the real application, both ways, and **never start ZePhone** when it is closed;
+- on quit, the socket is removed, no process remains (neither ZePhone nor the engine).
 
-### Non vérifié
+### Not verified
 
-- **Un raccourci pressé depuis une autre application.** Pendant cette session, le Mac était verrouillé : les frappes que je pouvais envoyer allaient à l'écran de connexion, pas aux applications. Le chemin « système → ZePhone → action » n'a donc pas été exercé de bout en bout ; le chemin « événement reçu → action » l'est par les tests. À vérifier en 10 secondes : ouvrez une autre application, pressez ⌥⇧⌘Z (« Ne pas déranger »), regardez la case dans le menu de la barre des menus de ZePhone.
-- Fenêtre réduite, touche maintenue et conflit avec une autre application **dans le système réel** (les trois sont couverts par des tests de la logique, pas par le système).
-- Un **vrai Stream Deck** (matériel et son logiciel) : seul le lancement des applications générées est vérifié.
-- Windows et Linux.
+- **A shortcut pressed from another application.** During this session, the Mac was locked: the keystrokes I could send went to the login screen, not to the applications. The "system → ZePhone → action" path was therefore not exercised end to end; the "event received → action" path is, by the tests. To check in 10 seconds: open another application, press ⌥⇧⌘Z ("Do not disturb"), look at the checkbox in ZePhone's menu bar menu.
+- Minimized window, held key and conflict with another application **in the real system** (all three are covered by tests of the logic, not by the system).
+- A **real Stream Deck** (hardware and its software): only the launch of the generated applications is verified.
+- Windows and Linux.
