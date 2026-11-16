@@ -276,6 +276,36 @@ mod tests {
         assert_eq!(dialable("n/a"), None);
     }
 
+    /// What the directory hands to the dialling code must be something that code accepts, for every way a source
+    /// writes a number: it is the real `normalize_target` of the SIP engine that decides.
+    #[test]
+    fn everything_the_directory_dials_is_accepted_by_the_applications_own_dialling() {
+        for (written, expected_user) in [
+            ("+33 1 23 45 67 89", "+33123456789"),
+            ("+33 (0)1 23-45.67.89", "+33123456789"),
+            ("01 23 45 67 89", "0123456789"),
+            ("01.23.45.67.89 poste 4567", "0123456789"),
+            ("06 12-34-56-78", "0612345678"),
+            ("4567", "4567"),
+            ("*72", "*72"),
+        ] {
+            let dial = dialable(written).unwrap_or_else(|| panic!("{written} is dialable"));
+            let uri = crate::sip::uri::normalize_target(&dial, "pbx.example.com")
+                .unwrap_or_else(|e| panic!("{written} -> {dial}: {e}"));
+            assert!(
+                uri.starts_with(&format!("sip:{}@", expected_user.replace('*', "%2A")))
+                    || uri.starts_with(&format!("sip:{expected_user}@")),
+                "{written} -> {uri}"
+            );
+        }
+        // a SIP address and a user@host address go through untouched
+        for address in ["sip:alice@example.com", "alice@example.com"] {
+            let dial = dialable(address).unwrap();
+            assert_eq!(dial, address);
+            assert!(crate::sip::uri::normalize_target(&dial, "pbx.example.com").is_ok());
+        }
+    }
+
     #[test]
     fn a_plus_only_counts_at_the_start() {
         assert_eq!(dialable("01+23").as_deref(), Some("0123"));
