@@ -24,6 +24,7 @@ use super::{
     sync::{
         ConnectorFactory, SyncError, backoff_delay, is_due, is_expired, needs_the_user, secret_key,
     },
+    system_contacts::{ContactsProvider, SOURCE_NAME, access_error},
 };
 use crate::{
     database::Database,
@@ -538,6 +539,41 @@ impl DirectoryService {
                 me.tick(Utc::now());
             }
         });
+    }
+
+    // ------------------------------------------------------------- the device's own address book
+
+    /// Connects the device's address book as a source: asks the user's permission (the system's own question, the
+    /// first time), and only if it is given creates the source — there is one, never two — and starts reading it.
+    /// Called again for a source that lost its permission, it is what turns it back on.
+    pub async fn connect_system_contacts(
+        self: &Arc<Self>,
+        provider: &dyn ContactsProvider,
+    ) -> AppResult<String> {
+        let access = provider.request_access().await;
+        if let Some(e) = access_error(access) {
+            return Err(AppError::Other(e.message));
+        }
+        let existing = self
+            .store
+            .list_sources()?
+            .into_iter()
+            .find(|s| s.kind == SourceKind::SystemContacts);
+        let id = match existing {
+            Some(row) => {
+                self.reconnected(&row.id)?;
+                row.id
+            }
+            None => self.add_source(
+                SourceKind::SystemContacts,
+                SOURCE_NAME,
+                &serde_json::json!({}),
+                15,
+                None,
+            )?,
+        };
+        self.spawn_sync(id.clone(), true);
+        Ok(id)
     }
 
     // ------------------------------------------------------------- sign-in in the browser
@@ -1371,6 +1407,184 @@ mod tests {
             r.svc.name_for("0123456789").as_deref(),
             Some("Élodie Dupont")
         );
+    }
+
+    // ------------------------------------------------- the device's own address book
+
+    use crate::directory::system_contacts::{Access, ContactsProvider, ProviderError, RawContact};
+
+    /// An address book whose permission the test controls.
+    struct FakeBook {
+        access: Mutex<Access>,
+        /// What the user answers when asked.
+        answer: Access,
+        asked: AtomicUsize,
+        cards: Mutex<Vec<RawContact>>,
+    }
+
+    impl FakeBook {
+        fn new(access: Access, answer: Access) -> Arc<Self> {
+            Arc::new(Self {
+                access: Mutex::new(access),
+                answer,
+                asked: AtomicUsize::new(0),
+                cards: Mutex::new(vec![RawContact {
+                    identifier: "c1".into(),
+                    given_name: "Élodie".into(),
+                    family_name: "Dupont".into(),
+                    phones: vec![(Some("_$!<Mobile>!$_".into()), "06 12-34-56-78".into())],
+                    ..Default::default()
+                }]),
+            })
+        }
+    }
+
+    #[async_trait]
+    impl ContactsProvider for FakeBook {
+        fn access(&self) -> Access {
+            *self.access.lock().unwrap()
+        }
+        async fn request_access(&self) -> Access {
+            let mut a = self.access.lock().unwrap();
+            if *a == Access::NotDetermined {
+                self.asked.fetch_add(1, Ordering::SeqCst);
+                *a = self.answer;
+            }
+            *a
+        }
+        fn read_all(&self) -> Result<Vec<RawContact>, ProviderError> {
+            Ok(self.cards.lock().unwrap().clone())
+        }
+    }
+
+    /// A directory whose factory reads `book` for the device's address book.
+    fn rig_with_book(book: Arc<FakeBook>) -> Rig {
+        struct BookFactory(Arc<FakeBook>);
+        impl ConnectorFactory for BookFactory {
+            fn build(
+                &self,
+                _s: &SourceRow,
+                _secrets: Arc<dyn SecretStore>,
+            ) -> Result<Box<dyn Connector>, SyncError> {
+                Ok(Box::new(
+                    crate::directory::system_contacts::SystemContactsConnector::new(self.0.clone()),
+                ))
+            }
+        }
+        let r = rig();
+        let svc = DirectoryService::new(
+            r.db.clone(),
+            r.secrets.clone(),
+            r.events.clone(),
+            Arc::new(BookFactory(book)),
+        );
+        Rig { svc, ..r }
+    }
+
+    #[tokio::test]
+    async fn the_address_book_becomes_a_source_only_once_the_user_allowed_it() {
+        let book = FakeBook::new(Access::NotDetermined, Access::Authorized);
+        let r = rig_with_book(book.clone());
+        let id = r.svc.connect_system_contacts(book.as_ref()).await.unwrap();
+        assert_eq!(book.asked.load(Ordering::SeqCst), 1, "the user was asked");
+        wait_idle(&r, &id).await;
+        let v = r.svc.source(&id).unwrap();
+        assert_eq!(
+            (v.kind, v.read_only, v.state, v.contact_count),
+            (SourceKind::SystemContacts, true, SourceState::Idle, 1)
+        );
+        assert_eq!(v.sync_interval_min, 15);
+        assert_eq!(names(&r, "elodie"), vec!["Élodie Dupont"]);
+        // the source is the user's own address book: its numbers are searched like any other
+        assert_eq!(names(&r, "0612345678"), vec!["Élodie Dupont"]);
+    }
+
+    #[tokio::test]
+    async fn a_refusal_creates_nothing_and_says_where_to_change_it() {
+        let book = FakeBook::new(Access::NotDetermined, Access::Denied);
+        let r = rig_with_book(book.clone());
+        let err = r
+            .svc
+            .connect_system_contacts(book.as_ref())
+            .await
+            .unwrap_err();
+        assert!(
+            err.to_string()
+                .contains("Confidentialité et sécurité → Contacts"),
+            "{err}"
+        );
+        assert_eq!(
+            r.svc.sources().unwrap().len(),
+            1,
+            "only the local address book: no source was made"
+        );
+        assert!(names(&r, "").is_empty());
+    }
+
+    #[tokio::test]
+    async fn there_is_one_address_book_source_and_asking_again_reuses_it() {
+        let book = FakeBook::new(Access::Authorized, Access::Authorized);
+        let r = rig_with_book(book.clone());
+        let first = r.svc.connect_system_contacts(book.as_ref()).await.unwrap();
+        wait_idle(&r, &first).await;
+        let second = r.svc.connect_system_contacts(book.as_ref()).await.unwrap();
+        wait_idle(&r, &second).await;
+        assert_eq!(first, second);
+        assert_eq!(r.svc.sources().unwrap().len(), 2);
+        assert_eq!(
+            book.asked.load(Ordering::SeqCst),
+            0,
+            "already allowed: not asked again"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_permission_taken_back_is_reported_and_giving_it_again_turns_the_source_back_on() {
+        let book = FakeBook::new(Access::Authorized, Access::Authorized);
+        let r = rig_with_book(book.clone());
+        let id = r.svc.connect_system_contacts(book.as_ref()).await.unwrap();
+        wait_idle(&r, &id).await;
+        assert_eq!(names(&r, "elodie").len(), 1);
+
+        // the user takes the permission back in System Settings
+        *book.access.lock().unwrap() = Access::Denied;
+        let err = r.svc.sync_now(&id, true).await.unwrap_err();
+        assert!(err.to_string().contains("refusé"), "{err}");
+        let v = r.svc.source(&id).unwrap();
+        assert_eq!(
+            (v.state, v.error_kind),
+            (SourceState::Error, Some(SyncErrorKind::Forbidden))
+        );
+        assert_eq!(
+            names(&r, "elodie").len(),
+            1,
+            "what was read stays until it is read again"
+        );
+        // it is not retried on its own: it waits for the user
+        assert!(
+            r.svc
+                .tick(Utc::now() + chrono::Duration::days(2))
+                .is_empty()
+        );
+
+        // the user gives it back and presses "Autoriser l'accès"
+        *book.access.lock().unwrap() = Access::Authorized;
+        let again = r.svc.connect_system_contacts(book.as_ref()).await.unwrap();
+        assert_eq!(again, id);
+        wait_idle(&r, &id).await;
+        let v = r.svc.source(&id).unwrap();
+        assert_eq!((v.state, v.error_kind), (SourceState::Idle, None));
+    }
+
+    #[tokio::test]
+    async fn disconnecting_the_address_book_erases_what_was_read() {
+        let book = FakeBook::new(Access::Authorized, Access::Authorized);
+        let r = rig_with_book(book.clone());
+        let id = r.svc.connect_system_contacts(book.as_ref()).await.unwrap();
+        wait_idle(&r, &id).await;
+        r.svc.disconnect(&id).unwrap();
+        assert!(names(&r, "").is_empty());
+        assert_eq!(r.svc.source(&id).unwrap().state, SourceState::Disabled);
     }
 
     #[tokio::test]

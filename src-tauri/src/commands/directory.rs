@@ -21,6 +21,7 @@ use crate::{
         },
         normalize,
         sync::SyncError,
+        system_contacts::{self, Access},
     },
     error::{AppError, AppResult},
 };
@@ -288,6 +289,66 @@ pub async fn directory_connect_microsoft(
 #[tauri::command]
 pub fn directory_cancel_connect(state: S) {
     state.directory.cancel_connect();
+}
+
+// ---------------------------------------------------------------- the device's own address book
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemContactsInfo {
+    /// This platform has an address book ZePhone can read.
+    pub available: bool,
+    /// What it is called here ("Contacts du Mac").
+    pub name: &'static str,
+    pub access: Access,
+}
+
+/// Whether the device's contacts can be connected here, and whether the user has already allowed it. Reading the
+/// permission shows nothing and asks nothing.
+#[tauri::command]
+pub fn directory_system_contacts_info() -> SystemContactsInfo {
+    SystemContactsInfo {
+        available: system_contacts::AVAILABLE,
+        name: system_contacts::SOURCE_NAME,
+        access: system_contacts::platform_provider().access(),
+    }
+}
+
+/// Connects the device's address book. The system asks the user for permission the first time; if it is refused,
+/// nothing is created and the error says where to change it. Called again on a source that lost its permission, it
+/// turns the source back on.
+#[tauri::command]
+pub async fn directory_connect_system_contacts(state: S<'_>) -> AppResult<SourceView> {
+    if !system_contacts::AVAILABLE {
+        return Err(AppError::validation(
+            "Cet appareil n'a pas de contacts que ZePhone puisse lire",
+        ));
+    }
+    let provider = system_contacts::platform_provider();
+    let id = state
+        .directory
+        .connect_system_contacts(provider.as_ref())
+        .await?;
+    state.directory.source(&id)
+}
+
+/// Opens the system's privacy settings on the Contacts page, where the user can allow or take back the access.
+#[tauri::command]
+pub fn directory_open_contacts_privacy_settings() -> AppResult<()> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Contacts")
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| AppError::Other(e.to_string()))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err(AppError::validation(
+            "Les réglages de confidentialité ne s'ouvrent pas depuis ZePhone sur ce système",
+        ))
+    }
 }
 
 // ---------------------------------------------------------------- sources

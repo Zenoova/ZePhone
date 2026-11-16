@@ -4,6 +4,8 @@
 <dict>
   <key>NSMicrophoneUsageDescription</key>
   <string>ZePhone a besoin du microphone pour que votre correspondant vous entende pendant un appel.</string>
+  <key>NSContactsUsageDescription</key>
+  <string>ZePhone lit vos contacts pour les retrouver dans l'annuaire, les appeler en un clic et afficher leur nom quand ils vous appellent. Ils restent sur cet ordinateur et ne sont jamais modifiés.</string>
   <key>NSLocalNetworkUsageDescription</key>
   <string>ZePhone se connecte à votre serveur SIP/PBX, y compris sur votre réseau local.</string>
 </dict>

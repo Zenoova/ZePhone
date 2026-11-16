@@ -6,6 +6,10 @@
        (Baresip) is attributed to the app bundle by TCC. -->
   <key>com.apple.security.device.audio-input</key>
   <true/>
+  <!-- Contacts (hardened runtime / notarisation): the "Contacts du Mac" source reads the address book, read-only,
+       after the user allowed it. Nothing is ever written to it. -->
+  <key>com.apple.security.personal-information.addressbook</key>
+  <true/>
   <!-- Network client + server: SIP signalling and RTP media sockets. -->
   <key>com.apple.security.network.client</key>
   <true/>

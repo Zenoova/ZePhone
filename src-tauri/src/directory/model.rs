@@ -116,6 +116,8 @@ pub enum SourceKind {
     MicrosoftOrg,
     /// The signed-in user's own Outlook contacts (Graph `/me/contacts`). Not the organisation's directory.
     MicrosoftPersonal,
+    /// The device's own address book (Contacts on the Mac). Read-only, local, no network.
+    SystemContacts,
 }
 
 impl SourceKind {
@@ -125,6 +127,7 @@ impl SourceKind {
             Self::Ldap => "ldap",
             Self::MicrosoftOrg => "microsoftOrg",
             Self::MicrosoftPersonal => "microsoftPersonal",
+            Self::SystemContacts => "systemContacts",
         }
     }
 
@@ -134,6 +137,7 @@ impl SourceKind {
             "ldap" => Self::Ldap,
             "microsoftOrg" => Self::MicrosoftOrg,
             "microsoftPersonal" => Self::MicrosoftPersonal,
+            "systemContacts" => Self::SystemContacts,
             _ => return None,
         })
     }
@@ -143,13 +147,15 @@ impl SourceKind {
         self != Self::Local
     }
 
-    /// Which record to show as the main one when two sources describe the same person (lowest wins).
+    /// Which record to show as the main one when two sources describe the same person (lowest wins): the user's
+    /// own address books first, then the company's.
     pub fn priority(self) -> u8 {
         match self {
             Self::Local => 0,
-            Self::MicrosoftPersonal => 1,
-            Self::Ldap => 2,
-            Self::MicrosoftOrg => 3,
+            Self::SystemContacts => 1,
+            Self::MicrosoftPersonal => 2,
+            Self::Ldap => 3,
+            Self::MicrosoftOrg => 4,
         }
     }
 }
@@ -336,6 +342,7 @@ mod tests {
             SourceKind::Ldap,
             SourceKind::MicrosoftOrg,
             SourceKind::MicrosoftPersonal,
+            SourceKind::SystemContacts,
         ] {
             assert_eq!(SourceKind::parse(k.as_str()), Some(k));
             assert_eq!(k.read_only(), k != SourceKind::Local);

@@ -9,6 +9,7 @@ use super::{
     model::{SourceKind, SyncErrorKind},
     store::SourceRow,
     sync::{Connector, ConnectorFactory, SyncError, secret_key},
+    system_contacts::{SystemContactsConnector, platform_provider},
 };
 use crate::{database::Database, security::secrets::SecretStore};
 
@@ -102,6 +103,9 @@ impl ConnectorFactory for RealConnectorFactory {
                     source.id.clone(),
                     ca.as_deref(),
                 )?))
+            }
+            SourceKind::SystemContacts => {
+                Ok(Box::new(SystemContactsConnector::new(platform_provider())))
             }
             SourceKind::Local => Err(SyncError::new(
                 SyncErrorKind::Config,
