@@ -6,6 +6,7 @@ import type {
   AppInfo,
   AudioDevices,
   Call,
+  CallStatsSample,
   Contact,
   ContactInput,
   HistoryEntry,
@@ -67,6 +68,8 @@ export const telephony = {
   deleteRecording: (id: string) => call<void>("delete_recording", { id }),
   /** Live volume change (percent), not saved: the settings are what makes it last. */
   setAudioGains: (input: number, output: number) => call<void>("set_audio_gains", { input, output }),
+  /** The statistics gathered so far about a call in progress (one sample per second, oldest first). */
+  getCallStats: (callId: string) => call<CallStatsSample[]>("get_call_stats", { callId }),
   /** Brings the call window up (it is opened by the backend when a call starts). */
   openCallWindow: () => call<void>("open_call_window"),
   closeCallWindow: () => call<void>("close_call_window"),

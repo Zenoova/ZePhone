@@ -1,4 +1,4 @@
-import type { Account, AccountStatus, AccountView, Call, HistoryEntry } from "@/types/telephony";
+import type { Account, AccountStatus, AccountView, Call, CallStatsSample, HistoryEntry } from "@/types/telephony";
 
 export function makeCall(over: Partial<Call> = {}): Call {
   return {
@@ -74,4 +74,66 @@ export function makeHistory(over: Partial<HistoryEntry> = {}): HistoryEntry {
     reason: null,
     ...over,
   };
+}
+
+/** One healthy second of a call: 50 packets each way, steady 20 ms blocks, nothing lost. */
+export function makeStats(over: Partial<CallStatsSample> = {}): CallStatsSample {
+  const elapsedSecs = over.elapsedSecs ?? 10;
+  return {
+    callId: "call1",
+    atMs: 1_700_000_000_000 + elapsedSecs * 1000,
+    elapsedSecs,
+    rxPackets: 50,
+    txPackets: 50,
+    rxBitrate: 64_000,
+    txBitrate: 64_000,
+    rxJitterMs: 2,
+    txJitterMs: 2,
+    rttMs: 30,
+    jbufDelayMs: 40,
+    jbufPackets: 2,
+    jbufSkewMs: 0,
+    jbufLost: 0,
+    jbufLate: 0,
+    jbufOverflow: 0,
+    jbufFlush: 0,
+    jbufOutOfSeq: 0,
+    rxGapMaxMs: 21,
+    txGapMaxMs: 21,
+    rxLateBlocks: 0,
+    txLateBlocks: 0,
+    rxBusyMaxUs: 30,
+    txBusyMaxUs: 20,
+    recDropped: 0,
+    totals: {
+      codec: "PCMA",
+      txCodec: "PCMA",
+      clockRate: 8000,
+      rxPackets: elapsedSecs * 50,
+      txPackets: elapsedSecs * 50,
+      rxBytes: elapsedSecs * 8000,
+      txBytes: elapsedSecs * 8000,
+      rxErrors: 0,
+      txErrors: 0,
+      rxLost: 0,
+      lossPct: 0,
+      jbufLost: 0,
+      jbufLate: 0,
+      jbufOverflow: 0,
+      jbufFlush: 0,
+      rxLateBlocks: 0,
+      txLateBlocks: 0,
+      recDropped: 0,
+    },
+    ...over,
+  };
+}
+
+/** `n` consecutive seconds of a call, from second `from`; `edit` changes one of them. */
+export function makeRun(
+  n: number,
+  edit: (i: number) => Partial<CallStatsSample> = () => ({}),
+  from = 5,
+): CallStatsSample[] {
+  return Array.from({ length: n }, (_, i) => makeStats({ elapsedSecs: from + i, ...edit(i) }));
 }

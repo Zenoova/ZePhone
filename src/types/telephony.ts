@@ -242,6 +242,63 @@ export interface AudioLevelEvent {
   db: number;
 }
 
+/** Counters since the start of a call, with the latest sample of {@link CallStatsSample}. */
+export interface CallStatsTotals {
+  codec: string;
+  txCodec: string;
+  clockRate: number;
+  rxPackets: number;
+  txPackets: number;
+  rxBytes: number;
+  txBytes: number;
+  rxErrors: number;
+  txErrors: number;
+  /** Incoming packets that never arrived (RTCP), and that as a percentage of what was expected. */
+  rxLost: number;
+  lossPct: number;
+  jbufLost: number;
+  jbufLate: number;
+  jbufOverflow: number;
+  jbufFlush: number;
+  rxLateBlocks: number;
+  txLateBlocks: number;
+  recDropped: number;
+}
+
+/** What happened during the last second of a call (`call:stats` event, one per second). */
+export interface CallStatsSample {
+  callId: string;
+  /** Unix time in ms, and seconds since the first sample of the call. */
+  atMs: number;
+  elapsedSecs: number;
+  rxPackets: number;
+  txPackets: number;
+  /** bit/s */
+  rxBitrate: number;
+  txBitrate: number;
+  rxJitterMs: number;
+  txJitterMs: number;
+  rttMs: number | null;
+  jbufDelayMs: number;
+  jbufPackets: number;
+  jbufSkewMs: number;
+  jbufLost: number;
+  jbufLate: number;
+  jbufOverflow: number;
+  jbufFlush: number;
+  jbufOutOfSeq: number;
+  /** Longest wait between two audio blocks (ms): 20 on a healthy call. */
+  rxGapMaxMs: number;
+  txGapMaxMs: number;
+  rxLateBlocks: number;
+  txLateBlocks: number;
+  /** Longest time spent in the audio filter on one block (µs). */
+  rxBusyMaxUs: number;
+  txBusyMaxUs: number;
+  recDropped: number;
+  totals: CallStatsTotals;
+}
+
 export type MicPermission = "notDetermined" | "denied" | "restricted" | "authorized";
 
 // ----------------------------------------------------------------- system

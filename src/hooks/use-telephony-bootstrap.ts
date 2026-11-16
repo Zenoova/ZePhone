@@ -4,7 +4,8 @@ import { toast } from "@yusufceng1z/ding-react";
 import { pushLevel } from "@/lib/audio-levels";
 import { isTauri, subscribeTelephony, telephony } from "@/services/telephony";
 import { useAccountsStore } from "@/stores/accounts-store";
-import { useCallsStore } from "@/stores/calls-store";
+import { useCallStatsStore } from "@/stores/call-stats-store";
+import { isTerminal, useCallsStore } from "@/stores/calls-store";
 import { useEngineStore } from "@/stores/engine-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { useRecordingsStore } from "@/stores/recordings-store";
@@ -28,10 +29,14 @@ export function useTelephonyBootstrap(): void {
       unsubscribe = await subscribeTelephony({
         onEngineState: (info) => useEngineStore.getState().apply(info),
         onAccountStatus: (status) => useAccountsStore.getState().applyStatus(status),
-        onCallUpdate: (call) => useCallsStore.getState().apply(call),
+        onCallUpdate: (call) => {
+          useCallsStore.getState().apply(call);
+          if (isTerminal(call)) useCallStatsStore.getState().drop(call.id);
+        },
         onHistoryChanged: () => void useHistoryStore.getState().load(),
         onAudioError: (message) => toast.error(`Erreur audio : ${message}`),
         onAudioLevel: (l) => pushLevel(l.callId, l.tx, l.db),
+        onCallStats: (sample) => useCallStatsStore.getState().push(sample),
         onRecordingsChanged: () => void useRecordingsStore.getState().load(),
         onSettingsChanged: (s) => useSettingsStore.getState().adopt(s),
       });
