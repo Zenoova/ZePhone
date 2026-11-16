@@ -1378,3 +1378,162 @@ async fn nothing_is_sent_while_the_call_has_no_audio_stream() {
     assert!(stats_seen(&r.sink).is_empty());
     assert!(r.mgr.call_stats_history("st2").is_empty());
 }
+
+// ------------------------------------------------- naming callers from the company directory
+
+/// A directory that knows a few numbers, and counts how often it is asked.
+struct FakeDirectory {
+    asked: Mutex<Vec<String>>,
+}
+
+impl FakeDirectory {
+    fn new() -> Arc<Self> {
+        Arc::new(Self {
+            asked: Mutex::default(),
+        })
+    }
+}
+
+impl CallerLookup for FakeDirectory {
+    fn name_for(&self, number_or_uri: &str) -> Option<String> {
+        self.asked.lock().unwrap().push(number_or_uri.to_owned());
+        number_or_uri
+            .contains("2000")
+            .then(|| "Élodie Dupont".to_owned())
+    }
+}
+
+async fn close(r: &Rig, rf: CallRef) {
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Closed {
+            code: None,
+            reason: String::new(),
+        },
+    });
+    let sink = r.sink.clone();
+    until("history", move || sink.all().contains(&Seen::History)).await;
+}
+
+#[tokio::test]
+async fn an_incoming_call_from_somebody_the_directory_knows_is_named_but_not_in_the_history() {
+    let (r, _) = registered_rig().await;
+    let dir = FakeDirectory::new();
+    r.mgr.set_caller_lookup(dir.clone());
+
+    // the caller calls itself "Inconnu" in its SIP headers
+    let rf = CallRef {
+        peer_name: Some("Inconnu".into()),
+        ..cref("n1", CallDirection::Incoming, "sip:2000@example.com")
+    };
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Incoming,
+    });
+    let m = r.mgr.clone();
+    until("the call is shown", move || !m.calls().is_empty()).await;
+    assert_eq!(
+        r.mgr.calls()[0].remote_name.as_deref(),
+        Some("Élodie Dupont"),
+        "the directory beats the name the caller gives itself"
+    );
+    // the notification of an incoming call carries the name too
+    assert!(
+        r.sink.all().iter().any(|e| matches!(
+            e,
+            Seen::Incoming { call, .. } if call.remote_name.as_deref() == Some("Élodie Dupont")
+        )),
+        "the ring screen shows the directory's name"
+    );
+
+    close(&r, rf).await;
+    let h = r.db.list_history(&Default::default()).unwrap();
+    assert_eq!(
+        h[0].contact_name.as_deref(),
+        Some("Inconnu"),
+        "the history keeps what it always kept, not the directory's name"
+    );
+}
+
+#[tokio::test]
+async fn the_users_own_contact_wins_and_the_directory_is_not_even_asked() {
+    let (r, _) = registered_rig().await;
+    let dir = FakeDirectory::new();
+    r.mgr.set_caller_lookup(dir.clone());
+    r.db.save_contact(&crate::sip::types::ContactInput {
+        id: None,
+        first_name: "Lélo".into(),
+        last_name: "Maman".into(),
+        company: None,
+        number: "2000".into(),
+    })
+    .unwrap();
+    let rf = cref("n2", CallDirection::Incoming, "sip:2000@example.com");
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Incoming,
+    });
+    let m = r.mgr.clone();
+    until("the call is shown", move || !m.calls().is_empty()).await;
+    assert_eq!(r.mgr.calls()[0].remote_name.as_deref(), Some("Lélo Maman"));
+    assert!(dir.asked.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn a_caller_nobody_knows_keeps_the_name_it_gave_and_a_call_is_looked_up_once() {
+    let (r, _) = registered_rig().await;
+    let dir = FakeDirectory::new();
+    r.mgr.set_caller_lookup(dir.clone());
+    let rf = CallRef {
+        peer_name: Some("Standard".into()),
+        ..cref("n3", CallDirection::Incoming, "sip:3000@example.com")
+    };
+    for event in [
+        CallEvent::Incoming,
+        CallEvent::Established,
+        CallEvent::Hold,
+        CallEvent::Resume,
+    ] {
+        r.engine.emit(EngineEvent::Call {
+            call: rf.clone(),
+            event,
+        });
+    }
+    let m = r.mgr.clone();
+    until("established", move || {
+        m.calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
+    assert_eq!(r.mgr.calls()[0].remote_name.as_deref(), Some("Standard"));
+    assert_eq!(
+        dir.asked.lock().unwrap().len(),
+        1,
+        "asked when the call appeared, not at every event of its life"
+    );
+}
+
+#[tokio::test]
+async fn a_call_placed_to_somebody_in_the_directory_shows_their_name() {
+    let (r, _) = registered_rig().await;
+    r.mgr.set_caller_lookup(FakeDirectory::new());
+    let call = r.mgr.dial("2000", None).await.unwrap();
+    assert_eq!(call.remote_name.as_deref(), Some("Élodie Dupont"));
+}
+
+#[tokio::test]
+async fn without_a_directory_calls_are_named_as_before() {
+    let (r, _) = registered_rig().await;
+    let rf = CallRef {
+        peer_name: Some("Bob".into()),
+        ..cref("n4", CallDirection::Incoming, "sip:2000@example.com")
+    };
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Incoming,
+    });
+    let m = r.mgr.clone();
+    until("the call is shown", move || !m.calls().is_empty()).await;
+    assert_eq!(r.mgr.calls()[0].remote_name.as_deref(), Some("Bob"));
+}

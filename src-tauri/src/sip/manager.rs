@@ -35,6 +35,13 @@ use crate::{
     security::secrets::SecretStore,
 };
 
+/// Names a caller from somewhere other than the local address book — the company directory.
+pub trait CallerLookup: Send + Sync + 'static {
+    /// The name to show for a number or SIP address, only when it is certain: the number belongs to ONE person.
+    /// Two possible people, or none, is `None` — a wrong name is worse than the number.
+    fn name_for(&self, number_or_uri: &str) -> Option<String>;
+}
+
 /// Everything the manager needs to tell the outside world (UI events, OS notifications).
 pub trait UiSink: Send + Sync + 'static {
     fn engine_state(&self, info: &EngineInfo);
@@ -124,6 +131,8 @@ pub struct SipManager {
     recordings_dir: std::sync::Mutex<Option<PathBuf>>,
     /// How often the statistics of a call in progress are read.
     stats_interval: std::sync::Mutex<Duration>,
+    /// Where a caller the address book does not know is looked up next (the company directory).
+    caller_lookup: std::sync::Mutex<Option<Arc<dyn CallerLookup>>>,
 }
 
 /// One sample of statistics per second.
@@ -173,12 +182,18 @@ impl SipManager {
             state: Default::default(),
             recordings_dir: Default::default(),
             stats_interval: std::sync::Mutex::new(STATS_INTERVAL),
+            caller_lookup: Default::default(),
         })
     }
 
     /// Sets the folder of the recordings (created when needed).
     pub fn set_recordings_dir(&self, dir: PathBuf) {
         *self.recordings_dir.lock().unwrap() = Some(dir);
+    }
+
+    /// Names the callers the local address book does not know from another source (the company directory).
+    pub fn set_caller_lookup(&self, lookup: Arc<dyn CallerLookup>) {
+        *self.caller_lookup.lock().unwrap() = Some(lookup);
     }
 
     /// Changes how often call statistics are read (the tests do not want to wait a second).
@@ -550,7 +565,7 @@ impl SipManager {
             .await
             .map_err(engine_err)?;
 
-        let ctx = self.context_for(&acc.id, Some(&acc.label), &target_uri);
+        let ctx = self.context_for(&acc.id, Some(&acc.label), &target_uri, true);
         let r = super::engine::CallRef {
             id: id.clone(),
             aor: acc.aor(),
@@ -973,17 +988,33 @@ impl SipManager {
         self.sink.account_status(&status);
     }
 
-    fn context_for(&self, account_id: &str, label: Option<&str>, remote: &str) -> CallContext {
+    /// What the tracker cannot know about a call. `fresh`: the call is new, so its name is looked up — the tracker
+    /// only reads the names when it first sees a call.
+    fn context_for(
+        &self,
+        account_id: &str,
+        label: Option<&str>,
+        remote: &str,
+        fresh: bool,
+    ) -> CallContext {
         let contact_name = self
             .db
             .find_contact_by_number(remote)
             .ok()
             .flatten()
             .map(|c| c.display_name());
+        // Only for a caller the user's own address book does not know.
+        let directory_name = if fresh && contact_name.is_none() {
+            let lookup = self.caller_lookup.lock().unwrap().clone();
+            lookup.and_then(|l| l.name_for(remote))
+        } else {
+            None
+        };
         CallContext {
             account_id: Some(account_id.to_owned()),
             account_label: label.map(str::to_owned),
             contact_name,
+            directory_name,
         }
     }
 
@@ -1085,8 +1116,9 @@ impl SipManager {
                     .hosted
                     .get(&uri::normalize_aor(&r.aor))
                     .cloned();
+                let fresh = self.state.lock().unwrap().tracker.get(&r.id).is_none();
                 let ctx = match &hosted {
-                    Some(h) => self.context_for(&h.account_id, Some(&h.label), &r.peer_uri),
+                    Some(h) => self.context_for(&h.account_id, Some(&h.label), &r.peer_uri, fresh),
                     None => CallContext::default(),
                 };
                 let update = self

@@ -94,6 +94,8 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(RealConnectorFactory::new(db.clone())),
     );
     directory.start();
+    // A call from somebody the address book does not know is named by the company directory, when it is sure.
+    manager.set_caller_lookup(directory.clone());
     app.manage(AppState {
         manager: manager.clone(),
         directory,

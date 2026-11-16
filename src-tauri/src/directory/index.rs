@@ -11,7 +11,7 @@ use super::{
     },
     normalize::{
         digits_match, extension_digits, extension_query, fold, is_sip_address, link_key,
-        phone_digits, phone_query, same_number,
+        phone_digits, phone_query, same_number, sip_identity,
     },
 };
 
@@ -45,6 +45,8 @@ struct Entry {
     digit_keys: Vec<String>,
     /// The extensions alone: written after a number, or numbers of the internal-extension kind.
     ext_keys: Vec<String>,
+    /// `user@host` of every SIP address of the person.
+    sip_ids: Vec<String>,
     link: Option<String>,
 }
 
@@ -133,6 +135,11 @@ impl Entry {
             hay,
             digit_keys,
             ext_keys,
+            sip_ids: r
+                .phones
+                .iter()
+                .filter_map(|p| sip_identity(&p.number))
+                .collect(),
             contact,
         }
     }
@@ -204,6 +211,59 @@ impl Index {
             .collect();
         out.sort_by_key(|d| fold(&d.name));
         out
+    }
+
+    /// The name of the ONE person a number or SIP address belongs to, for naming a call. `None` when it belongs to
+    /// nobody, or to several people (two people sharing a number, an extension that exists in two sources): a
+    /// wrong name on a call is worse than the number. Records joined by their e-mail address count as one person.
+    ///
+    /// A telephone number matches by its digits (`0123456789` is `+33 1 23 45 67 89`, an extension must be equal);
+    /// a SIP address matches by its user AND host.
+    pub fn name_for_number(&self, number_or_uri: &str) -> Option<String> {
+        let user = crate::sip::uri::user_part(number_or_uri);
+        let user = user.trim();
+        let phone_like = !user.is_empty()
+            && user.chars().all(|c| {
+                c.is_ascii_digit() || matches!(c, '+' | '*' | '#' | ' ' | '-' | '.' | '(' | ')')
+            });
+        let digits = if phone_like {
+            // The same reduction as the stored numbers: no separators, no bracketed trunk zero.
+            let d = phone_digits(user);
+            let d = d
+                .strip_prefix("00")
+                .map_or_else(|| d.clone(), str::to_owned);
+            (d.len() >= 3).then_some(d)
+        } else {
+            None
+        };
+        let identity = sip_identity(number_or_uri);
+        if digits.is_none() && identity.is_none() {
+            return None;
+        }
+
+        let mut people: HashMap<&str, Vec<&Entry>> = HashMap::new();
+        for e in &self.entries {
+            let hit = match &digits {
+                Some(d) => e.digit_keys.iter().any(|k| same_number(d, k)),
+                None => identity.as_ref().is_some_and(|i| e.sip_ids.contains(i)),
+            };
+            if hit {
+                let person = e.link.as_deref().unwrap_or(e.contact.id.as_str());
+                people.entry(person).or_default().push(e);
+            }
+        }
+        if people.len() != 1 {
+            return None;
+        }
+        people
+            .into_values()
+            .next()?
+            .into_iter()
+            .min_by(|a, b| {
+                (a.kind.priority(), &a.contact.id).cmp(&(b.kind.priority(), &b.contact.id))
+            })
+            .map(|e| e.name.clone())
+            .filter(|n| !n.is_empty())
     }
 
     pub fn search(&self, q: &DirectoryQuery, ctx: &SearchContext<'_>) -> DirectoryPage {
@@ -704,6 +764,144 @@ mod tests {
         assert_eq!(f.search("zzzz").total, 0);
         assert_eq!(f.search("   ").total, 3);
         assert_eq!(f.search("--").total, 3);
+    }
+
+    #[test]
+    fn a_caller_is_named_whatever_way_the_number_is_written() {
+        let f = company_directory();
+        for caller in [
+            "+33123456789",
+            "0123456789",
+            "0033123456789",
+            "+33 (0)1 23 45 67 89",
+            "sip:0123456789@pbx.example.com",
+            "\"Inconnu\" <sip:+33123456789@pbx.example.com;transport=tls>",
+        ] {
+            assert_eq!(
+                f.index.name_for_number(caller).as_deref(),
+                Some("Élodie Dupont"),
+                "{caller}"
+            );
+        }
+        // the mobile number, written with its separators the other way round
+        assert_eq!(
+            f.index.name_for_number("0612345678").as_deref(),
+            Some("Élodie Dupont")
+        );
+        // and the other person's, whose number the source wrote with dots and an extension
+        assert_eq!(
+            f.index.name_for_number("+33198765432").as_deref(),
+            Some("Bob Martin")
+        );
+    }
+
+    #[test]
+    fn a_number_that_nobody_has_names_nobody() {
+        let f = company_directory();
+        for caller in [
+            "0123456780",
+            "+33 7 00 00 00 00",
+            "12",
+            "",
+            "   ",
+            "anonymous",
+            "sip:pbx.example.com",
+        ] {
+            assert_eq!(f.index.name_for_number(caller), None, "{caller}");
+        }
+    }
+
+    #[test]
+    fn an_internal_extension_names_its_owner_only_when_it_is_the_same_extension() {
+        let f = company_directory();
+        assert_eq!(
+            f.index.name_for_number("4567").as_deref(),
+            Some("Élodie Dupont")
+        );
+        assert_eq!(
+            f.index
+                .name_for_number("sip:4567@pbx.example.com")
+                .as_deref(),
+            Some("Élodie Dupont")
+        );
+        assert_eq!(
+            f.index.name_for_number("456"),
+            None,
+            "a part of an extension is not the extension"
+        );
+        assert_eq!(f.index.name_for_number("45678"), None);
+    }
+
+    #[test]
+    fn a_sip_caller_is_named_by_user_and_host_together() {
+        let f = company_directory();
+        assert_eq!(
+            f.index
+                .name_for_number("sip:chloe@pbx.example.com")
+                .as_deref(),
+            Some("Chloé Bernard")
+        );
+        assert_eq!(
+            f.index
+                .name_for_number("SIP:Chloe@PBX.example.com:5060")
+                .as_deref(),
+            Some("Chloé Bernard")
+        );
+        // the same user name on another server is somebody else
+        assert_eq!(f.index.name_for_number("sip:chloe@other.example.org"), None);
+    }
+
+    #[test]
+    fn two_people_who_could_be_the_caller_are_never_guessed_between() {
+        let a = with_phone(rc("1", "Jean Martin"), PhoneKind::Work, "01 11 11 11 11");
+        let b = with_phone(rc("2", "Jeanne Durand"), PhoneKind::Work, "01.11.11.11.11"); // the same line
+        let f = Fixture::new(&[("s", SourceKind::Ldap)], vec![("s", a), ("s", b)]);
+        assert_eq!(f.index.name_for_number("0111111111"), None);
+
+        // the same extension in two sources: which of them is calling?
+        let a = with_phone(rc("1", "Alice"), PhoneKind::Extension, "1001");
+        let b = with_phone(rc("9", "Bruno"), PhoneKind::Extension, "1001");
+        let f = Fixture::new(
+            &[("ldap", SourceKind::Ldap), ("ms", SourceKind::MicrosoftOrg)],
+            vec![("ldap", a), ("ms", b)],
+        );
+        assert_eq!(f.index.name_for_number("1001"), None);
+    }
+
+    #[test]
+    fn one_person_found_in_two_sources_is_still_one_person() {
+        let mut ldap = with_phone(rc("u1", "Élodie Dupont"), PhoneKind::Work, "01 23 45 67 89");
+        ldap.email = Some("elodie.dupont@example.com".into());
+        let mut ms = with_phone(
+            rc("g1", "Elodie DUPONT (MS)"),
+            PhoneKind::Work,
+            "+33 1 23 45 67 89",
+        );
+        ms.email = Some("Elodie.Dupont@example.com".into());
+        let f = Fixture::new(
+            &[("ldap", SourceKind::Ldap), ("ms", SourceKind::MicrosoftOrg)],
+            vec![("ms", ms), ("ldap", ldap)],
+        );
+        // named by the higher-priority source's record, as the directory shows it
+        assert_eq!(
+            f.index.name_for_number("0123456789").as_deref(),
+            Some("Élodie Dupont")
+        );
+    }
+
+    #[test]
+    fn two_people_sharing_a_name_but_not_a_number_are_told_apart_by_the_number() {
+        let a = with_phone(rc("1", "Jean Martin"), PhoneKind::Work, "01 11 11 11 11");
+        let b = with_phone(rc("2", "Jean Martin"), PhoneKind::Work, "01 22 22 22 22");
+        let f = Fixture::new(&[("s", SourceKind::Ldap)], vec![("s", a), ("s", b)]);
+        assert_eq!(
+            f.index.name_for_number("0111111111").as_deref(),
+            Some("Jean Martin")
+        );
+        assert_eq!(
+            f.index.name_for_number("0122222222").as_deref(),
+            Some("Jean Martin")
+        );
     }
 
     #[test]

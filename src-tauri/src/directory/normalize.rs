@@ -187,6 +187,26 @@ pub fn extension_query(q: &str) -> Option<String> {
     (!rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit())).then(|| rest.to_owned())
 }
 
+/// `user@host` of a SIP address, lower-cased, without scheme, port, parameters or display name:
+/// `"Alice" <sip:Alice@PBX.example.com:5060;transport=tls>` gives `alice@pbx.example.com`. `None` for anything
+/// that is not an address with a host.
+pub fn sip_identity(address: &str) -> Option<String> {
+    let t = address.trim();
+    let inner = match (t.find('<'), t.rfind('>')) {
+        (Some(a), Some(b)) if a < b => &t[a + 1..b],
+        _ => t,
+    };
+    let lower = inner.to_ascii_lowercase();
+    let rest = lower
+        .strip_prefix("sips:")
+        .or_else(|| lower.strip_prefix("sip:"))
+        .unwrap_or(&lower);
+    let rest = rest.split([';', '?']).next()?;
+    let (user, host) = rest.split_once('@')?;
+    let host = host.split(':').next()?;
+    (!user.is_empty() && !host.is_empty()).then(|| format!("{user}@{host}"))
+}
+
 /// What links two records of different sources as the same person: their e-mail address, nothing else.
 /// Never the name — two people can share one.
 pub fn link_key(email: Option<&str>) -> Option<String> {
@@ -304,6 +324,27 @@ mod tests {
             assert_eq!(dial, address);
             assert!(crate::sip::uri::normalize_target(&dial, "pbx.example.com").is_ok());
         }
+    }
+
+    #[test]
+    fn a_sip_address_is_reduced_to_its_user_and_host() {
+        for a in [
+            "sip:alice@pbx.example.com",
+            "SIP:Alice@PBX.example.com:5060",
+            "\"Alice\" <sip:alice@pbx.example.com;transport=tls>",
+            "sips:alice@pbx.example.com;x=y",
+            "alice@pbx.example.com",
+        ] {
+            assert_eq!(
+                sip_identity(a).as_deref(),
+                Some("alice@pbx.example.com"),
+                "{a}"
+            );
+        }
+        assert_eq!(sip_identity("0123456789"), None);
+        assert_eq!(sip_identity("sip:pbx.example.com"), None);
+        assert_eq!(sip_identity("sip:@pbx.example.com"), None);
+        assert_eq!(sip_identity(""), None);
     }
 
     #[test]

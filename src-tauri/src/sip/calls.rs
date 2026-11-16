@@ -21,12 +21,18 @@ pub struct CallContext {
     pub account_label: Option<String>,
     /// Name from the address book, if the number matches a contact.
     pub contact_name: Option<String>,
+    /// Name from the company directory, when the number belongs to one person there. Shown during the call, but
+    /// never written to the call history: the history outlives the directory's cache, which is erased when a
+    /// source is disconnected.
+    pub directory_name: Option<String>,
 }
 
 #[derive(Debug, Clone)]
 struct Tracked {
     call: Call,
     contact_name: Option<String>,
+    /// The display name the other side sent in its SIP headers.
+    peer_name: Option<String>,
     user_hangup: bool,
     user_reject: bool,
     answered_at: Option<DateTime<Utc>>,
@@ -89,10 +95,13 @@ impl CallTracker {
     ) -> &mut Tracked {
         self.calls.entry(r.id.clone()).or_insert_with(|| {
             let number = uri::user_part(&r.peer_uri);
+            let peer_name = r.peer_name.clone().filter(|n| !n.trim().is_empty());
+            // The user's own address book first, then the company directory, then what the caller says of itself.
             let remote_name = ctx
                 .contact_name
                 .clone()
-                .or_else(|| r.peer_name.clone().filter(|n| !n.trim().is_empty()));
+                .or_else(|| ctx.directory_name.clone())
+                .or_else(|| peer_name.clone());
             Tracked {
                 call: Call {
                     id: r.id.clone(),
@@ -115,6 +124,7 @@ impl CallTracker {
                     reason: None,
                 },
                 contact_name: ctx.contact_name.clone(),
+                peer_name,
                 user_hangup: false,
                 user_reject: false,
                 answered_at: None,
@@ -309,10 +319,8 @@ impl CallTracker {
             account_label: t.call.account_label.clone(),
             remote_uri: t.call.remote_uri.clone(),
             remote_number: t.call.remote_number.clone(),
-            contact_name: t
-                .contact_name
-                .clone()
-                .or_else(|| t.call.remote_name.clone()),
+            // Not `remote_name`: a name that came from the company directory stays out of the history.
+            contact_name: t.contact_name.clone().or_else(|| t.peer_name.clone()),
             direction: t.call.direction,
             result,
             started_at: rfc(t.created_at),
@@ -390,6 +398,7 @@ mod tests {
             account_id: Some("acc1".into()),
             account_label: Some("Bureau".into()),
             contact_name: None,
+            directory_name: None,
         }
     }
 
@@ -686,6 +695,76 @@ mod tests {
         };
         let u = tr.apply(&r, &CallEvent::Incoming, &c, t0()).unwrap();
         assert_eq!(u.call.remote_name.as_deref(), Some("Robert Dupont"));
+    }
+
+    fn ended_history(tr: &mut CallTracker, r: &CallRef, c: &CallContext) -> HistoryEntry {
+        tr.apply(r, &CallEvent::Incoming, c, t0()).unwrap();
+        let closed = CallEvent::Closed {
+            code: None,
+            reason: String::new(),
+        };
+        tr.apply(r, &closed, c, t0()).unwrap().history.unwrap()
+    }
+
+    #[test]
+    fn the_company_directory_names_the_call_before_what_the_caller_says_of_itself() {
+        let mut tr = CallTracker::new();
+        let r = cref("c1", CallDirection::Incoming); // the caller calls itself "Bob"
+        let c = CallContext {
+            directory_name: Some("Élodie Dupont".into()),
+            ..ctx()
+        };
+        let u = tr.apply(&r, &CallEvent::Incoming, &c, t0()).unwrap();
+        assert_eq!(u.call.remote_name.as_deref(), Some("Élodie Dupont"));
+    }
+
+    #[test]
+    fn the_users_own_address_book_beats_the_company_directory() {
+        let mut tr = CallTracker::new();
+        let r = cref("c1", CallDirection::Incoming);
+        let c = CallContext {
+            contact_name: Some("Lélo (maman)".into()),
+            directory_name: Some("Élodie Dupont".into()),
+            ..ctx()
+        };
+        let u = tr.apply(&r, &CallEvent::Incoming, &c, t0()).unwrap();
+        assert_eq!(u.call.remote_name.as_deref(), Some("Lélo (maman)"));
+    }
+
+    #[test]
+    fn a_name_from_the_company_directory_is_never_written_to_the_history() {
+        // The history outlives the directory's cache (erased when a source is disconnected): it keeps what it
+        // always kept — the user's contact, or the name the caller sent — and never the directory's name.
+        let mut tr = CallTracker::new();
+        let r = cref("c1", CallDirection::Incoming);
+        let c = CallContext {
+            directory_name: Some("Élodie Dupont".into()),
+            ..ctx()
+        };
+        let h = ended_history(&mut tr, &r, &c);
+        assert_eq!(
+            h.contact_name.as_deref(),
+            Some("Bob"),
+            "the caller's own display name"
+        );
+
+        let mut tr = CallTracker::new();
+        let anonymous = CallRef {
+            peer_name: None,
+            ..cref("c2", CallDirection::Incoming)
+        };
+        let h = ended_history(&mut tr, &anonymous, &c);
+        assert_eq!(h.contact_name, None);
+
+        // a contact of the user's own is kept, as before
+        let mut tr = CallTracker::new();
+        let own = CallContext {
+            contact_name: Some("Robert Dupont".into()),
+            directory_name: Some("Élodie Dupont".into()),
+            ..ctx()
+        };
+        let h = ended_history(&mut tr, &cref("c3", CallDirection::Incoming), &own);
+        assert_eq!(h.contact_name.as_deref(), Some("Robert Dupont"));
     }
 
     #[test]

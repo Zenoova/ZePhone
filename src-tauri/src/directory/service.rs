@@ -29,6 +29,7 @@ use crate::{
     database::Database,
     error::{AppError, AppResult},
     security::secrets::SecretStore,
+    sip::manager::CallerLookup,
 };
 
 /// How the directory tells the outside world something changed (the UI re-reads what it shows).
@@ -606,6 +607,13 @@ impl DirectoryService {
         self.store.remove_from_group(group_id, ids)?;
         self.events.changed();
         Ok(())
+    }
+}
+
+/// The directory names the callers the user's own address book does not know.
+impl CallerLookup for DirectoryService {
+    fn name_for(&self, number_or_uri: &str) -> Option<String> {
+        self.index.read().unwrap().name_for_number(number_or_uri)
     }
 }
 
@@ -1302,6 +1310,67 @@ mod tests {
         r.db.delete_contact(&c.id).unwrap();
         r.svc.contacts_changed();
         assert!(names(&r, "").is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_caller_is_named_by_the_directory_for_as_long_as_the_source_is_connected() {
+        let r = rig();
+        let id = add_ldap(&r);
+        r.script.push(snapshot(vec![
+            person("1", "Élodie Dupont", "+33 1 23 45 67 89"),
+            person("2", "Bob Martin", "4567"),
+        ]));
+        r.svc.sync_now(&id, true).await.unwrap();
+        assert_eq!(
+            r.svc.name_for("0123456789").as_deref(),
+            Some("Élodie Dupont")
+        );
+        assert_eq!(
+            r.svc.name_for("sip:4567@pbx.example.com").as_deref(),
+            Some("Bob Martin")
+        );
+        assert_eq!(r.svc.name_for("0699999999"), None);
+
+        // a person who left is gone after the next successful synchronisation
+        r.script
+            .push(snapshot(vec![person("2", "Bob Martin", "4567")]));
+        r.svc.sync_now(&id, true).await.unwrap();
+        assert_eq!(r.svc.name_for("0123456789"), None);
+
+        // a source that is switched off names nobody, and neither does one that was disconnected
+        r.svc
+            .update_source(&id, "Annuaire", false, 60, None)
+            .unwrap();
+        assert_eq!(r.svc.name_for("4567"), None);
+        r.svc
+            .update_source(&id, "Annuaire", true, 60, None)
+            .unwrap();
+        assert_eq!(r.svc.name_for("4567").as_deref(), Some("Bob Martin"));
+        r.svc.disconnect(&id).unwrap();
+        assert_eq!(
+            r.svc.name_for("4567"),
+            None,
+            "the cache was erased: so were the names"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_outage_does_not_take_the_names_away() {
+        let r = rig();
+        let id = add_ldap(&r);
+        r.script.push(snapshot(vec![person(
+            "1",
+            "Élodie Dupont",
+            "+33 1 23 45 67 89",
+        )]));
+        r.svc.sync_now(&id, true).await.unwrap();
+        r.script
+            .push(Err(SyncError::new(SyncErrorKind::Network, "Injoignable")));
+        assert!(r.svc.sync_now(&id, true).await.is_err());
+        assert_eq!(
+            r.svc.name_for("0123456789").as_deref(),
+            Some("Élodie Dupont")
+        );
     }
 
     #[tokio::test]
