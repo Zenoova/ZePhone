@@ -122,3 +122,21 @@ export function toInput(f: FormState, id: string | null): AccountInput {
     password: f.password === "" ? null : f.password,
   };
 }
+
+/** What stops an account from being saved, as a sentence for the user and the field to put the cursor in. */
+export interface FormProblem {
+  field: string;
+  message: string;
+}
+
+export function validateAccount(f: FormState, hasStoredPassword: boolean): FormProblem | null {
+  if (!f.server.trim()) return { field: "a-server", message: "Enter the address of the SIP server." };
+  if (!f.username.trim()) return { field: "a-user", message: "Enter the username of the account." };
+  if (!hasStoredPassword && !f.password && Number(f.registerInterval) !== 0) {
+    return {
+      field: "a-pass",
+      message: "Enter the account password, or set the registration interval to 0 for direct calls.",
+    };
+  }
+  return null;
+}

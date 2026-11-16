@@ -1,3 +1,4 @@
+import { toast } from "@yusufceng1z/ding-react";
 import { useState } from "react";
 
 import { Button } from "@/components/arc/button/button";
@@ -68,6 +69,16 @@ function ContactFormBody({
   const hasName = form.firstName.trim() || form.lastName.trim() || form.company.trim();
 
   const submit = async () => {
+    if (!hasName) {
+      toast.error("Enter a name or a company for this contact.");
+      document.getElementById("c-first")?.focus();
+      return;
+    }
+    if (!form.number.trim()) {
+      toast.error("Enter a number, an extension or a SIP address.");
+      document.getElementById("c-number")?.focus();
+      return;
+    }
     setBusy(true);
     const saved = await save({
       id: contact?.id ?? null,
@@ -115,7 +126,7 @@ function ContactFormBody({
         <Button type="button" variant="secondary" onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" disabled={busy || !hasName || !form.number.trim()}>
+        <Button type="submit" disabled={busy}>
           Save
         </Button>
       </div>

@@ -1,3 +1,4 @@
+import { toast } from "@yusufceng1z/ding-react";
 import { useState, type ReactNode } from "react";
 
 import { Check, FolderPlus, Plus } from "@/components/icons";
@@ -27,7 +28,10 @@ export function GroupPicker({
 
   const create = async () => {
     const n = name.trim();
-    if (!n) return;
+    if (!n) {
+      toast.error("Enter a name for the group.");
+      return;
+    }
     const g = await createGroup(n);
     if (g && (await addToGroup(g.id, entries))) setName("");
   };
@@ -86,7 +90,7 @@ export function GroupPicker({
             maxLength={60}
             className="h-8"
           />
-          <Button type="submit" size="sm" variant="secondary" disabled={!name.trim()} aria-label="Create group">
+          <Button type="submit" size="sm" variant="secondary" aria-label="Create group">
             <Plus className="size-4" aria-hidden />
           </Button>
         </form>

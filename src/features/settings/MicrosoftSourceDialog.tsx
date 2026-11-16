@@ -94,13 +94,11 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
   const [level, setLevel] = useState<MicrosoftLevel>(saved.level ?? "full");
   const [interval, setInterval] = useState(String(source?.syncIntervalMin ?? 360));
   const [waiting, setWaiting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const tenant = tenantChoice === CUSTOM ? customTenant.trim() : tenantChoice;
   const ready = clientId.trim() !== "" && tenant !== "";
 
   const connect = async () => {
-    setError(null);
     setWaiting(true);
     try {
       await telephony.directoryConnectMicrosoft({
@@ -113,7 +111,7 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
       toast.success("Microsoft connected: syncing");
       onDone();
     } catch (e) {
-      setError(errorMessage(e));
+      toast.error(errorMessage(e));
     } finally {
       setWaiting(false);
     }
@@ -247,11 +245,6 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
         </ol>
       </details>
 
-      {error && (
-        <Alert tone="error" className="items-start">
-          <div data-testid="ms-error">{error}</div>
-        </Alert>
-      )}
       {waiting && (
         <Alert tone="info">
           <span data-testid="ms-waiting">

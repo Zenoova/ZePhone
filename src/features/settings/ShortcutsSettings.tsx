@@ -1,3 +1,4 @@
+import { toast } from "@yusufceng1z/ding-react";
 import { useEffect, useState } from "react";
 
 import { X } from "@/components/icons";
@@ -34,9 +35,11 @@ export function ShortcutsSettings() {
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
   /** The modifiers held, or a remark, while a combination is being recorded. */
   const [hint, setHint] = useState("");
-  /** What the backend answered when it refused a combination, per action. */
-  const [refused, setRefused] = useState<Partial<Record<ShortcutAction, string>>>({});
   const mac = view?.mac ?? navigator.userAgent.includes("Mac");
+  /** The backend refused a combination (taken by the system, by another application…): say so, with its reason. */
+  const refuse = (reason: string | null | undefined) => {
+    if (reason) toast.error(reason);
+  };
 
   useEffect(() => {
     void load();
@@ -48,7 +51,6 @@ export function ShortcutsSettings() {
   };
 
   const start = (action: ShortcutAction) => {
-    setRefused((r) => ({ ...r, [action]: undefined }));
     setHint("");
     setRecording(action);
   };
@@ -71,7 +73,7 @@ export function ShortcutsSettings() {
       const enabled = useShortcutsStore.getState().view?.items.find((i) => i.action === action)?.enabled ?? true;
       void (async () => {
         const reason = await set(action, r.accelerator, enabled);
-        setRefused((p) => ({ ...p, [action]: reason ?? undefined }));
+        refuse(reason);
         stop();
       })();
     };
@@ -100,7 +102,7 @@ export function ShortcutsSettings() {
       patch.accelerator === undefined ? item.accelerator : patch.accelerator,
       patch.enabled ?? item.enabled,
     );
-    setRefused((p) => ({ ...p, [item.action]: reason ?? undefined }));
+    refuse(reason);
   };
 
   const allDefault = view.items.every((i) => i.isDefault);
@@ -126,14 +128,12 @@ export function ShortcutsSettings() {
               master={view.enabled}
               recording={recording === item.action}
               hint={hint}
-              refused={refused[item.action]}
               onRecord={() => start(item.action)}
               onCancel={stop}
               onToggle={(enabled) => void change(item, { enabled })}
               onRemove={() => void change(item, { accelerator: null })}
               onReset={async () => {
-                const reason = await reset(item.action);
-                setRefused((p) => ({ ...p, [item.action]: reason ?? undefined }));
+                refuse(await reset(item.action));
               }}
             />
           ))}
@@ -147,8 +147,7 @@ export function ShortcutsSettings() {
             variant="secondary"
             disabled={allDefault && view.enabled}
             onClick={() => {
-              setRefused({});
-              void reset();
+              void reset().then(refuse);
             }}
           >
             Restore the default settings
@@ -185,7 +184,6 @@ function ShortcutRow({
   master,
   recording,
   hint,
-  refused,
   onRecord,
   onCancel,
   onToggle,
@@ -196,7 +194,6 @@ function ShortcutRow({
   master: boolean;
   recording: boolean;
   hint: string;
-  refused?: string;
   onRecord: () => void;
   onCancel: () => void;
   onToggle: (enabled: boolean) => void;
@@ -204,7 +201,7 @@ function ShortcutRow({
   onReset: () => void;
 }) {
   const status = STATUS[item.status.kind];
-  const problem = item.status.kind === "failed" ? item.status.message : refused;
+  const problem = item.status.kind === "failed" ? item.status.message : null;
   return (
     <li className="px-4 py-3" data-testid={`shortcut-${item.action}`}>
       <div className="flex items-center gap-3">

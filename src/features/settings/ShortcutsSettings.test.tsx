@@ -183,7 +183,7 @@ describe("ShortcutsSettings: recording a combination", () => {
     expect(asked.filter((c) => !c.startsWith("shortcuts_"))).toEqual([]);
   });
 
-  it("shows the reason when the backend refuses, in the row, and stops recording", async () => {
+  it("shows the reason when the backend refuses, in a toast, and stops recording", async () => {
     backend.handle("shortcuts_set", () => {
       throw { kind: "validation", message: "Already used for “Answer”" };
     });
@@ -191,7 +191,7 @@ describe("ShortcutsSettings: recording a combination", () => {
     fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
     await screen.findByText("Press the combination…");
     press({ code: "KeyA", metaKey: true, altKey: true, shiftKey: true });
-    expect(await within(row("hangup")).findByRole("alert")).toHaveTextContent("Already used for “Answer”");
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Already used for “Answer”"));
     await waitFor(() => expect(captures()).toEqual([true, false]));
     expect(within(row("hangup")).getByRole("button", { name: /Edit/ })).toHaveTextContent("⌥⇧⌘H");
   });

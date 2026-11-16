@@ -153,9 +153,12 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
   const runTest = async () => {
     setTesting(true);
     try {
-      setTest({ key, result: await telephony.directoryTestLdap(input) });
+      const result = await telephony.directoryTestLdap(input);
+      setTest({ key, result });
+      if (!result.ok && result.error) toast.error(result.error.message, { description: HINT[result.error.kind] });
     } catch (e) {
       setTest({ key, result: { ok: false, report: null, error: { kind: "config", message: errorMessage(e) } } });
+      toast.error(errorMessage(e), { description: HINT.config });
     } finally {
       setTesting(false);
     }
@@ -396,14 +399,6 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
         </Select>
       </Field>
 
-      {result && !result.ok && result.error && (
-        <Alert tone="error" className="items-start">
-          <div data-testid="ldap-test-error">
-            <p className="font-medium">{result.error.message}</p>
-            <p className="mt-0.5 opacity-80">{HINT[result.error.kind]}</p>
-          </div>
-        </Alert>
-      )}
       {result?.ok && result.report && (
         <div className="space-y-2" data-testid="ldap-test-ok">
           <Alert tone="info">

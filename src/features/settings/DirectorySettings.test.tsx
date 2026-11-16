@@ -323,9 +323,12 @@ describe("The LDAP dialog", () => {
     }));
     fillLdap();
     fireEvent.click(screen.getByRole("button", { name: "Test the connection" }));
-    const error = await screen.findByTestId("ldap-test-error");
-    expect(error).toHaveTextContent("The server refused the credentials");
-    expect(error).toHaveTextContent("Check the sign-in account");
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining("The server refused the credentials"),
+        expect.objectContaining({ description: expect.stringContaining("Check the sign-in account") }),
+      ),
+    );
     expect(screen.getByRole("button", { name: "Save and enable" })).toBeDisabled();
   });
 
@@ -342,7 +345,9 @@ describe("The LDAP dialog", () => {
     }));
     fillLdap();
     fireEvent.click(screen.getByRole("button", { name: "Test the connection" }));
-    expect(await screen.findByTestId("ldap-test-error")).toHaveTextContent("Settings → Network");
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Settings → Network"), expect.anything()),
+    );
   });
 
   it("warns when the preview is empty or incomplete", async () => {
@@ -471,9 +476,8 @@ describe("The Microsoft dialog", () => {
     });
     fireEvent.change(screen.getByLabelText("Application (client) ID"), { target: { value: CLIENT } });
     fireEvent.click(screen.getByRole("button", { name: "Sign in with Microsoft" }));
-    const error = await screen.findByTestId("ms-error");
-    expect(error).toHaveTextContent("admin consent");
-    expect(error).toHaveTextContent("reconnect the source");
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("admin consent")));
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("reconnect the source"));
     // and the form is usable again
     expect(screen.getByRole("button", { name: "Sign in with Microsoft" })).toBeEnabled();
   });
@@ -557,10 +561,14 @@ describe("Settings → Directory: the device's address book", () => {
     render(<DirectorySettings />);
     await addSourceMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: /Mac contacts/ }));
-    const error = await screen.findByTestId("contacts-error");
-    expect(error).toHaveTextContent("Privacy & Security → Contacts");
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining("Privacy & Security → Contacts"),
+        expect.objectContaining({ action: expect.objectContaining({ label: "Open settings" }) }),
+      ),
+    );
     expect(cards()).toHaveLength(1); // no source was made
-    fireEvent.click(within(error).getByRole("button", { name: "Open settings" }));
+    toast.error.mock.calls[0]![1].action.onClick();
     await waitFor(() => expect(backend.calls("directory_open_contacts_privacy_settings")).toHaveLength(1));
   });
 

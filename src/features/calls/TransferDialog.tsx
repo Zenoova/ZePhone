@@ -1,3 +1,4 @@
+import { toast } from "@yusufceng1z/ding-react";
 import { PhoneForwarded } from "@/components/icons";
 import { useState } from "react";
 
@@ -27,7 +28,10 @@ export function TransferDialog({
   const transfer = useCallsStore((s) => s.transfer);
 
   const submit = async () => {
-    if (!target.trim()) return;
+    if (!target.trim()) {
+      toast.error("Enter the number or extension to transfer the call to.");
+      return;
+    }
     setBusy(true);
     // A number picked from the directory is shown as written; what is transferred to is its dialling form.
     const wanted = target.trim();
@@ -83,7 +87,7 @@ export function TransferDialog({
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={busy || !target.trim()}>
+            <Button type="submit" disabled={busy}>
               <PhoneForwarded className="size-4" aria-hidden /> Transfer
             </Button>
           </div>

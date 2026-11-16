@@ -255,7 +255,6 @@ export function DirectorySettings() {
   /** The system's question about the address book is on screen, waiting for the user. */
   const [asking, setAsking] = useState(false);
   /** Why connecting the address book failed (most often: the user said no). */
-  const [deviceError, setDeviceError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadSources();
@@ -275,13 +274,18 @@ export function DirectorySettings() {
   /** Asks the user's permission (the system's own question), then reads the address book. Nothing is created if
    * the answer is no. */
   const connectDevice = async () => {
-    setDeviceError(null);
     setAsking(true);
     try {
       await telephony.directoryConnectSystemContacts();
       toast.success("Contacts connected: reading in progress");
     } catch (e) {
-      setDeviceError(errorMessage(e));
+      toast.error(errorMessage(e), {
+        action: {
+          label: "Open settings",
+          onClick: () =>
+            void telephony.directoryOpenContactsPrivacySettings().catch((e2) => toast.error(errorMessage(e2))),
+        },
+      });
     } finally {
       setAsking(false);
       telephony
@@ -345,22 +349,6 @@ export function DirectorySettings() {
               <span data-testid="contacts-asking">
                 Waiting for your answer to the system question… Answer in the window that opened.
               </span>
-            </Alert>
-          )}
-          {deviceError && (
-            <Alert tone="error" className="items-center">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="contacts-error">
-                <span>{deviceError}</span>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() =>
-                    void telephony.directoryOpenContactsPrivacySettings().catch((e) => toast.error(errorMessage(e)))
-                  }
-                >
-                  Open settings
-                </Button>
-              </div>
             </Alert>
           )}
           <div className="flex flex-wrap items-center gap-2">

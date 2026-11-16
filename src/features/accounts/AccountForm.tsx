@@ -1,3 +1,4 @@
+import { toast } from "@yusufceng1z/ding-react";
 import { useState } from "react";
 
 import { PasswordInput } from "@/components/PasswordInput";
@@ -10,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { MEDIA_ENCRYPTION_LABEL, TRANSPORT_LABEL } from "@/lib/labels";
 import { useAccountsStore } from "@/stores/accounts-store";
 
-import { defaultPort, editField, type FormState, toForm, toInput } from "./account-form-model";
+import { defaultPort, editField, type FormState, toForm, toInput, validateAccount } from "./account-form-model";
 import type { AccountView, MediaEncryption, Transport } from "@/types/telephony";
 
 export function AccountFormDialog({
@@ -58,12 +59,13 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
   const onTransport = (t: Transport) =>
     setForm((f) => ({ ...f, transport: t, port: f.port === defaultPort(f.transport) ? defaultPort(t) : f.port }));
 
-  const valid =
-    form.server.trim() &&
-    form.username.trim() &&
-    (account?.hasPassword || form.password || Number(form.registerInterval) === 0);
-
   const submit = async () => {
+    const problem = validateAccount(form, account?.hasPassword ?? false);
+    if (problem) {
+      toast.error(problem.message);
+      document.getElementById(problem.field)?.focus();
+      return;
+    }
     setBusy(true);
     const saved = await save(toInput(form, account?.id ?? null));
     setBusy(false);
@@ -209,7 +211,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
         <Button type="button" variant="secondary" onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" disabled={busy || !valid}>
+        <Button type="submit" disabled={busy}>
           {account ? "Save" : "Add and connect"}
         </Button>
       </div>

@@ -1,3 +1,4 @@
+import { toast } from "@yusufceng1z/ding-react";
 import { useState } from "react";
 
 import { Building2, Folder, Pencil, Plus, Trash2 } from "@/components/icons";
@@ -19,7 +20,10 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [deleting, setDeleting] = useState<GroupView | null>(null);
 
   const create = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      toast.error("Enter a name for the group.");
+      return;
+    }
     if (await createGroup(name)) setName("");
   };
 
@@ -50,7 +54,7 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                 aria-label="Name of the new group"
                 maxLength={60}
               />
-              <Button type="submit" disabled={!name.trim()}>
+              <Button type="submit">
                 <Plus className="size-4" aria-hidden /> Create
               </Button>
             </form>

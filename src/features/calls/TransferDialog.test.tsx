@@ -50,6 +50,14 @@ async function searchFor(text: string, who: string) {
 }
 
 describe("TransferDialog and the directory", () => {
+  it("says in a toast that a number is needed, and transfers nothing", async () => {
+    open();
+    await screen.findAllByTestId("directory-picker-result");
+    fireEvent.click(screen.getByRole("button", { name: /^Transfer$/ }));
+    expect(toast.error).toHaveBeenCalledWith("Enter the number or extension to transfer the call to.");
+    expect(backend.calls("transfer_call")).toHaveLength(0);
+  });
+
   it("offers the favourites as soon as it opens", async () => {
     open();
     const results = await screen.findAllByTestId("directory-picker-result");

@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
+const { invoke, toast } = vi.hoisted(() => ({ invoke: vi.fn(), toast: { error: vi.fn() } }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
-vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn() } }));
+vi.mock("@yusufceng1z/ding-react", () => ({ toast }));
 
 import { makeAccount } from "@/test/fixtures";
 
@@ -11,12 +11,29 @@ import { AccountFormDialog } from "./AccountForm";
 
 beforeEach(() => {
   invoke.mockReset();
+  toast.error.mockReset();
   invoke.mockResolvedValue(makeAccount());
 });
 
 const field = (label: string) => screen.getByLabelText(label) as HTMLInputElement;
 
 describe("AccountForm", () => {
+  it("says what is missing in a toast, puts the cursor there, and sends nothing", () => {
+    render(<AccountFormDialog open onOpenChange={() => {}} account={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /Add and connect/ }));
+    expect(toast.error).toHaveBeenLastCalledWith("Enter the address of the SIP server.");
+    expect(field("SIP server")).toHaveFocus();
+
+    fireEvent.change(field("SIP server"), { target: { value: "sip.example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /Add and connect/ }));
+    expect(toast.error).toHaveBeenLastCalledWith("Enter the username of the account.");
+
+    fireEvent.change(field("Username"), { target: { value: "1001" } });
+    fireEvent.click(screen.getByRole("button", { name: /Add and connect/ }));
+    expect(toast.error).toHaveBeenLastCalledWith(expect.stringContaining("Enter the account password"));
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
   it("fills the optional fields while the main ones are typed, then saves them as defaults", async () => {
     render(<AccountFormDialog open onOpenChange={() => {}} account={null} />);
     fireEvent.change(field("SIP server"), { target: { value: "sip.example.com" } });
