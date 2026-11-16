@@ -7,6 +7,7 @@
  * compiled out of production builds (`import.meta.env.DEV`). It simulates nothing of
  * SIP: real telephony only exists in the Tauri app.
  */
+import { createMockDirectory } from "./mock-directory";
 import type {
   AccountStatus,
   AccountView,
@@ -331,7 +332,9 @@ export function installMockBackend(): void {
     calls.delete(id);
   };
 
+  const directory = createMockDirectory(emit, () => contacts);
   const commands: Record<string, (a: Args) => unknown> = {
+    ...directory,
     get_snapshot: () => ({ engine: engine(), accounts, statuses: Object.values(statuses), calls: [...calls.values()] }),
     get_app_info: () => ({
       name: "zephone",

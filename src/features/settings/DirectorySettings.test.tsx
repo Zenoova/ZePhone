@@ -88,7 +88,7 @@ describe("Settings → Annuaire: the sources", () => {
     const card = (await screen.findAllByTestId("source-card"))[1]!;
     expect(card).toHaveAttribute("data-state", "error");
     expect(card).toHaveTextContent("80 contacts");
-    expect(card).toHaveTextContent("conservées");
+    expect(card).toHaveTextContent("contacts conservés");
     const error = within(card).getByTestId("source-error");
     expect(error).toHaveTextContent("Le serveur refuse la connexion.");
     fireEvent.click(within(error).getByRole("button", { name: "Réessayer" }));

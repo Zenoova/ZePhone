@@ -62,9 +62,9 @@ describe("sourceStatus", () => {
       "Synchronisée il y a 1 h",
     );
     expect(sourceStatus(makeSource({ state: "error", lastSuccessAt: "2026-03-10T11:00:00Z" }), now)).toContain(
-      "conservées",
+      "contacts conservés (dernière synchronisation il y a 1 h)",
     );
-    expect(sourceStatus(makeSource({ kind: "local", state: "idle" }), now)).toBe("Toujours disponible");
+    expect(sourceStatus(makeSource({ kind: "local", state: "idle" }), now)).toBe("Stockés sur cet ordinateur");
   });
 
   it("names the intervals", () => {

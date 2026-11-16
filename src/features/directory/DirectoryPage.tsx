@@ -51,7 +51,9 @@ function isTypingTarget(t: EventTarget | null): boolean {
 function SourceNotice({ source }: { source: SourceView }) {
   const openSettings = useUiStore((s) => s.openSettings);
   const { action, label } = failureAction(source);
-  const kept = source.lastSuccessAt ? ` Les contacts du ${relativeTime(source.lastSuccessAt)} sont conservés.` : "";
+  const kept = source.lastSuccessAt
+    ? ` Les contacts déjà reçus sont conservés (dernière synchronisation ${relativeTime(source.lastSuccessAt)}).`
+    : "";
   const text =
     source.state === "needsReauth"
       ? `${source.name} : reconnexion nécessaire.${kept}`

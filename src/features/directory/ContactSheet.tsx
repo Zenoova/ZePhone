@@ -36,7 +36,11 @@ export function ContactSheet({
   return (
     <Dialog open={entry !== null} onOpenChange={(o) => !o && onClose()}>
       {entry && (
-        <DialogContent title={entry.displayName} description={entrySubtitle(entry) || "Fiche contact"}>
+        <DialogContent
+          title={entry.displayName}
+          description={entrySubtitle(entry) || "Fiche contact"}
+          style={{ width: "min(calc(100vw - 2rem), 600px)" }}
+        >
           <div className="space-y-5" data-testid="contact-sheet">
             <div className="flex items-center gap-3">
               <ContactAvatar name={entry.displayName} className="size-14 text-lg" />
@@ -74,7 +78,7 @@ export function ContactSheet({
                       className="flex flex-wrap items-center gap-2 px-3 py-2.5"
                       data-testid="phone-row"
                     >
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-40 flex-1">
                         <p className="text-muted-foreground text-xs">{kind}</p>
                         <p className="font-mono text-sm break-all" data-selectable>
                           {p.number}

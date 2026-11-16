@@ -95,8 +95,10 @@ export function sourceStatus(s: SourceView, now: Date = new Date()): string {
     case "needsReauth":
       return "Reconnexion nécessaire";
     case "error":
-      return s.lastSuccessAt ? `Erreur · données du ${relativeTime(s.lastSuccessAt, now)} conservées` : "Erreur";
+      return s.lastSuccessAt
+        ? `Erreur · contacts conservés (dernière synchronisation ${relativeTime(s.lastSuccessAt, now)})`
+        : "Erreur";
     default:
-      return s.kind === "local" ? "Toujours disponible" : `Synchronisée ${relativeTime(s.lastSuccessAt, now)}`;
+      return s.kind === "local" ? "Stockés sur cet ordinateur" : `Synchronisée ${relativeTime(s.lastSuccessAt, now)}`;
   }
 }
