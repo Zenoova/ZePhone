@@ -1132,3 +1132,120 @@ async fn zeaudio_records_both_voices_and_changes_the_volumes_during_a_call() {
         );
     }
 }
+
+/// One engine hosting two accounts, both live at once: a call to each rings at the same time, and answering
+/// the second one puts the first on hold (the other side sees it) instead of dropping it.
+#[tokio::test]
+async fn two_accounts_on_one_engine_receive_calls_at_the_same_time() {
+    let tmp = tempfile::tempdir().unwrap();
+    let port_b = std::net::UdpSocket::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port();
+    let (Some(a), Some(b)) = (
+        remote_phone(tmp.path(), "a", 440, &tmp.path().join("a.wav"), None).await,
+        remote_phone(
+            tmp.path(),
+            "b",
+            880,
+            &tmp.path().join("b.wav"),
+            Some(port_b),
+        )
+        .await,
+    ) else {
+        eprintln!("SKIPPED: sidecar/test modules missing");
+        return;
+    };
+    let (mut ea, mut eb) = (a.subscribe(), b.subscribe());
+    a.add_account(&spec_at("alice", "pw", LOOPBACK, port_b, 0))
+        .await
+        .unwrap();
+    // B hosts two accounts at once.
+    b.add_account(&spec_at("bob", "pw", LOOPBACK, 9, 0))
+        .await
+        .unwrap();
+    b.add_account(&spec_at("carol", "pw", LOOPBACK, 9, 0))
+        .await
+        .unwrap();
+
+    let to_bob = a
+        .dial(
+            "sip:alice@127.0.0.1",
+            &format!("sip:bob@127.0.0.1:{port_b}"),
+        )
+        .await
+        .unwrap();
+    let to_carol = a
+        .dial(
+            "sip:alice@127.0.0.1",
+            &format!("sip:carol@127.0.0.1:{port_b}"),
+        )
+        .await
+        .unwrap();
+    println!("A dialled bob ({to_bob}) and carol ({to_carol})");
+
+    // Both calls arrive, each on its own account, while neither has been answered.
+    let mut incoming = std::collections::HashMap::new();
+    while incoming.len() < 2 {
+        match wait_for(&mut eb, 10, |e| {
+            matches!(
+                e,
+                EngineEvent::Call {
+                    event: CallEvent::Incoming,
+                    ..
+                }
+            )
+        })
+        .await
+        {
+            Some(EngineEvent::Call { call, .. }) => {
+                incoming.insert(call.aor.clone(), call.id.clone());
+            }
+            other => panic!("only {incoming:?} rang: {other:?}"),
+        }
+    }
+    println!("B is ringing on: {incoming:?}");
+    let bob_call = incoming.get("sip:bob@127.0.0.1").expect("a call for bob");
+    let carol_call = incoming
+        .get("sip:carol@127.0.0.1")
+        .expect("a call for carol");
+
+    // Answer the first account's call, then the second one's.
+    b.accept(bob_call).await.unwrap();
+    assert!(
+        wait_for(&mut ea, 10, |e| matches!(
+            e,
+            EngineEvent::Call { event: CallEvent::Established, call } if call.id == to_bob
+        ))
+        .await
+        .is_some(),
+        "bob's call was not established"
+    );
+    b.accept(carol_call).await.unwrap();
+    // The two things arrive in either order: carol's call is established, and bob's is put on hold (kept,
+    // not hung up) because the second one became the active call.
+    let (mut carol_up, mut bob_held) = (false, false);
+    wait_for(&mut ea, 10, |e| {
+        if let EngineEvent::Call { event, call } = e {
+            carol_up |= *event == CallEvent::Established && call.id == to_carol;
+            bob_held |= *event == CallEvent::Hold && call.id == to_bob;
+            assert!(
+                !matches!(event, CallEvent::Closed { .. }),
+                "a call was closed: {event:?}"
+            );
+        }
+        carol_up && bob_held
+    })
+    .await;
+    assert!(carol_up, "carol's call was not established");
+    assert!(
+        bob_held,
+        "the first call should have been put on hold when the second was answered"
+    );
+
+    a.hangup(&to_bob, None).await.unwrap();
+    a.hangup(&to_carol, None).await.unwrap();
+    a.stop().await;
+    b.stop().await;
+}
