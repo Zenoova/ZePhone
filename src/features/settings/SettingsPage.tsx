@@ -3,12 +3,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
 import { type SettingsTab, useUiStore } from "@/stores/ui-store";
 
 import { AboutSettings } from "./AboutSettings";
+import { AccountsSettings } from "./AccountsSettings";
 import { AudioSettings } from "./AudioSettings";
 import { GeneralSettings } from "./GeneralSettings";
 import { NetworkSettings } from "./NetworkSettings";
 import { NotificationSettings } from "./NotificationSettings";
 
 const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
+  { id: "accounts", label: "Comptes SIP" },
   { id: "audio", label: "Audio" },
   { id: "network", label: "Réseau" },
   { id: "notifications", label: "Notifications" },
@@ -36,6 +38,7 @@ export function SettingsPage() {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-28">
         <div className="mx-auto max-w-2xl">
+          {tab === "accounts" && <AccountsSettings />}
           {tab === "audio" && <AudioSettings />}
           {tab === "network" && <NetworkSettings />}
           {tab === "notifications" && <NotificationSettings />}

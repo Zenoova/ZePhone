@@ -7,15 +7,15 @@ vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn() } }));
 import { useAccountsStore } from "@/stores/accounts-store";
 import { makeAccount, makeStatus } from "@/test/fixtures";
 
-import { AccountsPage } from "./AccountsPage";
+import { AccountsSettings } from "./AccountsSettings";
 
 beforeEach(() => {
   useAccountsStore.setState({ accounts: [], statuses: {} });
 });
 
-describe("AccountsPage", () => {
+describe("AccountsSettings", () => {
   it("invites to add a first account", () => {
-    render(<AccountsPage />);
+    render(<AccountsSettings />);
     expect(screen.getByText("Aucun compte SIP")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Ajouter/ })).toBeInTheDocument();
   });
@@ -28,7 +28,7 @@ describe("AccountsPage", () => {
       ],
       statuses: { a1: makeStatus({ accountId: "a1", state: "registered" }) },
     });
-    render(<AccountsPage />);
+    render(<AccountsSettings />);
     const cards = screen.getAllByTestId("account-card");
     expect(cards).toHaveLength(2);
     expect(within(cards[0]!).getByText("Bureau")).toBeInTheDocument();

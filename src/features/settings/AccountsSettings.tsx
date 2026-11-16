@@ -4,7 +4,6 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { AccountAvatar } from "@/components/AccountAvatar";
-import { PageHeader } from "@/components/PageHeader";
 import { RegistrationBadge } from "@/components/RegistrationBadge";
 import { Badge } from "@/components/arc/badge/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import { TRANSPORT_LABEL } from "@/lib/labels";
 import { useAccountsStore } from "@/stores/accounts-store";
 import type { AccountStatus, AccountView } from "@/types/telephony";
 
-import { AccountFormDialog } from "./AccountForm";
+import { AccountFormDialog } from "../accounts/AccountForm";
 
 function StatusDetail({ status }: { status: AccountStatus | undefined }) {
   if (!status) return null;
@@ -106,8 +105,8 @@ function AccountCard({
   );
 }
 
-/** The SIP accounts: a list with each account's little face, its state, and what can be done with it. */
-export function AccountsPage() {
+/** The detailed list of the SIP accounts: state, address, and everything that can be done with each one. */
+export function AccountsSettings() {
   const accounts = useAccountsStore((s) => s.accounts);
   const remove = useAccountsStore((s) => s.remove);
   const [formOpen, setFormOpen] = useState(false);
@@ -115,44 +114,43 @@ export function AccountsPage() {
   const [deleting, setDeleting] = useState<AccountView | null>(null);
 
   return (
-    <div className="flex h-full flex-col">
-      <PageHeader
-        title="Comptes SIP"
-        description="Plusieurs comptes peuvent être connectés en même temps."
-        actions={
-          <ArcButton
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="size-4" aria-hidden /> Ajouter
-          </ArcButton>
-        }
-      />
-      <div className="min-h-0 flex-1 overflow-auto px-6 pb-28">
-        {accounts.length === 0 ? (
-          <EmptyState
-            icon={UserPlus}
-            title="Aucun compte SIP"
-            description="Ajoutez votre serveur, votre identifiant et votre mot de passe pour commencer."
-          />
-        ) : (
-          <ul className="space-y-3">
-            {accounts.map((a) => (
-              <AccountCard
-                key={a.id}
-                account={a}
-                onEdit={() => {
-                  setEditing(a);
-                  setFormOpen(true);
-                }}
-                onDelete={() => setDeleting(a)}
-              />
-            ))}
-          </ul>
-        )}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Comptes SIP</h2>
+          <p className="text-muted-foreground text-sm">Plusieurs comptes peuvent être connectés en même temps.</p>
+        </div>
+        <ArcButton
+          onClick={() => {
+            setEditing(null);
+            setFormOpen(true);
+          }}
+        >
+          <Plus className="size-4" aria-hidden /> Ajouter
+        </ArcButton>
       </div>
+
+      {accounts.length === 0 ? (
+        <EmptyState
+          icon={UserPlus}
+          title="Aucun compte SIP"
+          description="Ajoutez votre serveur, votre identifiant et votre mot de passe pour commencer."
+        />
+      ) : (
+        <ul className="space-y-3">
+          {accounts.map((a) => (
+            <AccountCard
+              key={a.id}
+              account={a}
+              onEdit={() => {
+                setEditing(a);
+                setFormOpen(true);
+              }}
+              onDelete={() => setDeleting(a)}
+            />
+          ))}
+        </ul>
+      )}
       <AccountFormDialog open={formOpen} onOpenChange={setFormOpen} account={editing} />
       <ConfirmDialog
         open={deleting !== null}

@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
-export type Section = "dialer" | "contacts" | "history" | "recordings" | "accounts" | "settings";
-export type SettingsTab = "audio" | "network" | "notifications" | "general" | "about";
+export type Section = "dialer" | "contacts" | "history" | "recordings" | "settings";
+export type SettingsTab = "accounts" | "audio" | "network" | "notifications" | "general" | "about";
 
 interface UiState {
   section: Section;
@@ -23,7 +23,7 @@ interface UiState {
 
 export const useUiStore = create<UiState>((set) => ({
   section: "dialer",
-  settingsTab: "audio",
+  settingsTab: "accounts",
   dialValue: "",
   dialAccountId: null,
   backendUnavailable: false,

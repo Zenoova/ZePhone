@@ -11,7 +11,7 @@ export function StatusBar() {
   const accounts = useAccountsStore((s) => s.accounts);
   const statuses = useAccountsStore((s) => s.statuses);
   const engine = useEngineStore((s) => s.info);
-  const setSection = useUiStore((s) => s.setSection);
+  const openSettings = useUiStore((s) => s.openSettings);
   const summary = useMemo(() => summarizeRegistration(accounts, statuses), [accounts, statuses]);
 
   const registered = accounts.filter((a) => statuses[a.id]?.state === "registered").length;
@@ -22,7 +22,7 @@ export function StatusBar() {
     <footer className="bg-sidebar/60 text-muted-foreground flex h-8 shrink-0 items-center justify-between gap-3 border-t px-3 text-xs">
       <button
         type="button"
-        onClick={() => setSection("accounts")}
+        onClick={() => openSettings("accounts")}
         className="hover:text-foreground flex min-w-0 items-center gap-2 outline-none focus-visible:underline"
         title={summary.status?.message ?? undefined}
         data-testid="connection-status"
