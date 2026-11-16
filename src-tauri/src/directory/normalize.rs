@@ -117,7 +117,10 @@ pub fn dialable(number: &str) -> Option<String> {
         .filter(|(i, c)| c.is_ascii_digit() || matches!(c, '*' | '#') || (*c == '+' && *i == 0))
         .map(|(_, c)| c)
         .collect();
-    cleaned.chars().any(|c| c.is_ascii_digit()).then_some(cleaned)
+    cleaned
+        .chars()
+        .any(|c| c.is_ascii_digit())
+        .then_some(cleaned)
 }
 
 /// A query that is made of digits and the usual separators (`"01 23-45.67"`, `"+33 1 23"`) searches telephone
@@ -156,6 +159,32 @@ pub fn digits_match(query: &str, stored: &str) -> bool {
     // "+33123456789" typed (digits 33123456789), "0123456789" stored.
     let stored_nz = stored.trim_start_matches('0');
     stored.starts_with('0') && stored_nz.len() >= 8 && query.ends_with(stored_nz)
+}
+
+/// Are these two numbers (as digits) the same line? Equal, or the national and the international form of one
+/// number (`0123456789` and `33123456789`: at least 8 shared last digits after the trunk zero).
+pub fn same_number(a: &str, b: &str) -> bool {
+    if a.is_empty() || b.is_empty() {
+        return false;
+    }
+    if a == b {
+        return true;
+    }
+    let nat = |x: &str, other: &str| {
+        let nz = x.trim_start_matches('0');
+        x.starts_with('0') && nz.len() >= 8 && other.ends_with(nz) && other.len() > x.len() - 1
+    };
+    nat(a, b) || nat(b, a)
+}
+
+/// A query that is only an extension marker and digits (`"poste 4567"`, `"ext. 12"`): returns the digits.
+pub fn extension_query(q: &str) -> Option<String> {
+    let f = fold(q);
+    let rest = ["poste", "extension", "ext"]
+        .iter()
+        .find_map(|m| f.strip_prefix(m))?
+        .trim();
+    (!rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit())).then(|| rest.to_owned())
 }
 
 /// What links two records of different sources as the same person: their e-mail address, nothing else.
@@ -205,7 +234,10 @@ mod tests {
             split_extension("0123456789 ext. 12"),
             ("0123456789", Some("12"))
         );
-        assert_eq!(split_extension("0123456789 x12"), ("0123456789", Some("12")));
+        assert_eq!(
+            split_extension("0123456789 x12"),
+            ("0123456789", Some("12"))
+        );
         assert_eq!(split_extension("4567"), ("4567", None));
         // not a marker: the "x" of a user name in an address
         assert_eq!(
@@ -280,6 +312,26 @@ mod tests {
         // too short to be sure: no equivalence
         assert!(!digits_match("01234", &phone_digits("+33 1 23")));
         assert!(!digits_match("", &intl));
+    }
+
+    #[test]
+    fn the_same_line_written_nationally_and_internationally_is_recognised() {
+        assert!(same_number("0123456789", "33123456789"));
+        assert!(same_number("33123456789", "0123456789"));
+        assert!(same_number("0123456789", "0123456789"));
+        assert!(!same_number("0123456789", "33123456780"));
+        assert!(!same_number("0612", "33612"), "too short to be sure");
+        assert!(!same_number("", ""));
+    }
+
+    #[test]
+    fn a_query_naming_an_extension_is_recognised() {
+        assert_eq!(extension_query("poste 4567").as_deref(), Some("4567"));
+        assert_eq!(extension_query("Ext. 12").as_deref(), Some("12"));
+        assert_eq!(extension_query("extension 12"), Some("12".into()));
+        assert_eq!(extension_query("poste"), None);
+        assert_eq!(extension_query("poste dupont"), None);
+        assert_eq!(extension_query("4567"), None);
     }
 
     #[test]

@@ -16,9 +16,7 @@ use chrono::Utc;
 use rusqlite::{OptionalExtension, Transaction, params};
 use uuid::Uuid;
 
-use super::model::{
-    Contact, GroupView, RemoteContact, SourceKind, SyncErrorKind, contact_id,
-};
+use super::model::{Contact, GroupView, RemoteContact, SourceKind, SyncErrorKind, contact_id};
 use crate::{
     database::Database,
     error::{AppError, AppResult},
@@ -297,7 +295,8 @@ impl DirectoryStore {
             let tx = c.transaction()?;
             let ids: Vec<String> = {
                 let mut stmt = tx.prepare("SELECT id FROM dir_contacts WHERE source_id = ?1")?;
-                stmt.query_map([id], |r| r.get(0))?.collect::<Result<_, _>>()?
+                stmt.query_map([id], |r| r.get(0))?
+                    .collect::<Result<_, _>>()?
             };
             for cid in &ids {
                 tx.execute("DELETE FROM dir_favorites WHERE contact_id = ?1", [cid])?;
@@ -509,8 +508,10 @@ impl DirectoryStore {
 
     /// Deletes the group and its memberships. The contacts are not touched.
     pub fn delete_group(&self, id: &str) -> AppResult<()> {
-        self.db
-            .with(|c| c.execute("DELETE FROM dir_groups WHERE id = ?1", [id]).map(|_| ()))
+        self.db.with(|c| {
+            c.execute("DELETE FROM dir_groups WHERE id = ?1", [id])
+                .map(|_| ())
+        })
     }
 
     pub fn groups(&self) -> AppResult<Vec<GroupView>> {
@@ -567,7 +568,9 @@ impl DirectoryStore {
         self.db.with(|c| {
             let mut stmt = c.prepare("SELECT contact_id, group_id FROM dir_group_members")?;
             let mut map: HashMap<String, Vec<String>> = HashMap::new();
-            for row in stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))? {
+            for row in
+                stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?
+            {
                 let (contact, group) = row?;
                 map.entry(contact).or_default().push(group);
             }
@@ -577,7 +580,8 @@ impl DirectoryStore {
 
     pub fn members(&self, group_id: &str) -> AppResult<HashSet<String>> {
         self.db.with(|c| {
-            let mut stmt = c.prepare("SELECT contact_id FROM dir_group_members WHERE group_id = ?1")?;
+            let mut stmt =
+                c.prepare("SELECT contact_id FROM dir_group_members WHERE group_id = ?1")?;
             stmt.query_map([group_id], |r| r.get(0))?.collect()
         })
     }
@@ -617,8 +621,14 @@ mod tests {
     }
 
     fn source(s: &DirectoryStore) -> String {
-        s.insert_source(SourceKind::Ldap, "Annuaire", &serde_json::json!({}), 60, true)
-            .unwrap()
+        s.insert_source(
+            SourceKind::Ldap,
+            "Annuaire",
+            &serde_json::json!({}),
+            60,
+            true,
+        )
+        .unwrap()
     }
 
     #[test]
@@ -626,7 +636,11 @@ mod tests {
         let s = store();
         let src = source(&s);
         let r = s
-            .apply_snapshot(&src, &[person("a", "Ada", "1"), person("b", "Bob", "2")], Some("c1"))
+            .apply_snapshot(
+                &src,
+                &[person("a", "Ada", "1"), person("b", "Bob", "2")],
+                Some("c1"),
+            )
             .unwrap();
         assert_eq!(
             r,
@@ -647,7 +661,8 @@ mod tests {
     fn a_contact_keeps_its_id_across_synchronisations_and_only_changes_are_counted() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
         let id = contact_id(&src, "a");
         let r = s
             .apply_snapshot(&src, &[person("a", "Ada Lovelace", "1")], None)
@@ -666,14 +681,20 @@ mod tests {
     fn a_contact_missing_from_a_successful_snapshot_is_deleted_with_its_personal_data() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1"), person("b", "Bob", "2")], None)
-            .unwrap();
+        s.apply_snapshot(
+            &src,
+            &[person("a", "Ada", "1"), person("b", "Bob", "2")],
+            None,
+        )
+        .unwrap();
         let (a, b) = (contact_id(&src, "a"), contact_id(&src, "b"));
         let g = s.create_group("Direction").unwrap();
         s.set_favorite(&[a.clone(), b.clone()], true).unwrap();
         s.add_to_group(&g.id, &[a.clone(), b.clone()]).unwrap();
 
-        let r = s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
+        let r = s
+            .apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
         assert_eq!((r.removed, r.total), (1, 1));
         assert_eq!(s.favorites().unwrap(), HashSet::from([a.clone()]));
         assert_eq!(s.members(&g.id).unwrap(), HashSet::from([a]));
@@ -683,7 +704,8 @@ mod tests {
     fn favourites_and_groups_survive_an_update_of_the_directory() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
         let a = contact_id(&src, "a");
         let g = s.create_group("Clients").unwrap();
         s.set_favorite(&[a.clone()], true).unwrap();
@@ -705,7 +727,11 @@ mod tests {
         let src = source(&s);
         s.apply_snapshot(
             &src,
-            &[person("a", "Ada", "1"), person("b", "Bob", "2"), person("c", "Cy", "3")],
+            &[
+                person("a", "Ada", "1"),
+                person("b", "Bob", "2"),
+                person("c", "Cy", "3"),
+            ],
             Some("d1"),
         )
         .unwrap();
@@ -718,23 +744,31 @@ mod tests {
             )
             .unwrap();
         assert_eq!((r.added, r.updated, r.removed, r.total), (1, 1, 1, 3));
-        assert_eq!(s.get_source(&src).unwrap().unwrap().cursor.as_deref(), Some("d2"));
+        assert_eq!(
+            s.get_source(&src).unwrap().unwrap().cursor.as_deref(),
+            Some("d2")
+        );
     }
 
     #[test]
     fn a_failure_is_a_note_on_the_source_and_leaves_the_cache_alone() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
         s.record_failure(&src, SyncErrorKind::Network, "Serveur injoignable")
             .unwrap();
         let row = s.get_source(&src).unwrap().unwrap();
         assert_eq!(row.error_kind, Some(SyncErrorKind::Network));
         assert_eq!(row.last_error.as_deref(), Some("Serveur injoignable"));
-        assert!(row.last_success_at.is_some(), "the last success is remembered");
+        assert!(
+            row.last_success_at.is_some(),
+            "the last success is remembered"
+        );
         assert_eq!(s.all_contacts().unwrap().len(), 1);
         // the next success clears the failure
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
         assert_eq!(s.get_source(&src).unwrap().unwrap().error_kind, None);
     }
 
@@ -742,7 +776,8 @@ mod tests {
     fn disconnecting_empties_the_cache_but_keeps_favourites_and_groups_for_a_reconnection() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], Some("cur")).unwrap();
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], Some("cur"))
+            .unwrap();
         let a = contact_id(&src, "a");
         let g = s.create_group("Clients").unwrap();
         s.set_favorite(&[a.clone()], true).unwrap();
@@ -755,7 +790,8 @@ mod tests {
         assert!(s.favorites().unwrap().contains(&a), "personal data stay");
 
         // connected again: the same person comes back with the same id, still a favourite and in the group
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
         assert_eq!(s.all_contacts().unwrap()[0].id, a);
         assert!(s.members(&g.id).unwrap().contains(&a));
     }
@@ -765,10 +801,13 @@ mod tests {
         let s = store();
         let src = source(&s);
         let other = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
-        s.apply_snapshot(&other, &[person("a", "Ada", "1")], None).unwrap(); // same external id, other source
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
+        s.apply_snapshot(&other, &[person("a", "Ada", "1")], None)
+            .unwrap(); // same external id, other source
         let (mine, theirs) = (contact_id(&src, "a"), contact_id(&other, "a"));
-        s.set_favorite(&[mine.clone(), theirs.clone()], true).unwrap();
+        s.set_favorite(&[mine.clone(), theirs.clone()], true)
+            .unwrap();
 
         s.delete_source(&src).unwrap();
         assert_eq!(s.favorites().unwrap(), HashSet::from([theirs]));
@@ -780,7 +819,8 @@ mod tests {
     fn a_disabled_source_is_not_listed() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None).unwrap();
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
+            .unwrap();
         s.update_source(&src, "Annuaire", false, 60, None).unwrap();
         assert!(s.all_contacts().unwrap().is_empty());
         assert_eq!(s.contact_count(&src).unwrap(), 1, "but its cache is kept");
@@ -790,9 +830,16 @@ mod tests {
     fn changing_the_configuration_starts_the_synchronisation_over() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1")], Some("old")).unwrap();
-        s.update_source(&src, "Annuaire", true, 60, Some(&serde_json::json!({"url": "ldaps://x"})))
+        s.apply_snapshot(&src, &[person("a", "Ada", "1")], Some("old"))
             .unwrap();
+        s.update_source(
+            &src,
+            "Annuaire",
+            true,
+            60,
+            Some(&serde_json::json!({"url": "ldaps://x"})),
+        )
+        .unwrap();
         let row = s.get_source(&src).unwrap().unwrap();
         assert_eq!(row.cursor, None);
         assert_eq!(row.config["url"], "ldaps://x");
@@ -803,8 +850,12 @@ mod tests {
     fn groups_are_created_renamed_and_deleted_without_touching_contacts() {
         let s = store();
         let src = source(&s);
-        s.apply_snapshot(&src, &[person("a", "Ada", "1"), person("b", "Bob", "2")], None)
-            .unwrap();
+        s.apply_snapshot(
+            &src,
+            &[person("a", "Ada", "1"), person("b", "Bob", "2")],
+            None,
+        )
+        .unwrap();
         let (a, b) = (contact_id(&src, "a"), contact_id(&src, "b"));
         let g = s.create_group("  Clients  ").unwrap();
         assert_eq!(g.name, "Clients");
@@ -820,7 +871,11 @@ mod tests {
 
         s.delete_group(&g.id).unwrap();
         assert!(s.groups().unwrap().is_empty());
-        assert_eq!(s.all_contacts().unwrap().len(), 2, "the contacts are still there");
+        assert_eq!(
+            s.all_contacts().unwrap().len(),
+            2,
+            "the contacts are still there"
+        );
         assert!(s.memberships().unwrap().is_empty());
     }
 

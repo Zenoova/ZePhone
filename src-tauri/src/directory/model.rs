@@ -334,6 +334,9 @@ mod tests {
     #[test]
     fn phone_entries_serialise_without_an_empty_label() {
         let json = serde_json::to_value(PhoneEntry::new(PhoneKind::Mobile, "06 12")).unwrap();
-        assert_eq!(json, serde_json::json!({"kind": "mobile", "number": "06 12"}));
+        assert_eq!(
+            json,
+            serde_json::json!({"kind": "mobile", "number": "06 12"})
+        );
     }
 }

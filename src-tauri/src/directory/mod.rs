@@ -5,6 +5,7 @@
 //! * [`normalize`] — folded text and number keys for searching, dialable numbers;
 //! * the connectors (`ldap`, `microsoft`) turn a source into [`model::RemoteContact`]s.
 
+pub mod index;
 pub mod model;
 pub mod normalize;
 pub mod store;
