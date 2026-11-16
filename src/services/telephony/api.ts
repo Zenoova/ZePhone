@@ -18,6 +18,7 @@ import type {
   Snapshot,
 } from "@/types/telephony";
 
+import type { AudioState, HeadsetState, Role } from "@/types/audio";
 import type { ShortcutAction, ShortcutsView } from "@/types/shortcuts";
 import type {
   DepartmentCount,
@@ -130,6 +131,16 @@ export const telephony = {
   listHistory: (filter?: HistoryFilter) => call<HistoryEntry[]>("list_history", { filter: filter ?? null }),
   deleteHistoryEntry: (id: string) => call<void>("delete_history_entry", { id }),
   clearHistory: () => call<void>("clear_history"),
+
+  // audio devices and the headset
+  audioState: () => call<AudioState>("audio_state"),
+  /** Picks a device for a role: for the call in progress only, or (`remember`) for good. */
+  audioChoose: (role: Role, uid: string, remember: boolean) => call<void>("audio_choose", { role, uid, remember }),
+  /** Plays a test sound (never into a call; refused during one). */
+  audioTest: (kind: "speaker" | "ringtone") => call<void>("audio_test", { kind }),
+  /** Starts or stops the live microphone level. */
+  audioMeter: (on: boolean) => call<void>("audio_meter", { on }),
+  headsetState: () => call<HeadsetState>("headset_state"),
 
   // keyboard shortcuts
   shortcutsGet: () => call<ShortcutsView>("shortcuts_get"),

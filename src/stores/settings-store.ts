@@ -6,7 +6,28 @@ import { errorMessage, telephony } from "@/services/telephony";
 import type { AudioDevices, MicPermission, Settings } from "@/types/telephony";
 
 export const DEFAULT_SETTINGS: Settings = {
-  audio: { inputDevice: null, outputDevice: null, inputGain: 100, outputGain: 100 },
+  audio: {
+    inputDevice: null,
+    outputDevice: null,
+    inputGain: 100,
+    outputGain: 100,
+    routing: {
+      microphone: { selection: { kind: "follow", source: "systemDefault" }, fallback: null },
+      speaker: { selection: { kind: "follow", source: "systemDefault" }, fallback: null },
+      ringer: { selection: { kind: "follow", source: "systemDefault" }, fallback: null },
+      lostPolicy: "useFallback",
+      allowPublicSpeaker: false,
+    },
+    headset: {
+      mode: "auto",
+      answer: true,
+      hangUp: true,
+      mute: true,
+      hold: true,
+      onlySelectedDevice: true,
+      longPressMs: 800,
+    },
+  },
   notifications: { incomingCall: true, missedCall: true, ringtone: true },
   general: {
     theme: "system",

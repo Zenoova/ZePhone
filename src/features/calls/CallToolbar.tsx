@@ -9,6 +9,7 @@ import { VolumeSliders } from "@/components/VolumeSliders";
 import { telephony } from "@/services/telephony";
 import type { Call } from "@/types/telephony";
 
+import { AudioDevicePicker } from "./AudioDevicePicker";
 import { CallInfoDialog } from "./CallInfoDialog";
 import { EngineLogDialog } from "./EngineLogDialog";
 import { CallStatsDialog } from "./stats/CallStatsDialog";
@@ -40,6 +41,8 @@ export function CallToolbar({ call }: { call: Call }) {
 
   return (
     <div className="absolute top-3 right-3 z-20 flex items-center gap-1" data-testid="call-toolbar">
+      <AudioDevicePicker call={call} />
+
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="sm" aria-label="Volume du son" title="Volume du son">

@@ -3,6 +3,8 @@
  * `src-tauri/src/sip/types.rs`, `sip/manager.rs` and `audio/`.
  */
 
+import type { HeadsetSettings, Routing } from "./audio";
+
 // --------------------------------------------------------------- accounts
 
 export type Transport = "udp" | "tcp" | "tls";
@@ -169,6 +171,10 @@ export interface Settings {
     inputGain: number;
     /** What we hear, in percent (0-200). */
     outputGain: number;
+    /** Which device each role uses, and what happens when one goes away. */
+    routing: Routing;
+    /** The headset's physical buttons. */
+    headset: HeadsetSettings;
   };
   notifications: { incomingCall: boolean; missedCall: boolean; ringtone: boolean };
   general: {

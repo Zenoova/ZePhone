@@ -11,6 +11,7 @@ import { isTerminal, useCallsStore } from "@/stores/calls-store";
 import type { Call } from "@/types/telephony";
 
 import { Dialpad } from "../dialer/Dialpad";
+import { AudioNoticeBanner } from "./AudioNoticeBanner";
 import { TransferDialog } from "./TransferDialog";
 
 function Control({
@@ -126,6 +127,8 @@ export function CallPanel({ call }: { call: Call }) {
           <p className="text-muted-foreground max-w-xs text-xs">{call.reason}</p>
         )}
       </header>
+
+      <AudioNoticeBanner />
 
       {/* the voice of the other party */}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center gap-3 py-3">

@@ -1,5 +1,6 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
+import type { AudioState, HeadsetState } from "@/types/audio";
 import type { AccountStatus, AudioLevelEvent, Call, CallStatsSample, EngineInfo, Settings } from "@/types/telephony";
 
 /** Event names emitted by the Rust backend (see `src-tauri/src/app/mod.rs`). */
@@ -15,6 +16,9 @@ export const EVENTS = {
   settingsChanged: "settings:changed",
   directoryChanged: "directory:changed",
   shellFocus: "shell:focus",
+  audioState: "audio:state",
+  headsetState: "headset:state",
+  audioTestLevel: "audio:test-level",
 } as const;
 
 export interface TelephonyHandlers {
@@ -33,6 +37,11 @@ export interface TelephonyHandlers {
   onDirectoryChanged?: () => void;
   /** The window was brought forward by a shortcut or the command line, on a page. */
   onShellFocus?: (target: "dialer" | "search") => void;
+  /** The audio devices, what each role uses, or a notice about them changed. */
+  onAudioState?: (state: AudioState) => void;
+  onHeadsetState?: (state: HeadsetState) => void;
+  /** One reading of the microphone level test, in dBFS. */
+  onAudioTestLevel?: (db: number) => void;
 }
 
 /** Subscribes to every backend event; returns a function that removes all listeners. */
@@ -49,6 +58,9 @@ export async function subscribeTelephony(h: TelephonyHandlers): Promise<() => vo
     listen<Settings>(EVENTS.settingsChanged, (e) => h.onSettingsChanged?.(e.payload)),
     listen<null>(EVENTS.directoryChanged, () => h.onDirectoryChanged?.()),
     listen<"dialer" | "search">(EVENTS.shellFocus, (e) => h.onShellFocus?.(e.payload)),
+    listen<AudioState>(EVENTS.audioState, (e) => h.onAudioState?.(e.payload)),
+    listen<HeadsetState>(EVENTS.headsetState, (e) => h.onHeadsetState?.(e.payload)),
+    listen<number>(EVENTS.audioTestLevel, (e) => h.onAudioTestLevel?.(e.payload)),
   ]);
   return () => unlisteners.forEach((u) => u());
 }

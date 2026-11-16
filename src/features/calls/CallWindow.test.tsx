@@ -43,7 +43,7 @@ describe("CallWindow", () => {
     const names = within(screen.getByTestId("call-toolbar"))
       .getAllByRole("button")
       .map((b) => b.getAttribute("aria-label"));
-    expect(names).toEqual(["Volume du son", "Options de l'appel"]);
+    expect(names).toEqual(["Périphériques audio", "Volume du son", "Options de l'appel"]);
   });
 
   it("an incoming call rings in this window, with its answer and reject buttons", () => {

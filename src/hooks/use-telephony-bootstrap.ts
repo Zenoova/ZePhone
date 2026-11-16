@@ -4,6 +4,7 @@ import { toast } from "@yusufceng1z/ding-react";
 import { pushLevel } from "@/lib/audio-levels";
 import { isTauri, subscribeTelephony, telephony } from "@/services/telephony";
 import { useAccountsStore } from "@/stores/accounts-store";
+import { useAudioStore } from "@/stores/audio-store";
 import { useCallStatsStore } from "@/stores/call-stats-store";
 import { useDirectoryStore } from "@/stores/directory-store";
 import { isTerminal, useCallsStore } from "@/stores/calls-store";
@@ -42,6 +43,9 @@ export function useTelephonyBootstrap(): void {
         onSettingsChanged: (s) => useSettingsStore.getState().adopt(s),
         onDirectoryChanged: () => void useDirectoryStore.getState().refreshAll(),
         onShellFocus: (target) => useUiStore.getState().requestFocus(target),
+        onAudioState: (st) => useAudioStore.getState().apply(st),
+        onHeadsetState: (st) => useAudioStore.getState().applyHeadset(st),
+        onAudioTestLevel: (db) => useAudioStore.getState().pushLevel(db),
       });
       if (cancelled) {
         unsubscribe();
@@ -63,6 +67,7 @@ export function useTelephonyBootstrap(): void {
       void useEngineStore.getState().loadAppInfo();
       void useSettingsStore.getState().refreshMic();
       void useDirectoryStore.getState().loadSources();
+      void useAudioStore.getState().load();
     })();
 
     return () => {

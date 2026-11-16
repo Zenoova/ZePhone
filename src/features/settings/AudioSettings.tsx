@@ -1,104 +1,54 @@
-import { TriangleAlert, CircleCheck, Mic, RefreshCw } from "@/components/icons";
-import { useEffect } from "react";
+import { TriangleAlert, CircleCheck, Mic } from "@/components/icons";
+import { useEffect, useState } from "react";
 
 import { Alert } from "@/features/settings/alert";
 import { Badge } from "@/components/arc/badge/badge";
 import { Button } from "@/components/arc/button/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { VolumeSliders } from "@/components/VolumeSliders";
 import { telephony } from "@/services/telephony";
 import { useEngineStore } from "@/stores/engine-store";
 import { useSettingsStore } from "@/stores/settings-store";
-import type { AudioDevice } from "@/types/telephony";
 
+import { AudioDevices } from "./AudioDevices";
+import { AudioDiagnostics } from "./AudioDiagnostics";
+import { HeadsetButtons } from "./HeadsetButtons";
 import { SettingRow, SettingsSection } from "./parts";
 
-const SYSTEM_DEFAULT = "__system__";
 /** A selector must return the same value while nothing changes: a fresh `[]` each time would loop. */
 const NO_CODECS: string[] = [];
 
-function DeviceSelect({
-  id,
-  label,
-  value,
-  devices,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: string | null;
-  devices: AudioDevice[] | undefined;
-  onChange: (v: string | null) => void;
-}) {
-  const known = devices?.some((d) => d.name === value);
-  return (
-    <Select value={value ?? SYSTEM_DEFAULT} onValueChange={(v) => onChange(v === SYSTEM_DEFAULT ? null : v)}>
-      <SelectTrigger id={id} aria-label={label} className="w-72 max-w-full">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={SYSTEM_DEFAULT}>Par défaut du système</SelectItem>
-        {value && !known && (
-          <SelectItem value={value} disabled>
-            {value} (non branché)
-          </SelectItem>
-        )}
-        {devices?.map((d) => (
-          <SelectItem key={d.name} value={d.name} disabled={!d.selectable}>
-            {d.name}
-            {d.isDefault && " · défaut"}
-            {!d.selectable && " (nom non pris en charge)"}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
-
 export function AudioSettings() {
   const settings = useSettingsStore((s) => s.settings);
-  const devices = useSettingsStore((s) => s.devices);
+  const [diagOpen, setDiagOpen] = useState(false);
   const mic = useSettingsStore((s) => s.micPermission);
-  const { update, loadDevices, refreshMic, requestMic } = useSettingsStore.getState();
+  const { update, refreshMic, requestMic } = useSettingsStore.getState();
   const codecs = useEngineStore((s) => s.info?.codecs ?? NO_CODECS);
 
   useEffect(() => {
-    void loadDevices();
     void refreshMic();
-  }, [loadDevices, refreshMic]);
+  }, [refreshMic]);
 
   const lacking = ["G722", "opus"].filter((c) => !codecs.some((x) => x.toLowerCase() === c.toLowerCase()));
 
   return (
     <div className="space-y-6">
+      <AudioDevices />
+
+      <HeadsetButtons />
+
       <SettingsSection
-        title="Périphériques audio"
-        description="Microphone et sortie (haut-parleurs, casque USB ou Bluetooth). Le changement s'applique à l'appel suivant."
+        title="Diagnostic"
+        description="Voir les périphériques détectés et ceux réellement utilisés, tester la sortie et la sonnerie, regarder le niveau du micro, comprendre une erreur."
       >
-        <SettingRow label="Microphone" htmlFor="audio-in">
-          <DeviceSelect
-            id="audio-in"
-            label="Microphone"
-            value={settings.audio.inputDevice}
-            devices={devices?.inputs}
-            onChange={(v) => void update({ audio: { inputDevice: v } })}
-          />
-        </SettingRow>
-        <SettingRow label="Sortie audio" htmlFor="audio-out">
-          <DeviceSelect
-            id="audio-out"
-            label="Sortie audio"
-            value={settings.audio.outputDevice}
-            devices={devices?.outputs}
-            onChange={(v) => void update({ audio: { outputDevice: v } })}
-          />
-        </SettingRow>
-        <SettingRow label="Actualiser la liste" description="Après avoir branché un casque ou un micro">
-          <Button variant="secondary" size="sm" onClick={() => void loadDevices()}>
-            <RefreshCw className="size-4" aria-hidden /> Actualiser
+        <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+          <p className="text-muted-foreground text-sm">
+            Rien ne démarre sans votre action, et jamais pendant un appel.
+          </p>
+          <Button variant="secondary" onClick={() => setDiagOpen(true)}>
+            Ouvrir le diagnostic audio
           </Button>
-        </SettingRow>
+        </div>
       </SettingsSection>
 
       <SettingsSection
@@ -177,6 +127,7 @@ export function AudioSettings() {
           )}
         </div>
       </SettingsSection>
+      <AudioDiagnostics open={diagOpen} onOpenChange={setDiagOpen} />
     </div>
   );
 }

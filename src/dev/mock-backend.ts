@@ -8,6 +8,8 @@
  * SIP: real telephony only exists in the Tauri app.
  */
 import { createMockDirectory } from "./mock-directory";
+import { DEFAULT_SETTINGS } from "@/stores/settings-store";
+import { createMockAudio } from "./mock-audio";
 import { createMockShortcuts } from "./mock-shortcuts";
 import type {
   AccountStatus,
@@ -124,7 +126,7 @@ export function installMockBackend(): void {
     h("h5", "incoming", "rejected", "3000", null, 3000, 0),
   ];
   let settings: Settings = {
-    audio: { inputDevice: null, outputDevice: null, inputGain: 100, outputGain: 100 },
+    audio: { ...DEFAULT_SETTINGS.audio },
     notifications: { incomingCall: true, missedCall: true, ringtone: true },
     general: {
       theme: "system",
@@ -338,6 +340,7 @@ export function installMockBackend(): void {
   const commands: Record<string, (a: Args) => unknown> = {
     ...directory,
     ...createMockShortcuts(),
+    ...createMockAudio(emit),
     get_snapshot: () => ({ engine: engine(), accounts, statuses: Object.values(statuses), calls: [...calls.values()] }),
     get_app_info: () => ({
       name: "zephone",

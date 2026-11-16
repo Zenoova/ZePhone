@@ -15,7 +15,8 @@ beforeEach(() => {
 describe("mergeSettings", () => {
   it("deep-merges one section without touching the others", () => {
     const merged = mergeSettings(DEFAULT_SETTINGS, { audio: { inputDevice: "USB Mic" } });
-    expect(merged.audio).toEqual({ inputDevice: "USB Mic", outputDevice: null, inputGain: 100, outputGain: 100 });
+    expect(merged.audio).toEqual({ ...DEFAULT_SETTINGS.audio, inputDevice: "USB Mic" });
+    expect(merged.audio.routing).toEqual(DEFAULT_SETTINGS.audio.routing);
     expect(merged.recording).toEqual({ autoRecord: true });
     expect(merged.general).toEqual(DEFAULT_SETTINGS.general);
   });
