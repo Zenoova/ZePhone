@@ -34,6 +34,13 @@ sed -i.bak 's/tmr_start(&st->tmr, 500,/tmr_start(\&st->tmr, 60,/' "$SRC/modules/
 rm -f "$SRC/modules/vumeter/vumeter.c.bak"
 grep -c 'tmr_start(&st->tmr, 60,' "$SRC/modules/vumeter/vumeter.c" | grep -qx 2 || { echo "vumeter patch not applied" >&2; exit 1; }
 
+# The jitter buffer counts what it does (packets late, lost, overflowing, its delay...) only in debug builds
+# (`#ifndef RELEASE`). The call statistics window needs these numbers, and counting costs a few additions under a
+# lock the buffer already takes: keep them in the release build. (Idempotent; the second one-line change to Baresip.)
+sed -i.bak 's/^#ifndef RELEASE$/#if 1 \/* ZePhone: jitter buffer statistics in release builds *\//' "$SRC/src/jbuf.c"
+rm -f "$SRC/src/jbuf.c.bak"
+grep -q 'ZePhone: jitter buffer statistics' "$SRC/src/jbuf.c" || { echo "jbuf patch not applied" >&2; exit 1; }
+
 # zeaudio (scripts/baresip-modules/zeaudio): ZePhone's own audio filter — incoming/outgoing gain and local
 # call recording. It is built out of tree through Baresip's APP_MODULES hook.
 cmake -S "$SRC" -B "$WORK/build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$BREW" \
