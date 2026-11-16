@@ -32,6 +32,24 @@ repérés par l'identifiant stable de chaque contact, et survivent donc aux mise
   `Entrée` ouvre la fiche · `Ctrl/⌘ + Entrée` appelle (si un seul numéro) · `F` met en favori · `Échap` revient à la recherche.
 - La liste est virtualisée : quelques milliers de contacts restent fluides (20 000 contacts : ~10 ms par recherche, mesuré).
 
+## Nommer les appels
+
+Un appel — entrant ou sortant — dont le numéro n'est pas dans **vos contacts locaux** est nommé par l'annuaire d'entreprise, sur
+l'écran de sonnerie, dans la notification et pendant l'appel. L'ordre est : **vos contacts locaux**, puis **l'annuaire**, puis le nom
+que l'appelant envoie de lui-même.
+
+- **Seulement si c'est sûr.** Le nom n'est affiché que si le numéro n'appartient qu'à **une seule personne** : deux personnes
+  qui partagent un numéro, ou un même poste dans deux sources, ne donnent **aucun nom** (on garde le numéro, ou le nom que
+  l'appelant envoie). Deux fiches de sources différentes qui ont la même adresse e-mail comptent pour une seule personne.
+- **Comment le numéro est reconnu.** Par ses chiffres, quelle que soit son écriture : `0123456789`, `+33 1 23 45 67 89`,
+  `0033123456789` et `+33 (0)1 23 45 67 89` désignent la même ligne. Un poste interne doit être **identique** (`456` n'est pas
+  `4567`). Une adresse SIP se reconnaît par son utilisateur **et** son serveur : `sip:chloe@pbx.entreprise.fr` n'est pas
+  `sip:chloe@autre.fr`. Moins de 3 chiffres : jamais de nom.
+- **Pas dans l'historique.** Le nom tiré de l'annuaire est affiché pendant l'appel mais **n'est pas copié dans l'historique** :
+  l'historique survit à la déconnexion d'une source, dont la mémoire est effacée. L'historique garde ce qu'il gardait déjà (votre
+  contact local, ou le nom envoyé par l'appelant).
+- Une source déconnectée, désactivée, ou dont la mémoire a expiré ne nomme plus personne.
+
 **Présence** : ZePhone n'a pas de fonction de présence (BLF, SIMPLE) ; l'annuaire n'affiche donc **aucune disponibilité**.
 Figurer dans l'annuaire ne dit rien de la joignabilité d'une personne.
 
@@ -138,6 +156,7 @@ synchronisation expire, ZePhone relit tout. Les contacts personnels sont relus e
 | Supprimer un groupe garde les contacts                          | tests Rust (`store`, `service`) |
 | Erreur d'authentification → action claire                       | tests Rust + d'interface (« Reconnecter ») |
 | Appel et transfert par les vraies fonctions SIP                 | tests d'interface (`dial`, `transfer_call`) + normalisation SIP réelle |
+| Appels nommés par l'annuaire, seulement si c'est sûr            | tests Rust (`index`, `service`, gestionnaire) et **vrais appels entre deux moteurs Baresip** (`manager_e2e`) : nom de l'annuaire, deux personnes possibles = aucun nom, contact local prioritaire, historique sans le nom |
 
 Lancer les tests : `cd src-tauri && cargo test --lib directory`, `cargo test --test directory_ldap -- --test-threads=1`
 (lance un vrai `slapd` — `brew install openldap openssl@3` — sur loopback, en TLS avec un certificat jetable),
