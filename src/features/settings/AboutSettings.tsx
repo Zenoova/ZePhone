@@ -21,30 +21,30 @@ export function AboutSettings() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <img src="/zephone-icon.svg" alt="Logo de ZePhone" width={56} height={56} className="size-14 shrink-0" />
+        <img src="/zephone-icon.svg" alt="ZePhone logo" width={56} height={56} className="size-14 shrink-0" />
         <div>
           <h2 className="text-xl font-semibold">ZePhone</h2>
-          <p className="text-muted-foreground text-sm">Softphone SIP universel · version {app?.version ?? "—"}</p>
+          <p className="text-muted-foreground text-sm">Universal SIP softphone · version {app?.version ?? "—"}</p>
         </div>
       </div>
 
       <SettingsSection title="Application">
         <Row k="Version" v={app?.version ?? "—"} />
-        <Row k="Système" v={app ? `${app.os} (${app.arch})` : "—"} />
+        <Row k="System" v={app ? `${app.os} (${app.arch})` : "—"} />
         <Row k="Tauri" v={app?.tauriVersion ?? "—"} />
-        <Row k="Dossier de données" v={app?.dataDir ?? "—"} />
+        <Row k="Data folder" v={app?.dataDir ?? "—"} />
       </SettingsSection>
 
-      <SettingsSection title="Moteur SIP">
-        <Row k="Moteur" v={engine ? `${engine.name} ${engine.version ?? ""}` : "—"} />
-        <Row k="État" v={<Badge tone="neutral">{engine?.state ?? "—"}</Badge>} />
-        {engine && "reason" in engine && <Row k="Détail" v={engine.reason} />}
+      <SettingsSection title="SIP engine">
+        <Row k="Engine" v={engine ? `${engine.name} ${engine.version ?? ""}` : "—"} />
+        <Row k="State" v={<Badge tone="neutral">{engine?.state ?? "—"}</Badge>} />
+        {engine && "reason" in engine && <Row k="Details" v={engine.reason} />}
         <Row k="Codecs" v={engine?.codecs.join(", ") || "—"} />
       </SettingsSection>
 
       <p className="text-muted-foreground text-xs leading-relaxed">
-        ZePhone s'appuie sur Baresip (BSD-3-Clause) et libre (BSD-3-Clause), embarqués avec l'application. Aucune
-        télémétrie n'est envoyée. Les mots de passe SIP sont stockés dans le trousseau du système.
+        ZePhone relies on Baresip (BSD-3-Clause) and libre (BSD-3-Clause), shipped with the application. No telemetry is
+        sent. SIP passwords are stored in the system keychain.
       </p>
     </div>
   );

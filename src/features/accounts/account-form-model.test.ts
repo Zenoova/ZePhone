@@ -37,10 +37,10 @@ describe("mirrored optional fields (new account)", () => {
 
   it("keeps a custom account name and authentication identifier", () => {
     let f = editField(empty(), "server", "pbx.lan");
-    f = editField(f, "label", "Bureau");
+    f = editField(f, "label", "Office");
     f = editField(f, "authUsername", "auth-1001");
     f = editField(f, "username", "1001");
-    expect(f.label).toBe("Bureau");
+    expect(f.label).toBe("Office");
     expect(f.authUsername).toBe("auth-1001");
   });
 
@@ -80,12 +80,12 @@ describe("toInput", () => {
     f = editField(f, "username", "1001");
     f = editField(f, "domain", "example.com");
     f = editField(f, "authUsername", "auth1001");
-    f = editField(f, "label", "Bureau");
+    f = editField(f, "label", "Office");
     expect(toInput(f, "x")).toMatchObject({
       id: "x",
       domain: "example.com",
       authUsername: "auth1001",
-      label: "Bureau",
+      label: "Office",
     });
   });
 });
@@ -111,7 +111,7 @@ describe("toForm (existing account)", () => {
         domain: "example.com",
         username: "1001",
         authUsername: "auth",
-        label: "Bureau",
+        label: "Office",
       }),
     );
     expect([custom.domainEdited, custom.authEdited, custom.labelEdited]).toEqual([true, true, true]);

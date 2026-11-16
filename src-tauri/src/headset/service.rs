@@ -238,12 +238,12 @@ impl HeadsetService {
 fn status_word(s: Status) -> &'static str {
     match s {
         Status::Ok => "fait",
-        Status::Unavailable => "rien à faire",
-        Status::NotFound => "appel introuvable",
-        Status::Ambiguous => "plusieurs appels : non appliqué",
-        Status::Disconnected => "moteur non disponible",
-        Status::Invalid => "invalide",
-        Status::Failed => "échec",
+        Status::Unavailable => "nothing to do",
+        Status::NotFound => "call not found",
+        Status::Ambiguous => "several calls: not applied",
+        Status::Disconnected => "engine unavailable",
+        Status::Invalid => "invalid",
+        Status::Failed => "failed",
     }
 }
 

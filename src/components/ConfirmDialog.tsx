@@ -24,7 +24,7 @@ export function ConfirmDialog({
       <DialogContent title={title} description={description}>
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Annuler
+            Cancel
           </Button>
           <Button variant={destructive ? "danger" : "primary"} onClick={onConfirm}>
             {confirmLabel}

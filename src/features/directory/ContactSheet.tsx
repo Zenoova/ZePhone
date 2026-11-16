@@ -38,7 +38,7 @@ export function ContactSheet({
       {entry && (
         <DialogContent
           title={entry.displayName}
-          description={entrySubtitle(entry) || "Fiche contact"}
+          description={entrySubtitle(entry) || "Contact card"}
           style={{ width: "min(calc(100vw - 2rem), 600px)" }}
         >
           <div className="space-y-5" data-testid="contact-sheet">
@@ -53,7 +53,7 @@ export function ContactSheet({
                   ))}
                   {entry.readOnly && (
                     <Badge tone="info" size="sm">
-                      Lecture seule
+                      Read-only
                     </Badge>
                   )}
                 </div>
@@ -68,7 +68,7 @@ export function ContactSheet({
               </div>
             </div>
 
-            <section aria-label="Numéros">
+            <section aria-label="Numbers">
               <ul className="divide-y rounded-xl border" data-testid="phone-list">
                 {sortedPhones(entry.phones).map((p) => {
                   const kind = p.label ?? PHONE_KIND_LABEL[p.kind];
@@ -88,18 +88,18 @@ export function ContactSheet({
                         <Button
                           size="sm"
                           variant="primary"
-                          aria-label={`Appeler ${kind} ${p.number}`}
+                          aria-label={`Call ${kind} ${p.number}`}
                           onClick={() => void actions.call(p.number).then((ok) => ok && onClose())}
                         >
-                          <Phone className="size-4" aria-hidden /> Appeler
+                          <Phone className="size-4" aria-hidden /> Call
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
-                          aria-label={`Copier ${p.number}`}
+                          aria-label={`Copy ${p.number}`}
                           onClick={() => void actions.copy(p.number)}
                         >
-                          <Copy className="size-4" aria-hidden /> Copier
+                          <Copy className="size-4" aria-hidden /> Copy
                         </Button>
                         <Button
                           size="sm"
@@ -107,13 +107,13 @@ export function ContactSheet({
                           disabled={!actions.activeCall}
                           title={
                             actions.activeCall
-                              ? "Transférer l'appel en cours vers ce numéro"
-                              : "Aucun appel en cours à transférer"
+                              ? "Transfer the current call to this number"
+                              : "No call in progress to transfer"
                           }
-                          aria-label={`Transférer l'appel vers ${p.number}`}
+                          aria-label={`Transfer the call to ${p.number}`}
                           onClick={() => void actions.transfer(p.number).then((ok) => ok && onClose())}
                         >
-                          <PhoneForwarded className="size-4" aria-hidden /> Transférer
+                          <PhoneForwarded className="size-4" aria-hidden /> Transfer
                         </Button>
                       </div>
                     </li>
@@ -130,29 +130,29 @@ export function ContactSheet({
                 onClick={() => void toggleFavorite(entry)}
               >
                 <Star className={cn("size-4", entry.favorite && "text-warning fill-current")} aria-hidden />
-                {entry.favorite ? "Favori" : "Ajouter aux favoris"}
+                {entry.favorite ? "Favorite" : "Add to favorites"}
               </Button>
               <GroupPicker
                 entries={[entry]}
                 onManage={onManageGroups}
                 trigger={
                   <Button size="sm" variant="secondary">
-                    Groupes{entry.groups.length > 0 && ` (${entry.groups.length})`}
+                    Groups{entry.groups.length > 0 && ` (${entry.groups.length})`}
                   </Button>
                 }
               />
               {entry.groups.map((id) => (
                 <Badge key={id} tone="neutral" size="sm">
-                  {groups.find((g) => g.id === id)?.name ?? "Groupe"}
+                  {groups.find((g) => g.id === id)?.name ?? "Group"}
                 </Badge>
               ))}
               {!entry.readOnly && entry.sources[0]?.kind === "local" && (
                 <div className="ml-auto flex gap-1.5">
                   <Button size="sm" variant="ghost" onClick={() => onEdit(entry)}>
-                    <Pencil className="size-4" aria-hidden /> Modifier
+                    <Pencil className="size-4" aria-hidden /> Edit
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => onDelete(entry)}>
-                    <Trash2 className="text-destructive size-4" aria-hidden /> Supprimer
+                    <Trash2 className="text-destructive size-4" aria-hidden /> Delete
                   </Button>
                 </div>
               )}
@@ -167,7 +167,7 @@ export function ContactSheet({
                       {SOURCE_KIND_LABEL[s.kind]} · {s.sourceName}
                     </p>
                     <p className="text-muted-foreground break-all">
-                      Identifiant chez la source :{" "}
+                      Identifier in the source:{" "}
                       <span className="font-mono" data-selectable>
                         {s.externalId}
                       </span>
@@ -177,7 +177,7 @@ export function ContactSheet({
               </ul>
               {entry.sources.length > 1 && (
                 <p className="text-muted-foreground mt-2">
-                  Ces fiches sont rapprochées parce qu'elles ont la même adresse e-mail — jamais seulement le même nom.
+                  These records are matched because they have the same e-mail address — never just the same name.
                 </p>
               )}
             </details>

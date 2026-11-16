@@ -41,7 +41,7 @@ export function DirectoryPicker({ onPick }: { onPick: (number: string, who: stri
   }, [debounced]);
 
   return (
-    <section className="space-y-2" aria-label="Chercher dans l'annuaire" data-testid="directory-picker">
+    <section className="space-y-2" aria-label="Search the directory" data-testid="directory-picker">
       <div className="relative">
         <Search
           className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -50,19 +50,19 @@ export function DirectoryPicker({ onPick }: { onPick: (number: string, who: stri
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Chercher dans l'annuaire : nom, service, numéro…"
-          aria-label="Chercher dans l'annuaire"
+          placeholder="Search the directory: name, department, number…"
+          aria-label="Search the directory"
           autoComplete="off"
           spellCheck={false}
           className="pl-9"
         />
       </div>
       <div className="max-h-52 overflow-y-auto rounded-xl border" aria-live="polite">
-        {state.status === "loading" && <p className="text-muted-foreground px-3 py-3 text-sm">Recherche…</p>}
+        {state.status === "loading" && <p className="text-muted-foreground px-3 py-3 text-sm">Searching…</p>}
         {state.status === "error" && <p className="text-destructive px-3 py-3 text-sm">{state.message}</p>}
         {state.status === "ready" && state.items.length === 0 && (
           <p className="text-muted-foreground px-3 py-3 text-sm" data-testid="directory-picker-empty">
-            {debounced.trim() === "" ? "Aucun favori : tapez un nom ou un numéro." : "Personne ne correspond."}
+            {debounced.trim() === "" ? "No favorites: type a name or a number." : "Nobody matches."}
           </p>
         )}
         {state.status === "ready" && state.items.length > 0 && (

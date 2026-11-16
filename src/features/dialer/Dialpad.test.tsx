@@ -18,8 +18,8 @@ describe("Dialpad", () => {
     render(<Dialpad onKey={onKey} />);
     expect(screen.getAllByRole("button")).toHaveLength(12);
     fireEvent.click(screen.getByRole("button", { name: "5" }));
-    fireEvent.click(screen.getByRole("button", { name: "Étoile" }));
-    fireEvent.click(screen.getByRole("button", { name: "Dièse" }));
+    fireEvent.click(screen.getByRole("button", { name: "Star" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pound" }));
     expect(onKey.mock.calls.map((c) => c[0])).toEqual(["5", "*", "#"]);
   });
 

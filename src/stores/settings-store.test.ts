@@ -38,10 +38,10 @@ describe("update", () => {
   });
 
   it("rolls back and reports when the backend refuses", async () => {
-    invoke.mockRejectedValue({ kind: "validation", message: "Port invalide" });
+    invoke.mockRejectedValue({ kind: "validation", message: "Invalid port" });
     const ok = await useSettingsStore.getState().update({ network: { localSipPort: 80 } });
     expect(ok).toBe(false);
     expect(useSettingsStore.getState().settings.network.localSipPort).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Port invalide");
+    expect(toast.error).toHaveBeenCalledWith("Invalid port");
   });
 });

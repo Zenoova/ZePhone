@@ -26,30 +26,30 @@ beforeEach(() => {
 });
 
 describe("NavDock", () => {
-  it("is the main navigation, with no 'Appels' tab: the call lives on the keypad page", () => {
+  it("is the main navigation, with no 'Calls' tab: the call lives on the keypad page", () => {
     render(<NavDock />);
-    const nav = screen.getByRole("navigation", { name: "Navigation principale" });
+    const nav = screen.getByRole("navigation", { name: "Main navigation" });
     const names = within(nav)
       .getAllByRole("button")
       .map((b) => b.getAttribute("aria-label"));
     expect(names).toEqual([
-      "Choisir l'orbe vocal",
-      "Comptes SIP",
-      "Clavier",
-      "Annuaire",
-      "Historique",
-      "Enregistrements",
-      "Paramètres",
+      "Choose the voice orb",
+      "SIP accounts",
+      "Keypad",
+      "Directory",
+      "History",
+      "Recordings",
+      "Settings",
     ]);
   });
 
   it("goes to a page when its icon is clicked, and marks the page being shown", () => {
     render(<NavDock />);
-    expect(screen.getByRole("button", { name: "Paramètres" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("button", { name: "Annuaire" })).not.toHaveAttribute("aria-current");
-    fireEvent.click(screen.getByRole("button", { name: "Annuaire" }));
+    expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Directory" })).not.toHaveAttribute("aria-current");
+    fireEvent.click(screen.getByRole("button", { name: "Directory" }));
     expect(useUiStore.getState().section).toBe("contacts");
-    expect(screen.getByRole("button", { name: "Annuaire" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Directory" })).toHaveAttribute("aria-current", "page");
   });
 
   it("tells how many missed calls are waiting on the history icon", () => {
@@ -61,7 +61,7 @@ describe("NavDock", () => {
       seenAt: "2026-01-01T00:00:00.000Z",
     });
     render(<NavDock />);
-    expect(screen.getByRole("button", { name: "Historique (2 en attente)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "History (2 pending)" })).toBeInTheDocument();
   });
 
   it("the first icon of the dock is the voice orb and opens the carousel of orbs", async () => {

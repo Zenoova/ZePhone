@@ -45,8 +45,8 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
       {
         id: "wait",
         level: "info",
-        title: "Mesures en cours",
-        detail: "Il faut quelques secondes d'appel pour juger la qualité du son.",
+        title: "Measuring",
+        detail: "It takes a few seconds of call to judge the sound quality.",
       },
     ];
   }
@@ -60,22 +60,22 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
 
   if (lost + late > 0) {
     const parts = [
-      lost > 0 ? `${plural(lost, "paquet perdu", "paquets perdus")}` : "",
-      late > 0 ? `${plural(late, "paquet arrivé trop tard", "paquets arrivés trop tard")}` : "",
+      lost > 0 ? `${plural(lost, "lost packet", "lost packets")}` : "",
+      late > 0 ? `${plural(late, "packet arrived too late", "packets arrived too late")}` : "",
     ].filter(Boolean);
     hints.push({
       id: "network",
       level: "warn",
-      title: "Des paquets de voix se perdent ou arrivent trop tard",
-      detail: `${parts.join(" et ")} sur les ${n} dernières secondes. Le trou est dans le flux reçu : réseau (Wi-Fi, VPN, box), ou le serveur du service qui envoie le son à intervalles irréguliers.`,
+      title: "Voice packets are lost or arrive too late",
+      detail: `${parts.join(" and ")} over the last ${n} seconds. The gap is in the received stream: network (Wi-Fi, VPN, router), or the service's server sending the sound at irregular intervals.`,
     });
   }
   if (flush + overflow > 0) {
     hints.push({
       id: "buffer",
       level: "warn",
-      title: "La mémoire tampon a dû être vidée",
-      detail: `${plural(flush, "vidage", "vidages")} et ${plural(overflow, "débordement", "débordements")} : chaque fois, quelques dizaines de millisecondes de voix sont sautées.`,
+      title: "The buffer had to be flushed",
+      detail: `${plural(flush, "flush", "flushes")} and ${plural(overflow, "overflow", "overflows")}: each time, a few tens of milliseconds of voice are skipped.`,
     });
   }
   const jitter = max(recent.map((s) => s.rxJitterMs));
@@ -83,8 +83,8 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
     hints.push({
       id: "jitter",
       level: "warn",
-      title: "Gigue élevée",
-      detail: `Les paquets arrivent avec ${jitter.toFixed(0)} ms d'irrégularité au pire (sain : moins de ${JITTER_WARN_MS} ms). Le Wi-Fi ou une liaison chargée en est la cause habituelle.`,
+      title: "High jitter",
+      detail: `Packets arrive with up to ${jitter.toFixed(0)} ms of irregularity (healthy: under ${JITTER_WARN_MS} ms). Wi-Fi or a busy link is the usual cause.`,
     });
   }
   const rxGap = max(recent.map((s) => s.rxGapMaxMs));
@@ -92,8 +92,8 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
     hints.push({
       id: "rx-blocks",
       level: "warn",
-      title: "Le son reçu est livré par à-coups alors que le réseau est propre",
-      detail: `Jusqu'à ${rxGap.toFixed(0)} ms entre deux blocs de 20 ms. Rien n'a été perdu en route : c'est ce Mac qui est occupé (processeur, carte graphique) ou la sortie audio qui hoquette (Bluetooth, interface USB).`,
+      title: "The received sound is delivered in jerks while the network is clean",
+      detail: `Up to ${rxGap.toFixed(0)} ms between two 20 ms blocks. Nothing was lost on the way: this Mac is busy (processor, graphics card) or the audio output is hiccuping (Bluetooth, USB interface).`,
     });
   }
   const txGap = max(recent.map((s) => s.txGapMaxMs));
@@ -101,8 +101,8 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
     hints.push({
       id: "tx-blocks",
       level: "warn",
-      title: "Le micro livre sa voix en retard",
-      detail: `Jusqu'à ${txGap.toFixed(0)} ms entre deux blocs de 20 ms. L'autre côté entend alors des coupures : micro Bluetooth, interface USB ou machine surchargée.`,
+      title: "The microphone delivers its voice late",
+      detail: `Up to ${txGap.toFixed(0)} ms between two 20 ms blocks. The other side then hears dropouts: Bluetooth microphone, USB interface or overloaded machine.`,
     });
   }
   const busy = Math.max(...recent.map((s) => Math.max(s.rxBusyMaxUs, s.txBusyMaxUs)));
@@ -110,16 +110,16 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
     hints.push({
       id: "filter",
       level: "warn",
-      title: "Le traitement audio de ZePhone est lent",
-      detail: `Un bloc a pris ${(busy / 1000).toFixed(1)} ms à traiter (il devrait en prendre moins d'un dixième).`,
+      title: "ZePhone's audio processing is slow",
+      detail: `A block took ${(busy / 1000).toFixed(1)} ms to process (it should take less than a tenth of that).`,
     });
   }
   if (sum(recent.map((s) => s.recDropped)) > 0) {
     hints.push({
       id: "recording",
       level: "warn",
-      title: "L'enregistrement a perdu du son",
-      detail: "Le disque n'a pas suivi : l'appel n'est pas touché, mais l'enregistrement a des trous.",
+      title: "The recording lost some sound",
+      detail: "The disk did not keep up: the call is not affected, but the recording has gaps.",
     });
   }
   const bad = recent.slice(-30).filter(isBadSecond).length;
@@ -128,8 +128,8 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
     hints.push({
       id: "periodic",
       level: "warn",
-      title: "Un incident presque chaque seconde",
-      detail: `${bad} secondes sur les ${span} dernières. Une telle régularité signale une cause périodique : ${network > 0 ? "le serveur ou la liaison qui envoie le son par salves" : "une tâche de cet ordinateur qui revient chaque seconde"}.`,
+      title: "An incident almost every second",
+      detail: `${bad} seconds out of the last ${span}. Such regularity points to a periodic cause: ${network > 0 ? "the server or the link sending the sound in bursts" : "a task on this computer that comes back every second"}.`,
     });
   }
   const rtt = max(recent.map((s) => s.rttMs ?? 0));
@@ -137,17 +137,17 @@ export function diagnose(samples: CallStatsSample[]): Hint[] {
     hints.push({
       id: "rtt",
       level: "info",
-      title: "Délai aller-retour long",
-      detail: `${rtt.toFixed(0)} ms jusqu'au correspondant : la conversation se décale, mais cela ne coupe pas le son.`,
+      title: "Long round-trip delay",
+      detail: `${rtt.toFixed(0)} ms to the other party: the conversation lags, but the sound is not cut.`,
     });
   }
   if (!hints.some((h) => h.level === "warn")) {
     hints.unshift({
       id: "clean",
       level: "ok",
-      title: `Aucune irrégularité sur les ${n} dernières secondes`,
+      title: `No irregularity over the last ${n} seconds`,
       detail:
-        "Aucun paquet perdu ou en retard, la mémoire tampon n'a pas été vidée et les blocs audio passent toutes les 20 ms. Si vous entendez quand même des coupures, elles viennent d'avant ZePhone (le service ou son serveur : essayez un autre numéro d'écho) ou de la sortie audio de l'ordinateur (haut-parleur, casque).",
+        "No packet lost or late, the buffer was not flushed and the audio blocks pass every 20 ms. If you still hear dropouts, they come from before ZePhone (the service or its server: try another echo number) or from the computer's audio output (speaker, headset).",
     });
   }
   return hints;

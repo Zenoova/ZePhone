@@ -117,12 +117,12 @@ impl Usage {
 
     pub fn label(self) -> &'static str {
         match self {
-            Usage::HookSwitch => "Décrocher / raccrocher",
+            Usage::HookSwitch => "Answer / hang up",
             Usage::Flash => "Flash",
-            Usage::Hold => "Attente",
-            Usage::Drop => "Raccrocher",
-            Usage::PhoneMute => "Couper le micro",
-            Usage::Other { .. } => "Autre",
+            Usage::Hold => "Hold",
+            Usage::Drop => "Hang up",
+            Usage::PhoneMute => "Mute the microphone",
+            Usage::Other { .. } => "Other",
         }
     }
 
@@ -185,20 +185,20 @@ pub enum Ignored {
 impl Ignored {
     pub fn explain(self) -> &'static str {
         match self {
-            Ignored::ButtonsOff => "Les boutons du casque sont désactivés",
-            Ignored::VendorNotAvailable => "Aucune intégration constructeur n'est disponible",
-            Ignored::ThisActionIsOff => "Cette action est désactivée dans les réglages",
-            Ignored::NotTheSelectedHeadset => "Ce n'est pas le casque utilisé par ZePhone",
-            Ignored::Duplicate => "Événement en double",
-            Ignored::NoChange => "L'état n'a pas changé",
-            Ignored::NothingToAnswer => "Aucun appel entrant à décrocher",
-            Ignored::NoCallToEnd => "Aucun appel en cours à raccrocher",
-            Ignored::NeverDeclines => "Un casque ne refuse jamais un appel qui sonne",
-            Ignored::NoCallToControl => "Aucun appel établi à contrôler",
-            Ignored::LongPress => "Appui long ignoré",
-            Ignored::NoPress => "Relâchement sans appui",
-            Ignored::Pressed => "Appui : l'action a lieu au relâchement",
-            Ignored::Unsupported => "Commande non prise en charge",
+            Ignored::ButtonsOff => "The headset buttons are disabled",
+            Ignored::VendorNotAvailable => "No manufacturer integration is available",
+            Ignored::ThisActionIsOff => "This action is disabled in the settings",
+            Ignored::NotTheSelectedHeadset => "This is not the headset used by ZePhone",
+            Ignored::Duplicate => "Duplicate event",
+            Ignored::NoChange => "The state did not change",
+            Ignored::NothingToAnswer => "No incoming call to answer",
+            Ignored::NoCallToEnd => "No call in progress to hang up",
+            Ignored::NeverDeclines => "A headset never declines a ringing call",
+            Ignored::NoCallToControl => "No established call to control",
+            Ignored::LongPress => "Long press ignored",
+            Ignored::NoPress => "Release without a press",
+            Ignored::Pressed => "Press: the action happens at the release",
+            Ignored::Unsupported => "Unsupported command",
         }
     }
 }

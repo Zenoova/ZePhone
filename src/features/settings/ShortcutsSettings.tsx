@@ -12,16 +12,16 @@ import { Alert } from "./alert";
 import { SettingRow, SettingsSection } from "./parts";
 
 const STATUS: Record<BindingStatus["kind"], { label: string; tone: BadgeTone }> = {
-  active: { label: "Actif", tone: "success" },
-  disabled: { label: "Désactivé", tone: "neutral" },
-  unassigned: { label: "Non attribué", tone: "neutral" },
-  suspended: { label: "En pause", tone: "info" },
-  failed: { label: "Non activé", tone: "danger" },
+  active: { label: "Active", tone: "success" },
+  disabled: { label: "Disabled", tone: "neutral" },
+  unassigned: { label: "Unassigned", tone: "neutral" },
+  suspended: { label: "Paused", tone: "info" },
+  failed: { label: "Not activated", tone: "danger" },
 };
 
 const IN_APP: ReadonlyArray<{ keys: string; what: string }> = [
-  { keys: "⌘1 à ⌘4", what: "Changer de page (Clavier, Contacts, Historique, Paramètres)" },
-  { keys: "/", what: "Chercher dans l'annuaire (page Contacts)" },
+  { keys: "⌘1 to ⌘4", what: "Switch page (Keypad, Contacts, History, Settings)" },
+  { keys: "/", what: "Search the directory (Contacts page)" },
 ];
 
 export function ShortcutsSettings() {
@@ -67,7 +67,7 @@ export function ShortcutsSettings() {
       const r = recordKey(e, mac);
       if (r.kind === "pending") return setHint(showModifiers(r.modifiers, mac));
       if (r.kind === "cancel") return stop();
-      if (r.kind === "unsupported") return setHint("Cette touche ne peut pas faire partie d'un raccourci");
+      if (r.kind === "unsupported") return setHint("This key cannot be part of a shortcut");
       const enabled = useShortcutsStore.getState().view?.items.find((i) => i.action === action)?.enabled ?? true;
       void (async () => {
         const reason = await set(action, r.accelerator, enabled);
@@ -108,20 +108,17 @@ export function ShortcutsSettings() {
   return (
     <div className="space-y-6">
       <SettingsSection
-        title="Raccourcis globaux"
-        description="Ils fonctionnent dans toutes les applications, même quand ZePhone est réduit, tant qu'il est lancé."
+        title="Global shortcuts"
+        description="They work in all applications, even when ZePhone is minimized, as long as it is running."
       >
-        <SettingRow
-          label="Activer les raccourcis globaux"
-          description="Désactivé, aucune combinaison n'est réservée au système."
-        >
+        <SettingRow label="Enable global shortcuts" description="Off, no combination is reserved with the system.">
           <Switch
             checked={view.enabled}
             onCheckedChange={(v) => void setEnabled(v)}
-            aria-label="Activer les raccourcis globaux"
+            aria-label="Enable global shortcuts"
           />
         </SettingRow>
-        <ul aria-label="Raccourcis" className="divide-y">
+        <ul aria-label="Shortcuts" className="divide-y">
           {view.items.map((item) => (
             <ShortcutRow
               key={item.action}
@@ -143,8 +140,8 @@ export function ShortcutsSettings() {
         </ul>
         <div className="flex items-center justify-between gap-4 px-4 py-3">
           <p className="text-muted-foreground text-xs">
-            Une combinaison doit comporter au moins {mac ? "⌃, ⌥ ou ⌘" : "Ctrl, Alt ou Win"} : une touche seule se
-            déclencherait pendant que vous écrivez ailleurs.
+            A combination must include at least {mac ? "⌃, ⌥ or ⌘" : "Ctrl, Alt or Win"}: a bare key would fire while
+            you are typing elsewhere.
           </p>
           <Button
             variant="secondary"
@@ -154,24 +151,24 @@ export function ShortcutsSettings() {
               void reset();
             }}
           >
-            Rétablir les réglages par défaut
+            Restore the default settings
           </Button>
         </div>
       </SettingsSection>
 
       <Alert>
         {mac
-          ? "Sur macOS, ces raccourcis ne demandent aucune autorisation : ZePhone est seulement prévenu quand l'une de ces combinaisons est pressée, il ne lit pas le clavier. "
-          : "Ces raccourcis ne demandent aucune autorisation particulière. "}
+          ? "On macOS, these shortcuts do not need any permission: ZePhone is only told when one of these combinations is pressed, it does not read the keyboard. "
+          : "These shortcuts do not need any particular permission. "}
         {mac &&
-          "macOS ne signale pas qu'une autre application utilise la même combinaison : si un raccourci actif ne réagit pas, changez-le. "}
-        Pour les déclencher depuis un Stream Deck ou un autre outil, voir « Commande externe » dans la documentation
+          "macOS does not report that another application uses the same combination: if an active shortcut does not react, change it. "}
+        To trigger them from a Stream Deck or another tool, see “External command” in the documentation
         (docs/CONTROL.md).
       </Alert>
 
       <SettingsSection
-        title="Dans l'application seulement"
-        description="Ces raccourcis ne marchent que lorsque la fenêtre de ZePhone est au premier plan."
+        title="In the application only"
+        description="These shortcuts only work while the ZePhone window is in the foreground."
       >
         {IN_APP.map((s) => (
           <SettingRow key={s.keys} label={s.what}>
@@ -227,10 +224,10 @@ function ShortcutRow({
               aria-live="polite"
               className="border-primary bg-primary/10 text-primary min-w-40 rounded-lg border px-3 py-1.5 text-center text-sm"
             >
-              {hint || "Appuyez sur la combinaison…"}
+              {hint || "Press the combination…"}
             </span>
             <Button variant="ghost" onClick={onCancel}>
-              Annuler
+              Cancel
             </Button>
           </div>
         ) : (
@@ -238,31 +235,26 @@ function ShortcutRow({
             <Button
               variant="secondary"
               className="min-w-28 font-mono"
-              aria-label={`Modifier le raccourci : ${item.label}`}
+              aria-label={`Edit the shortcut: ${item.label}`}
               onClick={onRecord}
             >
-              {item.display ?? "Aucun"}
+              {item.display ?? "None"}
             </Button>
             {item.accelerator && (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Supprimer le raccourci : ${item.label}`}
-                onClick={onRemove}
-              >
+              <Button variant="ghost" size="sm" aria-label={`Delete the shortcut: ${item.label}`} onClick={onRemove}>
                 <X className="size-4" />
               </Button>
             )}
             {!item.isDefault && (
-              <Button variant="ghost" aria-label={`Rétablir le raccourci par défaut : ${item.label}`} onClick={onReset}>
-                Rétablir
+              <Button variant="ghost" aria-label={`Restore the default shortcut: ${item.label}`} onClick={onReset}>
+                Restore
               </Button>
             )}
             <Switch
               checked={item.enabled}
               disabled={!master || !item.accelerator}
               onCheckedChange={onToggle}
-              aria-label={`Activer le raccourci : ${item.label}`}
+              aria-label={`Enable the shortcut: ${item.label}`}
             />
           </div>
         )}

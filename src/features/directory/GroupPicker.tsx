@@ -37,10 +37,10 @@ export function GroupPicker({
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent align="start" className="w-72" data-testid="group-picker">
         <p className="text-muted-foreground px-2 pb-1 text-xs font-medium">
-          {entries.length > 1 ? `Ajouter ${entries.length} contacts à…` : "Groupes"}
+          {entries.length > 1 ? `Add ${entries.length} contacts to…` : "Groups"}
         </p>
         {groups.length === 0 ? (
-          <p className="text-muted-foreground px-2 py-2 text-sm">Aucun groupe pour l'instant : créez le premier.</p>
+          <p className="text-muted-foreground px-2 py-2 text-sm">No group yet: create the first one.</p>
         ) : (
           <ul className="max-h-56 space-y-0.5 overflow-y-auto">
             {groups.map((g) => {
@@ -81,18 +81,18 @@ export function GroupPicker({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Nouveau groupe"
-            aria-label="Nom du nouveau groupe"
+            placeholder="New group"
+            aria-label="Name of the new group"
             maxLength={60}
             className="h-8"
           />
-          <Button type="submit" size="sm" variant="secondary" disabled={!name.trim()} aria-label="Créer le groupe">
+          <Button type="submit" size="sm" variant="secondary" disabled={!name.trim()} aria-label="Create group">
             <Plus className="size-4" aria-hidden />
           </Button>
         </form>
         {onManage && (
           <Button variant="ghost" size="sm" className="mt-1 w-full justify-start" onClick={onManage}>
-            <FolderPlus className="size-4" aria-hidden /> Gérer les groupes…
+            <FolderPlus className="size-4" aria-hidden /> Manage groups…
           </Button>
         )}
       </PopoverContent>

@@ -27,8 +27,8 @@ impl Role {
     pub fn label(self) -> &'static str {
         match self {
             Role::Microphone => "Microphone",
-            Role::Speaker => "Sortie des conversations",
-            Role::Ringer => "Sonnerie",
+            Role::Speaker => "Conversation output",
+            Role::Ringer => "Ringtone",
         }
     }
 

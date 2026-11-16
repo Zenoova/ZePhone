@@ -13,27 +13,25 @@ fn has_control(s: &str) -> bool {
 pub fn validate_host(host: &str) -> Result<(), String> {
     let h = host.trim();
     if h.is_empty() {
-        return Err("valeur obligatoire".into());
+        return Err("required value".into());
     }
     if h.len() > 253 {
-        return Err("trop long".into());
+        return Err("too long".into());
     }
     if h.parse::<IpAddr>().is_ok() {
         return Ok(());
     }
     if h.starts_with('[') || h.contains(':') {
-        return Err("adresse IPv6 invalide (ou port non attendu ici)".into());
+        return Err("invalid IPv6 address (or unexpected port here)".into());
     }
     if h.starts_with(['.', '-']) || h.ends_with(['.', '-']) || h.contains("..") {
-        return Err("nom d'hôte invalide".into());
+        return Err("invalid host name".into());
     }
     if !h
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
     {
-        return Err(
-            "caractères non autorisés (lettres, chiffres, '.', '-' et '_' uniquement)".into(),
-        );
+        return Err("characters not allowed (letters, digits, '.', '-' and '_' only)".into());
     }
     Ok(())
 }
@@ -45,7 +43,7 @@ pub fn validate_host_port(value: &str) -> Result<(), String> {
     if let Some(p) = port
         && p == 0
     {
-        return Err("port invalide".into());
+        return Err("invalid port".into());
     }
     Ok(())
 }
@@ -53,13 +51,13 @@ pub fn validate_host_port(value: &str) -> Result<(), String> {
 /// Splits `host[:port]` handling bracketed IPv6. Returns the bare host.
 pub fn split_host_port(value: &str) -> Result<(String, Option<u16>), String> {
     if let Some(rest) = value.strip_prefix('[') {
-        let end = rest.find(']').ok_or("crochet fermant manquant")?;
+        let end = rest.find(']').ok_or("missing closing bracket")?;
         let host = &rest[..end];
         let after = &rest[end + 1..];
         let port = match after.strip_prefix(':') {
-            Some(p) => Some(p.parse::<u16>().map_err(|_| "port invalide")?),
+            Some(p) => Some(p.parse::<u16>().map_err(|_| "invalid port")?),
             None if after.is_empty() => None,
-            None => return Err("syntaxe invalide".into()),
+            None => return Err("invalid syntax".into()),
         };
         return Ok((host.to_string(), port));
     }
@@ -70,7 +68,7 @@ pub fn split_host_port(value: &str) -> Result<(String, Option<u16>), String> {
     match value.split_once(':') {
         Some((h, p)) => Ok((
             h.to_string(),
-            Some(p.parse::<u16>().map_err(|_| "port invalide")?),
+            Some(p.parse::<u16>().map_err(|_| "invalid port")?),
         )),
         None => Ok((value.to_string(), None)),
     }
@@ -86,18 +84,16 @@ pub fn host_for_uri(host: &str) -> String {
 
 pub fn validate_user(user: &str) -> Result<(), String> {
     if user.is_empty() {
-        return Err("valeur obligatoire".into());
+        return Err("required value".into());
     }
     if user.len() > 64 {
-        return Err("trop long (64 caractères max.)".into());
+        return Err("too long (64 characters max.)".into());
     }
     if !user
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '+' | '-' | '~' | '!' | '*'))
     {
-        return Err(
-            "caractères non autorisés (lettres, chiffres et . _ + - ~ ! * uniquement)".into(),
-        );
+        return Err("characters not allowed (letters, digits and . _ + - ~ ! * only)".into());
     }
     Ok(())
 }
@@ -105,10 +101,10 @@ pub fn validate_user(user: &str) -> Result<(), String> {
 /// Values we put between double quotes in a baresip account line.
 pub fn validate_quoted_value(v: &str) -> Result<(), String> {
     if v.len() > 128 {
-        return Err("trop long (128 caractères max.)".into());
+        return Err("too long (128 characters max.)".into());
     }
     if v.contains('"') || v.contains('\\') || has_control(v) {
-        return Err("guillemets, antislash et caractères de contrôle interdits".into());
+        return Err("quotes, backslashes and control characters not allowed".into());
     }
     Ok(())
 }
@@ -118,13 +114,13 @@ pub fn validate_quoted_value(v: &str) -> Result<(), String> {
 pub fn validate_password(pw: &str) -> AppResult<()> {
     if pw.len() > 256 {
         return Err(AppError::validation(
-            "Mot de passe trop long (256 caractères max.)",
+            "Password too long (256 characters max.)",
         ));
     }
     if pw.contains('"') || has_control(pw) {
         return Err(AppError::validation(
-            "Le mot de passe ne peut pas contenir de guillemet double (\") ni de caractère de contrôle \
-             (limitation de la syntaxe de compte de Baresip).",
+            "The password cannot contain a double quote (\") or a control character \
+             (a limitation of Baresip's account syntax).",
         ));
     }
     Ok(())
@@ -154,13 +150,13 @@ fn encode_user(user: &str) -> String {
 pub fn normalize_target(input: &str, default_domain: &str) -> Result<String, String> {
     let t = input.trim();
     if t.is_empty() {
-        return Err("destinataire vide".into());
+        return Err("empty recipient".into());
     }
     if t.len() > 200 {
-        return Err("destinataire trop long".into());
+        return Err("recipient too long".into());
     }
     if has_control(t) || t.contains(['<', '>', '"', '\\', ',']) {
-        return Err("caractères non autorisés".into());
+        return Err("characters not allowed".into());
     }
 
     let lower = t.to_ascii_lowercase();
@@ -173,7 +169,7 @@ pub fn normalize_target(input: &str, default_domain: &str) -> Result<String, Str
     };
 
     if rest.contains(char::is_whitespace) && !is_phone_like(rest) {
-        return Err("espaces non autorisés".into());
+        return Err("spaces not allowed".into());
     }
 
     // Split optional URI parameters (only `transport=` is accepted).
@@ -184,11 +180,11 @@ pub fn normalize_target(input: &str, default_domain: &str) -> Result<String, Str
     let transport_param = match params {
         None => None,
         Some(p) => {
-            let (k, v) = p.split_once('=').ok_or("paramètre d'URI invalide")?;
+            let (k, v) = p.split_once('=').ok_or("invalid URI parameter")?;
             if !k.eq_ignore_ascii_case("transport")
                 || !matches!(v.to_ascii_lowercase().as_str(), "udp" | "tcp" | "tls")
             {
-                return Err("seul le paramètre transport=udp|tcp|tls est accepté".into());
+                return Err("only the transport=udp|tcp|tls parameter is accepted".into());
             }
             Some(v.to_ascii_lowercase())
         }
@@ -212,12 +208,12 @@ pub fn normalize_target(input: &str, default_domain: &str) -> Result<String, Str
                 u.to_string()
             };
             if cleaned.is_empty() {
-                return Err("numéro vide".into());
+                return Err("empty number".into());
             }
             // `#` may legitimately appear in a dialled number; allow it, percent-encoded.
             let probe: String = cleaned.chars().filter(|c| *c != '#').collect();
             if !probe.is_empty() {
-                validate_user(&probe).map_err(|e| format!("numéro/identifiant : {e}"))?;
+                validate_user(&probe).map_err(|e| format!("number/identifier: {e}"))?;
             }
             Some(encode_user(&cleaned))
         }
@@ -225,9 +221,9 @@ pub fn normalize_target(input: &str, default_domain: &str) -> Result<String, Str
     };
 
     let (host, port) = split_host_port(&host_part)?;
-    validate_host(&host).map_err(|e| format!("hôte : {e}"))?;
+    validate_host(&host).map_err(|e| format!("host: {e}"))?;
     if port == Some(0) {
-        return Err("port invalide".into());
+        return Err("invalid port".into());
     }
 
     let mut uri = String::from(scheme);

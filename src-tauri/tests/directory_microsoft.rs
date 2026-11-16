@@ -211,7 +211,7 @@ fn user(n: u32, name: &str, phone: &str) -> Value {
     json!({
         "id": format!("00000000-0000-0000-0000-{n:012}"),
         "displayName": name, "givenName": name.split(' ').next().unwrap(), "surname": name.rsplit(' ').next().unwrap(),
-        "mail": format!("user{n}@contoso.example"), "jobTitle": "Chargé de mission", "department": "Finance",
+        "mail": format!("user{n}@contoso.example"), "jobTitle": "Project officer", "department": "Finance",
         "companyName": "Contoso", "businessPhones": [phone], "mobilePhone": null
     })
 }
@@ -524,12 +524,12 @@ async fn an_administrator_restriction_is_explained_and_a_refusal_is_not_an_error
         (
             "error=access_denied&error_description=AADSTS65001%3A+admin+consent+required",
             SyncErrorKind::Forbidden,
-            "administrateur",
+            "administrator",
         ),
         (
             "error=access_denied&error_description=user+cancelled",
             SyncErrorKind::Auth,
-            "refusé",
+            "refused access",
         ),
     ] {
         let auth = Authorization::begin(
@@ -581,7 +581,7 @@ async fn the_sign_in_can_be_cancelled_and_does_not_wait_forever() {
             .unwrap()
             .unwrap_err()
             .message
-            .contains("annulée")
+            .contains("cancelled")
     );
 
     let (_tx, rx) = oneshot::channel();
@@ -591,7 +591,7 @@ async fn the_sign_in_can_be_cancelled_and_does_not_wait_forever() {
         .finish(Duration::from_millis(200), rx, &http)
         .await
         .unwrap_err();
-    assert!(err.message.contains("à temps"), "{err}");
+    assert!(err.message.contains("in time"), "{err}");
     assert!(started.elapsed() < Duration::from_secs(5));
 }
 
@@ -771,7 +771,7 @@ async fn a_revoked_connection_asks_to_reconnect_and_a_missing_one_too() {
         .await
         .unwrap_err();
     assert_eq!(err.kind, SyncErrorKind::Auth, "{err}");
-    assert!(err.message.contains("reconnectez"));
+    assert!(err.message.contains("reconnect"));
 
     r.secrets
         .delete(&secret_key("src1", "refresh_token"))
@@ -797,7 +797,7 @@ async fn an_administrator_restriction_at_refresh_time_is_explained() {
         .await
         .unwrap_err();
     assert_eq!(err.kind, SyncErrorKind::Forbidden);
-    assert!(err.message.contains("administrateur"));
+    assert!(err.message.contains("administrator"));
 }
 
 #[tokio::test]
@@ -838,7 +838,7 @@ async fn through_the_service_a_delta_removes_people_and_an_outage_keeps_everyone
     let id = svc
         .add_source(
             SourceKind::MicrosoftOrg,
-            "Annuaire Contoso",
+            "Contoso directory",
             &serde_json::to_value(config(Level::Full)).unwrap(),
             60,
             None,

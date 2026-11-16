@@ -63,8 +63,8 @@ beforeEach(() => {
 describe("AudioDevicePicker", () => {
   it("shows the readable names, the one in use, and a live microphone indicator", () => {
     render(<AudioDevicePicker call={makeCall({ state: "connected", muted: false })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Périphériques audio" }));
-    expect(screen.getByTestId("mic-indicator")).toHaveTextContent("Micro actif");
+    fireEvent.click(screen.getByRole("button", { name: "Audio devices" }));
+    expect(screen.getByTestId("mic-indicator")).toHaveTextContent("Microphone on");
     const mics = screen.getByRole("list", { name: "Microphone" });
     expect(mics).toHaveTextContent("MacBook Pro Microphone");
     expect(mics.querySelector("[aria-current='true']")).toHaveTextContent("Jabra Evolve2 65");
@@ -72,17 +72,17 @@ describe("AudioDevicePicker", () => {
 
   it("shows when the microphone is muted", () => {
     render(<AudioDevicePicker call={makeCall({ state: "connected", muted: true })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Périphériques audio" }));
-    expect(screen.getByTestId("mic-indicator")).toHaveTextContent("Micro coupé");
+    fireEvent.click(screen.getByRole("button", { name: "Audio devices" }));
+    expect(screen.getByTestId("mic-indicator")).toHaveTextContent("Muted");
   });
 
   it("moves the call to the picked device for this call only, unless asked to keep it", async () => {
     render(<AudioDevicePicker call={makeCall({ state: "connected" })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Périphériques audio" }));
+    fireEvent.click(screen.getByRole("button", { name: "Audio devices" }));
     fireEvent.click(screen.getByRole("button", { name: /MacBook Pro Speakers/ }));
     await waitFor(() => expect(backend.calls("audio_choose")).toHaveLength(1));
     expect(backend.calls("audio_choose")[0]).toEqual({ role: "speaker", uid: "spk", remember: false });
-    fireEvent.click(screen.getByRole("switch", { name: "Garder ce choix" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Keep this choice" }));
     fireEvent.click(screen.getByRole("button", { name: /MacBook Pro Microphone/ }));
     await waitFor(() => expect(backend.calls("audio_choose")).toHaveLength(2));
     expect(backend.calls("audio_choose")[1]).toEqual({ role: "microphone", uid: "mic", remember: true });
@@ -90,8 +90,8 @@ describe("AudioDevicePicker", () => {
 
   it("flags a loudspeaker so nobody picks the room by mistake", () => {
     render(<AudioDevicePicker call={makeCall({ state: "connected" })} />);
-    fireEvent.click(screen.getByRole("button", { name: "Périphériques audio" }));
-    expect(screen.getByText("haut-parleur")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Audio devices" }));
+    expect(screen.getByText("speaker")).toBeInTheDocument();
   });
 });
 
@@ -102,9 +102,9 @@ describe("AudioNoticeBanner", () => {
     useAudioStore.setState({ state: state([role("microphone"), role("speaker", { notice: lost }), role("ringer")]) });
     render(<AudioNoticeBanner />);
     const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("« Jabra Evolve2 65 » n'est plus disponible");
-    expect(alert).toHaveTextContent("L'appel continue");
-    fireEvent.click(screen.getByRole("button", { name: "Choisir un autre périphérique" }));
+    expect(alert).toHaveTextContent("“Jabra Evolve2 65” is no longer available");
+    expect(alert).toHaveTextContent("The call continues");
+    fireEvent.click(screen.getByRole("button", { name: "Choose another device" }));
     fireEvent.click(screen.getByRole("button", { name: /MacBook Pro Speakers/ }));
     await waitFor(() => expect(backend.calls("audio_choose")).toHaveLength(1));
     expect(backend.calls("audio_choose")[0]).toMatchObject({ role: "speaker", uid: "spk" });
@@ -116,7 +116,7 @@ describe("AudioNoticeBanner", () => {
       state: state([role("microphone"), role("speaker", { notice: blocked }), role("ringer")]),
     });
     render(<AudioNoticeBanner />);
-    expect(screen.getByRole("alert")).toHaveTextContent("haut-parleurs que tout le monde entend");
+    expect(screen.getByRole("alert")).toHaveTextContent("speakers that everyone can hear");
   });
 
   it("tells an automatic switch as information, not as an alarm", () => {
@@ -132,8 +132,8 @@ describe("AudioNoticeBanner", () => {
     });
     render(<AudioNoticeBanner />);
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent("Le son est passé de « Jabra Evolve2 65 » à « Desk Speaker »");
-    expect(screen.queryByRole("button", { name: "Choisir un autre périphérique" })).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent("The sound moved from “Jabra Evolve2 65” to “Desk Speaker”");
+    expect(screen.queryByRole("button", { name: "Choose another device" })).toBeNull();
   });
 
   it("is silent when nothing happened, and ignores the ringer", () => {

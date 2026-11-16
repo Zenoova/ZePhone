@@ -45,7 +45,7 @@ impl RealConnectorFactory {
         std::fs::read(&path).map(Some).map_err(|_| {
             SyncError::new(
                 SyncErrorKind::Config,
-                "Le fichier de l'autorité de certification (Paramètres → Réseau) est illisible.",
+                "The certificate authority file (Settings → Network) is unreadable.",
             )
         })
     }
@@ -63,7 +63,7 @@ impl ConnectorFactory for RealConnectorFactory {
                     serde_json::from_value(source.config.clone()).map_err(|_| {
                         SyncError::new(
                             SyncErrorKind::Config,
-                            "La configuration de cette source est illisible : modifiez-la.",
+                            "The configuration of this source is unreadable: edit it.",
                         )
                     })?;
                 let password = secrets
@@ -71,13 +71,13 @@ impl ConnectorFactory for RealConnectorFactory {
                     .map_err(|_| {
                         SyncError::new(
                             SyncErrorKind::Config,
-                            "Le mot de passe de cette source est inaccessible dans le trousseau.",
+                            "The password of this source is not accessible in the keychain.",
                         )
                     })?;
                 if !config.bind_dn.trim().is_empty() && password.is_none() {
                     return Err(SyncError::new(
                         SyncErrorKind::Auth,
-                        "Le mot de passe de cette source n'est plus enregistré : saisissez-le à nouveau.",
+                        "The password of this source is no longer saved: enter it again.",
                     ));
                 }
                 Ok(Box::new(LdapConnector::new(
@@ -91,7 +91,7 @@ impl ConnectorFactory for RealConnectorFactory {
                     .map_err(|_| {
                         SyncError::new(
                             SyncErrorKind::Config,
-                            "La configuration de cette source est illisible : modifiez-la.",
+                            "The configuration of this source is unreadable: edit it.",
                         )
                     })?;
                 let ca = self.ca_pem()?;
@@ -109,7 +109,7 @@ impl ConnectorFactory for RealConnectorFactory {
             }
             SourceKind::Local => Err(SyncError::new(
                 SyncErrorKind::Config,
-                "Le carnet d'adresses local n'a rien à synchroniser.",
+                "The local address book has nothing to sync.",
             )),
         }
     }

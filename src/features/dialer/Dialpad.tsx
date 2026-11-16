@@ -79,7 +79,7 @@ export function Dialpad({
   const endZero = () => clearTimeout(holdTimer.current);
 
   return (
-    <div role="group" aria-label="Clavier numérique" className={cn("grid grid-cols-3 gap-2.5", className)}>
+    <div role="group" aria-label="Numeric keypad" className={cn("grid grid-cols-3 gap-2.5", className)}>
       {DIALPAD_KEYS.map(({ key, letters }) => (
         <button
           key={key}
@@ -89,7 +89,7 @@ export function Dialpad({
           }}
           type="button"
           disabled={disabled}
-          aria-label={key === "*" ? "Étoile" : key === "#" ? "Dièse" : key}
+          aria-label={key === "*" ? "Star" : key === "#" ? "Pound" : key}
           data-pressed={flashed === key}
           onPointerDown={key === "0" ? startZero : undefined}
           onPointerUp={key === "0" ? endZero : undefined}

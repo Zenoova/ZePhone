@@ -25,8 +25,8 @@ export function AccountFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title={account ? "Modifier le compte SIP" : "Ajouter un compte SIP"}
-        description="Renseignez les informations fournies par votre opérateur VoIP ou votre administrateur PBX."
+        title={account ? "Edit the SIP account" : "Add a SIP account"}
+        description="Enter the information provided by your VoIP provider or your PBX administrator."
         style={{ width: "min(calc(100vw - 2rem), 640px)" }}
       >
         <AccountFormBody key={account?.id ?? "new"} account={account} onDone={() => onOpenChange(false)} />
@@ -79,14 +79,14 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
       className="space-y-5"
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="a-label" label="Nom du compte" hint="Facultatif. Par défaut : identifiant@domaine">
-          <Input id="a-label" value={form.label} onChange={text("label")} placeholder="Bureau" autoFocus />
+        <Field id="a-label" label="Account name" hint="Optional. Default: username@domain">
+          <Input id="a-label" value={form.label} onChange={text("label")} placeholder="Office" autoFocus />
         </Field>
-        <Field id="a-display" label="Nom affiché" hint="Facultatif. Vu par vos correspondants">
+        <Field id="a-display" label="Display name" hint="Optional. Seen by your contacts">
           <Input id="a-display" value={form.displayName} onChange={text("displayName")} />
         </Field>
 
-        <Field id="a-server" label="Serveur SIP">
+        <Field id="a-server" label="SIP server">
           <Input
             id="a-server"
             value={form.server}
@@ -116,7 +116,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
           </Field>
         </div>
 
-        <Field id="a-domain" label="Domaine SIP" hint="Reprend le serveur tant que vous ne le modifiez pas">
+        <Field id="a-domain" label="SIP domain" hint="Takes the server's value as long as you do not change it">
           <Input
             id="a-domain"
             value={form.domain}
@@ -126,7 +126,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
             spellCheck={false}
           />
         </Field>
-        <Field id="a-user" label="Identifiant">
+        <Field id="a-user" label="Username">
           <Input
             id="a-user"
             value={form.username}
@@ -137,11 +137,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
           />
         </Field>
 
-        <Field
-          id="a-auth"
-          label="Identifiant d'authentification"
-          hint="Reprend l'identifiant tant que vous ne le modifiez pas"
-        >
+        <Field id="a-auth" label="Authentication username" hint="Takes the username as long as you do not change it">
           <Input
             id="a-auth"
             value={form.authUsername}
@@ -152,11 +148,11 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
         </Field>
         <Field
           id="a-pass"
-          label="Mot de passe"
+          label="Password"
           hint={
             account?.hasPassword
-              ? "Enregistré dans le trousseau. Laissez vide pour le conserver."
-              : "Stocké dans le trousseau du système, jamais en clair."
+              ? "Saved in the keychain. Leave empty to keep it."
+              : "Stored in the system keychain, never in clear text."
           }
         >
           <PasswordInput
@@ -170,9 +166,9 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
       </div>
 
       <details className="rounded-xl border px-4 py-3">
-        <summary className="cursor-pointer text-sm font-medium">Options avancées</summary>
+        <summary className="cursor-pointer text-sm font-medium">Advanced options</summary>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field id="a-proxy" label="Proxy sortant" hint="host[:port] — remplace le serveur comme prochain saut">
+          <Field id="a-proxy" label="Outbound proxy" hint="host[:port] — replaces the server as the next hop">
             <Input
               id="a-proxy"
               value={form.outboundProxy}
@@ -180,7 +176,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
               placeholder="proxy.example.com:5060"
             />
           </Field>
-          <Field id="a-regint" label="Intervalle d'enregistrement (s)" hint="0 = pas d'enregistrement (appels directs)">
+          <Field id="a-regint" label="Registration interval (s)" hint="0 = no registration (direct calls)">
             <Input
               id="a-regint"
               inputMode="numeric"
@@ -188,7 +184,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
               onChange={text("registerInterval")}
             />
           </Field>
-          <Field id="a-media" label="Chiffrement des médias">
+          <Field id="a-media" label="Media encryption">
             <Select value={form.mediaEncryption} onValueChange={(v) => set("mediaEncryption")(v as MediaEncryption)}>
               <SelectTrigger id="a-media" className="w-full">
                 <SelectValue />
@@ -203,7 +199,7 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
             </Select>
           </Field>
           <div className="flex items-center justify-between gap-3 self-end rounded-lg border px-3 py-2">
-            <Label htmlFor="a-enabled">Compte activé</Label>
+            <Label htmlFor="a-enabled">Account enabled</Label>
             <Switch id="a-enabled" checked={form.enabled} onCheckedChange={set("enabled")} />
           </div>
         </div>
@@ -211,10 +207,10 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
 
       <div className="flex justify-end gap-2 pt-3">
         <Button type="button" variant="secondary" onClick={onDone}>
-          Annuler
+          Cancel
         </Button>
         <Button type="submit" disabled={busy || !valid}>
-          {account ? "Enregistrer" : "Ajouter et connecter"}
+          {account ? "Save" : "Add and connect"}
         </Button>
       </div>
     </form>

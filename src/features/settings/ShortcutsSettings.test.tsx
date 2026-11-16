@@ -15,14 +15,14 @@ import type { ShortcutAction, ShortcutItem, ShortcutsView } from "@/types/shortc
 import { ShortcutsSettings } from "./ShortcutsSettings";
 
 const LABELS: Record<ShortcutAction, string> = {
-  answer: "Décrocher",
-  reject: "Refuser l'appel entrant",
-  hangup: "Raccrocher",
-  toggleMute: "Couper / réactiver le micro",
-  toggleHold: "Mettre en attente / reprendre",
-  showDialer: "Afficher le clavier",
-  showSearch: "Rechercher un contact",
-  toggleDnd: "Ne pas déranger",
+  answer: "Answer",
+  reject: "Decline the incoming call",
+  hangup: "Hang up",
+  toggleMute: "Mute / unmute the microphone",
+  toggleHold: "Put on hold / resume",
+  showDialer: "Show the keypad",
+  showSearch: "Search for a contact",
+  toggleDnd: "Do not disturb",
 };
 const KEYS: Record<ShortcutAction, string> = {
   answer: "A",
@@ -93,17 +93,17 @@ const captures = () => backend.calls("shortcuts_capture").map((c) => c.active);
 
 async function shown() {
   render(<ShortcutsSettings />);
-  await screen.findByRole("list", { name: "Raccourcis" });
+  await screen.findByRole("list", { name: "Shortcuts" });
 }
 
 describe("ShortcutsSettings: the list", () => {
   it("shows each action with its combination, its scope and whether it is really active", async () => {
     await shown();
     const answer = within(row("answer"));
-    expect(answer.getByText("Décrocher")).toBeInTheDocument();
-    expect(answer.getByText("Actif")).toBeInTheDocument();
+    expect(answer.getByText("Answer")).toBeInTheDocument();
+    expect(answer.getByText("Active")).toBeInTheDocument();
     expect(answer.getByText("Global")).toBeInTheDocument();
-    expect(answer.getByRole("button", { name: /Modifier le raccourci : Décrocher/ })).toHaveTextContent("⌥⇧⌘A");
+    expect(answer.getByRole("button", { name: /Edit the shortcut: Answer/ })).toHaveTextContent("⌥⇧⌘A");
     expect(screen.getAllByText("Global")).toHaveLength(8);
   });
 
@@ -111,16 +111,16 @@ describe("ShortcutsSettings: the list", () => {
     current = view({}, [
       item("answer"),
       item("toggleMute", {
-        status: { kind: "failed", message: "Déjà utilisée par une autre application ou par le système" },
+        status: { kind: "failed", message: "Already used by another application or by the system" },
       }),
     ]);
     await shown();
-    expect(within(row("answer")).getByText("Actif")).toBeInTheDocument();
+    expect(within(row("answer")).getByText("Active")).toBeInTheDocument();
     const mute = within(row("toggleMute"));
-    expect(mute.getByText("Non activé")).toBeInTheDocument();
-    expect(mute.getByRole("alert")).toHaveTextContent("Déjà utilisée par une autre application");
+    expect(mute.getByText("Not activated")).toBeInTheDocument();
+    expect(mute.getByRole("alert")).toHaveTextContent("Already used by another application");
     // Its combination is still shown: it is saved.
-    expect(mute.getByRole("button", { name: /Modifier/ })).toHaveTextContent("⌥⇧⌘M");
+    expect(mute.getByRole("button", { name: /Edit/ })).toHaveTextContent("⌥⇧⌘M");
   });
 
   it("shows disabled and unassigned actions as such", async () => {
@@ -129,24 +129,24 @@ describe("ShortcutsSettings: the list", () => {
       item("hangup", { accelerator: null, display: null, isDefault: false, status: { kind: "unassigned" } }),
     ]);
     await shown();
-    expect(within(row("answer")).getByText("Désactivé")).toBeInTheDocument();
-    expect(within(row("hangup")).getByText("Non attribué")).toBeInTheDocument();
-    expect(within(row("hangup")).getByRole("button", { name: /Modifier/ })).toHaveTextContent("Aucun");
+    expect(within(row("answer")).getByText("Disabled")).toBeInTheDocument();
+    expect(within(row("hangup")).getByText("Unassigned")).toBeInTheDocument();
+    expect(within(row("hangup")).getByRole("button", { name: /Edit/ })).toHaveTextContent("None");
     expect(within(row("hangup")).getByRole("switch")).toBeDisabled();
   });
 
   it("separates what works anywhere from what only works in the window", async () => {
     await shown();
-    expect(screen.getByText("Dans l'application seulement")).toBeInTheDocument();
-    expect(screen.getByText("⌘1 à ⌘4")).toBeInTheDocument();
+    expect(screen.getByText("In the application only")).toBeInTheDocument();
+    expect(screen.getByText("⌘1 to ⌘4")).toBeInTheDocument();
   });
 });
 
 describe("ShortcutsSettings: recording a combination", () => {
   it("pauses every shortcut while recording, then saves what was pressed and gives them back", async () => {
     await shown();
-    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Modifier/ }));
-    expect(await screen.findByText("Appuyez sur la combinaison…")).toBeInTheDocument();
+    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
+    expect(await screen.findByText("Press the combination…")).toBeInTheDocument();
     await waitFor(() => expect(captures()).toEqual([true]));
 
     press({ code: "KeyK", metaKey: true, altKey: true });
@@ -157,14 +157,14 @@ describe("ShortcutsSettings: recording a combination", () => {
       enabled: true,
     });
     await waitFor(() => expect(captures()).toEqual([true, false]));
-    expect(screen.queryByText("Appuyez sur la combinaison…")).toBeNull();
-    expect(within(row("hangup")).getByRole("button", { name: /Modifier/ })).toHaveTextContent("⌥⌘K");
+    expect(screen.queryByText("Press the combination…")).toBeNull();
+    expect(within(row("hangup")).getByRole("button", { name: /Edit/ })).toHaveTextContent("⌥⌘K");
   });
 
   it("shows the modifiers as they are held", async () => {
     await shown();
-    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Modifier/ }));
-    await screen.findByText("Appuyez sur la combinaison…");
+    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
+    await screen.findByText("Press the combination…");
     press({ code: "MetaLeft", metaKey: true });
     expect(await screen.findByRole("status")).toHaveTextContent("⌘");
     press({ code: "AltLeft", metaKey: true, altKey: true });
@@ -174,8 +174,8 @@ describe("ShortcutsSettings: recording a combination", () => {
 
   it("starts nothing while recording: the only things sent to the backend are the pause and the new combination", async () => {
     await shown();
-    fireEvent.click(within(row("answer")).getByRole("button", { name: /Modifier/ }));
-    await screen.findByText("Appuyez sur la combinaison…");
+    fireEvent.click(within(row("answer")).getByRole("button", { name: /Edit/ }));
+    await screen.findByText("Press the combination…");
     // The user presses the combination of "Hang up" itself.
     press({ code: "KeyH", metaKey: true, altKey: true, shiftKey: true });
     await waitFor(() => expect(captures()).toEqual([true, false]));
@@ -185,21 +185,21 @@ describe("ShortcutsSettings: recording a combination", () => {
 
   it("shows the reason when the backend refuses, in the row, and stops recording", async () => {
     backend.handle("shortcuts_set", () => {
-      throw { kind: "validation", message: "Déjà utilisée pour « Décrocher »" };
+      throw { kind: "validation", message: "Already used for “Answer”" };
     });
     await shown();
-    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Modifier/ }));
-    await screen.findByText("Appuyez sur la combinaison…");
+    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
+    await screen.findByText("Press the combination…");
     press({ code: "KeyA", metaKey: true, altKey: true, shiftKey: true });
-    expect(await within(row("hangup")).findByRole("alert")).toHaveTextContent("Déjà utilisée pour « Décrocher »");
+    expect(await within(row("hangup")).findByRole("alert")).toHaveTextContent("Already used for “Answer”");
     await waitFor(() => expect(captures()).toEqual([true, false]));
-    expect(within(row("hangup")).getByRole("button", { name: /Modifier/ })).toHaveTextContent("⌥⇧⌘H");
+    expect(within(row("hangup")).getByRole("button", { name: /Edit/ })).toHaveTextContent("⌥⇧⌘H");
   });
 
   it("gives up on Escape without changing anything", async () => {
     await shown();
-    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Modifier/ }));
-    await screen.findByText("Appuyez sur la combinaison…");
+    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
+    await screen.findByText("Press the combination…");
     press({ code: "Escape" });
     await waitFor(() => expect(captures()).toEqual([true, false]));
     expect(backend.calls("shortcuts_set")).toHaveLength(0);
@@ -207,17 +207,17 @@ describe("ShortcutsSettings: recording a combination", () => {
 
   it("gives up when the window loses the focus, so the shortcuts are never left paused", async () => {
     await shown();
-    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Modifier/ }));
-    await screen.findByText("Appuyez sur la combinaison…");
+    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
+    await screen.findByText("Press the combination…");
     act(() => void fireEvent.blur(window));
     await waitFor(() => expect(captures()).toEqual([true, false]));
   });
 
   it("gives them back when the page is closed in the middle of a recording", async () => {
     const { unmount } = render(<ShortcutsSettings />);
-    await screen.findByRole("list", { name: "Raccourcis" });
-    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Modifier/ }));
-    await screen.findByText("Appuyez sur la combinaison…");
+    await screen.findByRole("list", { name: "Shortcuts" });
+    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
+    await screen.findByText("Press the combination…");
     await waitFor(() => expect(captures()).toEqual([true]));
     unmount();
     await waitFor(() => expect(captures()).toEqual([true, false]));
@@ -225,10 +225,10 @@ describe("ShortcutsSettings: recording a combination", () => {
 
   it("does not take a key that cannot be part of a combination", async () => {
     await shown();
-    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Modifier/ }));
-    await screen.findByText("Appuyez sur la combinaison…");
+    fireEvent.click(within(row("hangup")).getByRole("button", { name: /Edit/ }));
+    await screen.findByText("Press the combination…");
     press({ code: "Comma", metaKey: true });
-    expect(await screen.findByRole("status")).toHaveTextContent("ne peut pas faire partie");
+    expect(await screen.findByRole("status")).toHaveTextContent("cannot be part of");
     expect(backend.calls("shortcuts_set")).toHaveLength(0);
   });
 });
@@ -236,7 +236,7 @@ describe("ShortcutsSettings: recording a combination", () => {
 describe("ShortcutsSettings: editing", () => {
   it("removes a combination", async () => {
     await shown();
-    fireEvent.click(within(row("answer")).getByRole("button", { name: /Supprimer le raccourci : Décrocher/ }));
+    fireEvent.click(within(row("answer")).getByRole("button", { name: /Delete the shortcut: Answer/ }));
     await waitFor(() =>
       expect(backend.calls("shortcuts_set")[0]).toEqual({ action: "answer", accelerator: null, enabled: true }),
     );
@@ -257,18 +257,18 @@ describe("ShortcutsSettings: editing", () => {
   it("puts one action, or all of them, back to the defaults", async () => {
     current = view({}, [item("answer", { accelerator: "Control+K", display: "⌃K", isDefault: false })]);
     await shown();
-    fireEvent.click(within(row("answer")).getByRole("button", { name: /Rétablir le raccourci par défaut/ }));
+    fireEvent.click(within(row("answer")).getByRole("button", { name: /Restore the default shortcut/ }));
     await waitFor(() => expect(backend.calls("shortcuts_reset")[0]).toEqual({ action: "answer" }));
 
     current = view({}, [item("answer", { accelerator: "Control+K", display: "⌃K", isDefault: false })]);
     useShortcutsStore.setState({ view: current });
-    fireEvent.click(await screen.findByRole("button", { name: "Rétablir les réglages par défaut" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Restore the default settings" }));
     await waitFor(() => expect(backend.calls("shortcuts_reset")[1]).toEqual({ action: null }));
   });
 
   it("the master switch turns every shortcut off at once", async () => {
     await shown();
-    fireEvent.click(screen.getByRole("switch", { name: "Activer les raccourcis globaux" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Enable global shortcuts" }));
     await waitFor(() => expect(backend.calls("shortcuts_set_enabled")[0]).toEqual({ enabled: false }));
   });
 

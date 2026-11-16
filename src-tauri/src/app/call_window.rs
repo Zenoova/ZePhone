@@ -20,7 +20,7 @@ pub fn open(app: &AppHandle) {
         // Same page, other view: `main.tsx` picks the call screen from the window's label.
         let built =
             WebviewWindowBuilder::new(&handle, CALL_WINDOW, WebviewUrl::App("index.html".into()))
-                .title("Appel")
+                .title("Call")
                 .inner_size(440.0, 760.0)
                 .min_inner_size(380.0, 600.0)
                 .center()

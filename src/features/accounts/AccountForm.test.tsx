@@ -19,15 +19,15 @@ const field = (label: string) => screen.getByLabelText(label) as HTMLInputElemen
 describe("AccountForm", () => {
   it("fills the optional fields while the main ones are typed, then saves them as defaults", async () => {
     render(<AccountFormDialog open onOpenChange={() => {}} account={null} />);
-    fireEvent.change(field("Serveur SIP"), { target: { value: "sip.example.com" } });
-    fireEvent.change(field("Identifiant"), { target: { value: "1001" } });
-    fireEvent.change(field("Mot de passe"), { target: { value: "pw" } });
+    fireEvent.change(field("SIP server"), { target: { value: "sip.example.com" } });
+    fireEvent.change(field("Username"), { target: { value: "1001" } });
+    fireEvent.change(field("Password"), { target: { value: "pw" } });
 
-    expect(field("Domaine SIP").value).toBe("sip.example.com");
-    expect(field("Identifiant d'authentification").value).toBe("1001");
-    expect(field("Nom du compte").value).toBe("1001@sip.example.com");
+    expect(field("SIP domain").value).toBe("sip.example.com");
+    expect(field("Authentication username").value).toBe("1001");
+    expect(field("Account name").value).toBe("1001@sip.example.com");
 
-    fireEvent.click(screen.getByRole("button", { name: /Ajouter et connecter/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add and connect/ }));
     await vi.waitFor(() => expect(invoke).toHaveBeenCalled());
     const [cmd, args] = invoke.mock.calls[0] as [string, { input: Record<string, unknown> }];
     expect(cmd).toBe("save_account");
@@ -42,16 +42,16 @@ describe("AccountForm", () => {
 
   it("a domain typed by hand is no longer overwritten by the server", () => {
     render(<AccountFormDialog open onOpenChange={() => {}} account={null} />);
-    fireEvent.change(field("Serveur SIP"), { target: { value: "sip.example.com" } });
-    fireEvent.change(field("Domaine SIP"), { target: { value: "example.com" } });
-    fireEvent.change(field("Serveur SIP"), { target: { value: "sip2.example.com" } });
-    expect(field("Domaine SIP").value).toBe("example.com");
+    fireEvent.change(field("SIP server"), { target: { value: "sip.example.com" } });
+    fireEvent.change(field("SIP domain"), { target: { value: "example.com" } });
+    fireEvent.change(field("SIP server"), { target: { value: "sip2.example.com" } });
+    expect(field("SIP domain").value).toBe("example.com");
   });
 
   it("the password can be revealed", () => {
     render(<AccountFormDialog open onOpenChange={() => {}} account={null} />);
-    expect(field("Mot de passe")).toHaveAttribute("type", "password");
-    fireEvent.click(screen.getByRole("button", { name: "Afficher le mot de passe" }));
-    expect(field("Mot de passe")).toHaveAttribute("type", "text");
+    expect(field("Password")).toHaveAttribute("type", "password");
+    fireEvent.click(screen.getByRole("button", { name: "Show the password" }));
+    expect(field("Password")).toHaveAttribute("type", "text");
   });
 });

@@ -80,16 +80,16 @@ impl Command {
             Command::Dial { target, account } => {
                 let t = target.trim();
                 if t.is_empty() {
-                    return Err("destinataire vide".into());
+                    return Err("empty recipient".into());
                 }
                 if t.len() > MAX_TARGET_LEN {
-                    return Err("destinataire trop long".into());
+                    return Err("recipient too long".into());
                 }
                 if t.chars().any(char::is_control) {
-                    return Err("destinataire invalide (caractères de contrôle)".into());
+                    return Err("invalid recipient (control characters)".into());
                 }
                 if let Some(a) = account {
-                    check_id(a, "compte")?;
+                    check_id(a, "account")?;
                 }
                 Ok(())
             }
@@ -98,7 +98,7 @@ impl Command {
             | Command::Hangup { call_id }
             | Command::Mute { call_id, .. }
             | Command::Hold { call_id, .. } => match call_id {
-                Some(id) => check_id(id, "appel"),
+                Some(id) => check_id(id, "call"),
                 None => Ok(()),
             },
             Command::Dnd { .. }
@@ -136,7 +136,7 @@ fn check_id(id: &str, what: &str) -> Result<(), String> {
     if ok {
         Ok(())
     } else {
-        Err(format!("identifiant de {what} invalide"))
+        Err(format!("invalid {what} identifier"))
     }
 }
 
@@ -284,7 +284,7 @@ impl Outcome {
         Self {
             settled: true,
             app: Some(app),
-            ..Self::new(Status::Ok, "État de l'application")
+            ..Self::new(Status::Ok, "Application state")
         }
     }
 
@@ -366,7 +366,7 @@ mod tests {
 
     #[test]
     fn the_outcome_is_plain_json_without_empty_fields() {
-        let json = serde_json::to_value(Outcome::unchanged("déjà muet", None)).unwrap();
+        let json = serde_json::to_value(Outcome::unchanged("already muted", None)).unwrap();
         assert_eq!(json["status"], "ok");
         assert_eq!(json["changed"], false);
         assert_eq!(json["settled"], true);

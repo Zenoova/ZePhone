@@ -12,84 +12,84 @@ import type {
 
 export const ROLE_LABEL: Record<Role, string> = {
   microphone: "Microphone",
-  speaker: "Sortie des conversations",
-  ringer: "Sonnerie",
+  speaker: "Conversation output",
+  ringer: "Ringtone",
 };
 
 export const TRANSPORT_LABEL: Record<Transport, string> = {
-  builtIn: "Intégré",
+  builtIn: "Built-in",
   usb: "USB",
   bluetooth: "Bluetooth",
-  display: "Écran",
-  virtual: "Virtuel",
-  other: "Autre",
+  display: "Screen",
+  virtual: "Virtual",
+  other: "Other",
 };
 
 /** What the role is doing about its choice, in words. */
 export const SOURCE_LABEL: Record<Source, string> = {
-  following: "Suit le système",
-  chosen: "Choix explicite",
-  fallback: "Périphérique de secours",
-  systemInstead: "Défaut du système (le choix est absent)",
-  nothing: "Aucun périphérique",
+  following: "Follows the system",
+  chosen: "Explicit choice",
+  fallback: "Backup device",
+  systemInstead: "System default (the choice is absent)",
+  nothing: "No device",
 };
 
 export function problemText(p: Problem): string {
   switch (p.kind) {
     case "chosenUnavailable":
-      return `« ${p.name} » n'est pas branché : il sera utilisé de nouveau dès son retour.`;
+      return `“${p.name}” is not plugged in: it will be used again as soon as it returns.`;
     case "fallbackUnavailable":
-      return `Le périphérique de secours « ${p.name} » n'est pas branché non plus.`;
+      return `The backup device “${p.name}” is not plugged in either.`;
     case "ambiguousName":
-      return `Plusieurs périphériques s'appellent « ${p.name} » et ce choix, enregistré avant que ZePhone retienne les identifiants, ne permet pas de savoir lequel : choisissez-le de nouveau.`;
+      return `Several devices are called “${p.name}” and this choice, saved before ZePhone kept identifiers, does not say which: choose it again.`;
     case "duplicateName":
-      return `Deux périphériques s'appellent « ${p.name} » : le moteur audio choisit par le nom et ne peut pas garantir lequel il ouvre.`;
+      return `Two devices are called “${p.name}”: the audio engine chooses by name and cannot guarantee which one it opens.`;
     case "nameNotSelectable":
-      return `Le moteur audio ne sait pas utiliser un périphérique dont le nom est « ${p.name} » (virgule, # ou nom trop long).`;
+      return `The audio engine cannot use a device named “${p.name}” (comma, # or name too long).`;
     case "communicationUnsupported":
-      return "Ce système n'a pas de périphérique « communication » : le périphérique par défaut est suivi.";
+      return "This system has no “communication” device: the default device is followed.";
     case "noDevice":
-      return "Aucun périphérique disponible pour cette fonction.";
+      return "No device available for this function.";
   }
 }
 
 const ASK_WHY: Record<AskWhy, string> = {
-  deviceLost: "L'appel continue, mais le son n'y passe plus. Choisissez un autre périphérique.",
+  deviceLost: "The call continues, but the sound no longer goes through it. Choose another device.",
   publicSpeaker:
-    "L'appel n'a pas été basculé sur des haut-parleurs que tout le monde entend : vous ne l'avez pas autorisé. Choisissez le périphérique à utiliser.",
-  nothingLeft: "Aucun périphérique n'est disponible. L'appel reste ouvert : branchez-en un ou choisissez-en un.",
+    "The call was not moved to speakers that everyone can hear: you did not allow it. Choose the device to use.",
+  nothingLeft: "No device is available. The call stays open: plug one in or choose one.",
 };
 
 export function noticeTitle(n: Notice): string {
   switch (n.kind) {
     case "lost":
-      return `« ${n.name} » n'est plus disponible`;
+      return `“${n.name}” is no longer available`;
     case "switched":
-      return `Le son est passé de « ${n.from} » à « ${n.to} »`;
+      return `The sound moved from “${n.from}” to “${n.to}”`;
     case "failed":
-      return `« ${n.name} » n'a pas pu être utilisé`;
+      return `“${n.name}” could not be used`;
   }
 }
 
 export function noticeDetail(n: Notice): string {
   switch (n.kind) {
     case "lost":
-      return `${ASK_WHY[n.why]}${n.blocked ? ` (« ${n.blocked} » aurait été utilisé.)` : ""}`;
+      return `${ASK_WHY[n.why]}${n.blocked ? ` (“${n.blocked}” would have been used.)` : ""}`;
     case "switched":
       return n.why === "fallback"
-        ? "Le périphérique de secours que vous avez configuré a pris le relais."
+        ? "The backup device you configured took over."
         : n.why === "systemDefault"
-          ? "Le périphérique par défaut du système a pris le relais, comme vous l'avez autorisé."
-          : "Le système a changé de périphérique par défaut et ce réglage le suit.";
+          ? "The system's default device took over, as you allowed."
+          : "The system changed its default device and this setting follows it.";
     case "failed":
-      return `${n.message}. Le périphérique précédent reste utilisé.`;
+      return `${n.message}. The previous device is still in use.`;
   }
 }
 
 /** A Bluetooth headset that is both a speaker and a microphone switches to its telephone profile when used. */
 export function bluetoothNote(d: DeviceInfo | null | undefined): string | null {
   if (!d || d.transport !== "bluetooth" || d.inputChannels === 0 || d.outputChannels === 0) return null;
-  return "Avec un casque Bluetooth, utiliser son micro le fait passer en mode téléphone : le son devient moins fidèle. C'est une contrainte du Bluetooth, pas un réglage de ZePhone.";
+  return "With a Bluetooth headset, using its microphone switches it to phone mode: the sound becomes less faithful. This is a Bluetooth constraint, not a ZePhone setting.";
 }
 
 // --- the value of a device select, and back

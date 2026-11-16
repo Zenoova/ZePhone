@@ -27,14 +27,14 @@ beforeEach(() => {
 describe("AudioSettings", () => {
   it("has the incoming and outgoing volumes", () => {
     render(<AudioSettings />);
-    expect(screen.getByRole("slider", { name: /son entrant/i })).toHaveValue("100");
-    expect(screen.getByRole("slider", { name: /son sortant/i })).toHaveValue("100");
+    expect(screen.getByRole("slider", { name: /incoming sound/i })).toHaveValue("100");
+    expect(screen.getByRole("slider", { name: /outgoing sound/i })).toHaveValue("100");
   });
 
   it("records every call by itself, unless turned off, and says it stays on this Mac", async () => {
     render(<AudioSettings />);
-    expect(screen.getByText(/restent sur ce Mac/)).toBeInTheDocument();
-    const toggle = screen.getByRole("switch", { name: "Enregistrer automatiquement les appels" });
+    expect(screen.getByText(/stay on this Mac/)).toBeInTheDocument();
+    const toggle = screen.getByRole("switch", { name: "Record calls automatically" });
     expect(toggle).toBeChecked();
     fireEvent.click(toggle);
     await waitFor(() => expect(useSettingsStore.getState().settings.recording.autoRecord).toBe(false));

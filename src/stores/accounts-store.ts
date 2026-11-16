@@ -80,7 +80,7 @@ export function summarizeRegistration(
   statuses: Record<string, AccountStatus>,
 ): { state: RegistrationState | "none"; label: string; status?: AccountStatus; account?: AccountView } {
   const enabled = accounts.filter((a) => a.enabled);
-  if (accounts.length === 0) return { state: "none", label: "Aucun compte" };
+  if (accounts.length === 0) return { state: "none", label: "No account" };
   const def = selectDefaultAccount(enabled.length ? enabled : accounts);
   const pick = (state: RegistrationState) =>
     enabled.find((a) => statuses[a.id]?.state === state && a.id === def?.id) ??

@@ -21,9 +21,9 @@ beforeEach(() => {
 describe("CallStatsDialog", () => {
   it("waits for the first measures and says so", async () => {
     show();
-    expect(await screen.findByTestId("stats-count")).toHaveTextContent("Les premières mesures arrivent");
+    expect(await screen.findByTestId("stats-count")).toHaveTextContent("The first measurements arrive in a second");
     expect(screen.queryByTestId("stats-summary")).toBeNull();
-    expect(screen.getByTestId("stats-hint")).toHaveTextContent("Mesures en cours");
+    expect(screen.getByTestId("stats-hint")).toHaveTextContent("Measuring");
     expect(invoke).toHaveBeenCalledWith("get_call_stats", { callId: "call1" });
   });
 
@@ -44,16 +44,16 @@ describe("CallStatsDialog", () => {
     show();
     const hints = within(screen.getByTestId("stats-hints")).getAllByTestId("stats-hint");
     expect(hints.map((h) => h.getAttribute("data-level"))).toEqual(["warn", "warn"]);
-    expect(screen.getByText("Un incident presque chaque seconde")).toBeInTheDocument();
+    expect(screen.getByText("An incident almost every second")).toBeInTheDocument();
   });
 
   it("keeps up with samples that arrive while it is open", () => {
     useCallStatsStore.setState({ samples: { call1: makeRun(5) } });
     show();
-    expect(screen.getByTestId("stats-count")).toHaveTextContent("5 secondes mesurées");
+    expect(screen.getByTestId("stats-count")).toHaveTextContent("5 seconds measured");
     useCallStatsStore.getState().push(makeRun(1, () => ({}), 10)[0]!);
     // the store is updated outside React's batching in tests: re-render through the DOM query
-    return screen.findByText("6 secondes mesurées");
+    return screen.findByText("6 seconds measured");
   });
 
   it("limits the charts to the chosen period but not the reading", () => {
@@ -64,9 +64,9 @@ describe("CallStatsDialog", () => {
     const jitter = screen.getByTestId("chart-jitter");
     const lastTick = () => jitter.querySelectorAll("text");
     const before = lastTick().length;
-    fireEvent.click(screen.getByRole("button", { name: "Tout" }));
-    expect(screen.getByRole("button", { name: "Tout" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
     expect(lastTick().length).toBeGreaterThanOrEqual(before - 3);
-    expect(screen.getByTestId("stats-count")).toHaveTextContent("100 secondes mesurées");
+    expect(screen.getByTestId("stats-count")).toHaveTextContent("100 seconds measured");
   });
 });

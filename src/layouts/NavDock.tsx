@@ -22,13 +22,13 @@ function OrbItem() {
     <PopoverTrigger asChild>
       <DockItem
         fixed
-        aria-label="Choisir l'orbe vocal"
+        aria-label="Choose the voice orb"
         data-testid="dock-orb"
         data-in-call={callId !== ""}
         className="bg-transparent p-0 hover:bg-transparent"
       >
         <VoiceOrb callId={callId} waiting={waiting} />
-        <DockLabel className="in-data-[state=open]:hidden">Orbe vocal</DockLabel>
+        <DockLabel className="in-data-[state=open]:hidden">Voice orb</DockLabel>
       </DockItem>
     </PopoverTrigger>
   );
@@ -43,7 +43,7 @@ export function NavDock() {
   return (
     <Popover>
       <nav
-        aria-label="Navigation principale"
+        aria-label="Main navigation"
         className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-2 pt-1 pb-2"
       >
         {/* the orb opens its picker, centred on the whole dock */}
@@ -58,7 +58,7 @@ export function NavDock() {
                 <DockItem
                   key={id}
                   active={section === id}
-                  aria-label={missed > 0 ? `${label} (${missed} en attente)` : label}
+                  aria-label={missed > 0 ? `${label} (${missed} pending)` : label}
                   onClick={() => setSection(id)}
                 >
                   <DockIcon>

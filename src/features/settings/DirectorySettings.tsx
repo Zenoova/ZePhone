@@ -40,11 +40,11 @@ const STATE_TONE: Record<SourceState, BadgeTone> = {
 };
 
 const STATE_LABEL: Record<SourceState, string> = {
-  idle: "Connectée",
-  syncing: "Synchronisation…",
-  error: "Erreur",
-  needsReauth: "À reconnecter",
-  disabled: "Déconnectée",
+  idle: "Connected",
+  syncing: "Syncing…",
+  error: "Error",
+  needsReauth: "Reconnect",
+  disabled: "Disconnected",
 };
 
 const KIND_ICON: Record<SourceKind, typeof Server> = {
@@ -63,19 +63,19 @@ type Confirm = { kind: "disconnect" | "clear" | "remove"; source: SourceView };
 
 const CONFIRM_TEXT: Record<Confirm["kind"], (name: string) => { title: string; description: string; label: string }> = {
   disconnect: (n) => ({
-    title: "Déconnecter cette source ?",
-    description: `« ${n} » est déconnectée : le mot de passe ou l'autorisation enregistré et les contacts gardés en mémoire sont effacés. Vos favoris et vos groupes sont conservés pour une prochaine connexion.`,
-    label: "Déconnecter",
+    title: "Disconnect this source?",
+    description: `“${n}” is disconnected: the saved password or authorization and the cached contacts are cleared. Your favorites and groups are kept for a future connection.`,
+    label: "Disconnect",
   }),
   clear: (n) => ({
-    title: "Effacer la mémoire de cette source ?",
-    description: `Les contacts de « ${n} » gardés en mémoire sont effacés ; la source reste connectée et sera relue à la prochaine synchronisation. Vos favoris et vos groupes sont conservés.`,
-    label: "Effacer la mémoire",
+    title: "Clear this source's cache?",
+    description: `The cached contacts of “${n}” are cleared; the source stays connected and will be read again at the next sync. Your favorites and groups are kept.`,
+    label: "Clear the cache",
   }),
   remove: (n) => ({
-    title: "Supprimer cette source ?",
-    description: `« ${n} » est supprimée, avec son mot de passe ou son autorisation, ses contacts en mémoire, et les favoris et groupes qui ne concernaient que ses contacts.`,
-    label: "Supprimer la source",
+    title: "Delete this source?",
+    description: `“${n}” is deleted, with its password or authorization, its cached contacts, and the favorites and groups that only concerned its contacts.`,
+    label: "Delete the source",
   }),
 };
 
@@ -119,11 +119,11 @@ function SourceCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="truncate font-semibold">{source.name}</h3>
             <Badge tone={STATE_TONE[source.state]} size="sm">
-              {local ? "Toujours disponible" : STATE_LABEL[source.state]}
+              {local ? "Always available" : STATE_LABEL[source.state]}
             </Badge>
             {!local && (
               <Badge tone="neutral" size="sm">
-                Lecture seule
+                Read-only
               </Badge>
             )}
           </div>
@@ -144,7 +144,7 @@ function SourceCard({
             onCheckedChange={(v) =>
               void run(() => telephony.directorySetSource(source.id, source.name, v, source.syncIntervalMin))
             }
-            aria-label={source.enabled ? `Désactiver ${source.name}` : `Activer ${source.name}`}
+            aria-label={source.enabled ? `Disable ${source.name}` : `Enable ${source.name}`}
           />
         )}
       </div>
@@ -172,7 +172,7 @@ function SourceCard({
                 variant="ghost"
                 onClick={() => void run(() => telephony.directoryOpenContactsPrivacySettings())}
               >
-                Ouvrir les réglages
+                Open settings
               </Button>
             )}
           </div>
@@ -180,8 +180,8 @@ function SourceCard({
       )}
       {source.stale && !problem && (
         <Alert tone="warning" className="mt-3">
-          La mémoire de cette source n'a pas pu être mise à jour depuis longtemps : elle sera effacée après 30 jours
-          sans synchronisation.
+          The cache of this source could not be updated for a long time: it will be cleared after 30 days without
+          syncing.
         </Alert>
       )}
 
@@ -194,27 +194,27 @@ function SourceCard({
               disabled={source.state === "syncing"}
               onClick={() => void run(() => telephony.directorySync(source.id))}
             >
-              <RefreshCw className="size-4" aria-hidden /> Synchroniser
+              <RefreshCw className="size-4" aria-hidden /> Sync
             </Button>
           )}
           {!device && (
             <Button size="sm" variant="ghost" onClick={() => onEdit(source)}>
-              <Pencil className="size-4" aria-hidden /> Modifier
+              <Pencil className="size-4" aria-hidden /> Edit
             </Button>
           )}
           {microsoft && (
             <Button size="sm" variant="ghost" onClick={() => onEdit(source)}>
-              Reconnecter
+              Reconnect
             </Button>
           )}
           <Button size="sm" variant="ghost" onClick={() => onConfirm({ kind: "disconnect", source })}>
-            <LogOut className="size-4" aria-hidden /> Se déconnecter
+            <LogOut className="size-4" aria-hidden /> Disconnect
           </Button>
           <Button size="sm" variant="ghost" onClick={() => onConfirm({ kind: "clear", source })}>
-            Effacer la mémoire
+            Clear the cache
           </Button>
           <Button size="sm" variant="ghost" className="ml-auto" onClick={() => onConfirm({ kind: "remove", source })}>
-            <Trash2 className="text-destructive size-4" aria-hidden /> Supprimer
+            <Trash2 className="text-destructive size-4" aria-hidden /> Delete
           </Button>
           <div className="basis-full sm:basis-auto">
             <Select
@@ -225,7 +225,7 @@ function SourceCard({
                 )
               }
             >
-              <SelectTrigger aria-label={`Fréquence de synchronisation de ${source.name}`} className="h-8 w-60">
+              <SelectTrigger aria-label={`Sync frequency of ${source.name}`} className="h-8 w-60">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -243,7 +243,7 @@ function SourceCard({
   );
 }
 
-/** Settings → Annuaire: where the company's contacts come from. */
+/** Settings → Directory: where the company's contacts come from. */
 export function DirectorySettings() {
   const sources = useDirectoryStore((s) => s.sources);
   const loaded = useDirectoryStore((s) => s.sourcesLoaded);
@@ -279,7 +279,7 @@ export function DirectorySettings() {
     setAsking(true);
     try {
       await telephony.directoryConnectSystemContacts();
-      toast.success("Contacts connectés : lecture en cours");
+      toast.success("Contacts connected: reading in progress");
     } catch (e) {
       setDeviceError(errorMessage(e));
     } finally {
@@ -317,12 +317,12 @@ export function DirectorySettings() {
   return (
     <div className="space-y-6">
       <SettingsSection
-        title="Annuaire d'entreprise"
-        description="Retrouvez vos collègues et vos clients dans l'annuaire, avec tous leurs numéros, sans rien recopier."
+        title="Company directory"
+        description="Find your colleagues and customers in the directory, with all their numbers, without retyping anything."
       >
         <div className="space-y-3 p-4">
-          <ul className="space-y-3" aria-label="Sources de contacts">
-            {!loaded && <li className="text-muted-foreground text-sm">Chargement…</li>}
+          <ul className="space-y-3" aria-label="Contact sources">
+            {!loaded && <li className="text-muted-foreground text-sm">Loading…</li>}
             {sources.map((s) => (
               <SourceCard
                 key={s.id}
@@ -336,14 +336,14 @@ export function DirectorySettings() {
           {loaded && sources.length <= 1 && (
             <EmptyState
               icon={Building2}
-              title="Aucun annuaire d'entreprise connecté"
-              description="Connectez un annuaire LDAP ou Microsoft 365 : ses contacts s'ajoutent à vos contacts locaux, en lecture seule."
+              title="No company directory connected"
+              description="Connect an LDAP or Microsoft 365 directory: its contacts are added to your local contacts, read-only."
             />
           )}
           {asking && (
             <Alert tone="info">
               <span data-testid="contacts-asking">
-                En attente de votre réponse à la question du système… Répondez dans la fenêtre qui s'est ouverte.
+                Waiting for your answer to the system question… Answer in the window that opened.
               </span>
             </Alert>
           )}
@@ -358,29 +358,29 @@ export function DirectorySettings() {
                     void telephony.directoryOpenContactsPrivacySettings().catch((e) => toast.error(errorMessage(e)))
                   }
                 >
-                  Ouvrir les réglages
+                  Open settings
                 </Button>
               </div>
             </Alert>
           )}
           <div className="flex flex-wrap items-center gap-2">
             <DropdownMenu
-              label="Ajouter une source"
+              label="Add a source"
               icon={<Plus className="size-4" aria-hidden />}
               items={[
                 {
-                  label: "Annuaire LDAP ou Active Directory",
+                  label: "LDAP or Active Directory directory",
                   icon: <Server className="size-4" />,
                   onSelect: () => setEditor({ type: "ldap", source: null }),
                 },
                 {
-                  label: "Microsoft 365 : annuaire de l'organisation",
+                  label: "Microsoft 365: organization directory",
                   icon: <Building2 className="size-4" />,
                   onSelect: () => setEditor({ type: "microsoft", kind: "microsoftOrg", source: null }),
                   separatorBefore: true,
                 },
                 {
-                  label: "Outlook : mes contacts personnels",
+                  label: "Outlook: my personal contacts",
                   icon: <Cloud className="size-4" />,
                   onSelect: () => setEditor({ type: "microsoft", kind: "microsoftPersonal", source: null }),
                 },
@@ -388,7 +388,7 @@ export function DirectorySettings() {
                 ...(device?.available && !sources.some((s) => s.kind === "systemContacts")
                   ? [
                       {
-                        label: `${device.name} (lecture seule)`,
+                        label: `${device.name} (read-only)`,
                         icon: <UserRound className="size-4" />,
                         onSelect: () => void connectDevice(),
                         separatorBefore: true,
@@ -398,28 +398,28 @@ export function DirectorySettings() {
               ]}
             />
             <Button variant="ghost" onClick={() => setSection("contacts")}>
-              Voir l'annuaire
+              View the directory
             </Button>
           </div>
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Comment ça marche">
+      <SettingsSection title="How it works">
         <div className="text-muted-foreground space-y-2 p-4 text-sm">
           <p>
-            Les fiches de l'entreprise sont en <strong>lecture seule</strong> : elles se modifient dans l'annuaire
-            d'origine. Vos favoris et vos groupes restent à vous, séparés des données synchronisées.
+            Company records are <strong>read-only</strong>: they are edited in the original directory. Your favorites
+            and your groups stay yours, separate from the synced data.
           </p>
           <p>
-            Les contacts sont gardés en mémoire sur cet ordinateur pour que la recherche reste instantanée et fonctionne
-            même si le serveur est injoignable. Une panne n'efface jamais l'annuaire ; la mémoire d'une source est
-            effacée à sa déconnexion, ou après 30 jours sans synchronisation réussie.
+            Contacts are kept in memory on this computer so that the search stays instant and works even if the server
+            is unreachable. An outage never erases the directory; a source's cache is cleared when it is disconnected,
+            or after 30 days without a successful sync.
           </p>
           <p>
-            Les contacts de l'appareil restent sur cet ordinateur : ZePhone les lit après votre autorisation, ne les
-            modifie jamais, et vous pouvez retirer l'autorisation à tout moment dans les réglages du système.
+            Device contacts stay on this computer: ZePhone reads them after your permission, never modifies them, and
+            you can withdraw the permission at any time in the system settings.
           </p>
-          <p>La présence (disponible, en ligne) n'est pas affichée : ZePhone ne la reçoit pas de ces sources.</p>
+          <p>Presence (available, online) is not shown: ZePhone does not receive it from these sources.</p>
         </div>
       </SettingsSection>
 

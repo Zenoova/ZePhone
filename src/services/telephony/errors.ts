@@ -10,7 +10,7 @@ export function toAppError(e: unknown): AppError {
       return { kind, message: o.message };
     }
   }
-  return { kind: "unknown", message: "Erreur inattendue" };
+  return { kind: "unknown", message: "Unexpected error" };
 }
 
 export function errorMessage(e: unknown): string {

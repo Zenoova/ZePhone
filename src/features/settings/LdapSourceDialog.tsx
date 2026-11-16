@@ -34,13 +34,13 @@ const PHONE_KINDS: PhoneKind[] = ["work", "mobile", "extension", "home", "sip", 
 
 /** What to do about each kind of failure, said under the message of the server. */
 const HINT: Record<string, string> = {
-  auth: "Vérifiez le compte de connexion (Bind DN) et son mot de passe.",
-  forbidden: "Ce compte n'a pas le droit de lire l'annuaire : demandez l'accès à votre administrateur.",
-  config: "Corrigez le réglage indiqué, puis testez à nouveau.",
-  network: "Vérifiez l'adresse, le port et votre connexion au réseau de l'entreprise (VPN).",
-  invalid: "Vérifiez la base de recherche et le filtre.",
-  server: "Le serveur est indisponible : réessayez dans un instant.",
-  throttled: "Le serveur demande de patienter : réessayez dans un instant.",
+  auth: "Check the sign-in account (Bind DN) and its password.",
+  forbidden: "This account is not allowed to read the directory: ask your administrator for access.",
+  config: "Fix the indicated setting, then test again.",
+  network: "Check the address, the port and your connection to the company network (VPN).",
+  invalid: "Check the search base and the filter.",
+  server: "The server is unavailable: try again in a moment.",
+  throttled: "The server asks you to wait: try again in a moment.",
 };
 
 interface Form {
@@ -79,7 +79,7 @@ function fromSource(source: SourceView | null): Form {
 function toInput(f: Form, id?: string): LdapSourceInput {
   return {
     id,
-    name: f.name.trim() || "Annuaire LDAP",
+    name: f.name.trim() || "LDAP directory",
     config: {
       url: f.url.trim(),
       starttls: f.starttls,
@@ -106,7 +106,7 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 }
 
 /**
- * Adds or edits an LDAP source. Nothing is turned on before the user has seen it work: "Tester la connexion" signs in
+ * Adds or edits an LDAP source. Nothing is turned on before the user has seen it work: "Test the connection" signs in
  * and shows the first contacts the settings would produce, and only a test of the settings as they are now unlocks
  * the save button.
  */
@@ -122,8 +122,8 @@ export function LdapSourceDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title={source ? "Modifier l'annuaire LDAP" : "Connecter un annuaire LDAP"}
-        description="Serveur LDAP ou Active Directory. La connexion est chiffrée et le certificat du serveur est toujours vérifié."
+        title={source ? "Edit the LDAP directory" : "Connect an LDAP directory"}
+        description="LDAP or Active Directory server. The connection is encrypted and the server's certificate is always verified."
         style={{ width: "min(calc(100vw - 2rem), 640px)" }}
       >
         <LdapForm key={source?.id ?? "new"} source={source} onDone={() => onOpenChange(false)} />
@@ -165,7 +165,7 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
     setSaving(true);
     try {
       await telephony.directorySaveLdap(input);
-      toast.success(source ? "Annuaire modifié" : "Annuaire ajouté : synchronisation en cours");
+      toast.success(source ? "Directory updated" : "Directory added: syncing");
       onDone();
     } catch (e) {
       toast.error(errorMessage(e));
@@ -186,17 +186,17 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
       }}
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field id="ldap-name" label="Nom affiché">
+        <Field id="ldap-name" label="Display name">
           <Input
             id="ldap-name"
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
-            placeholder="Annuaire de l'entreprise"
+            placeholder="Company directory"
           />
         </Field>
-        <Field id="ldap-preset" label="Type de serveur">
+        <Field id="ldap-preset" label="Server type">
           <Select value={form.preset} onValueChange={(v) => applyPreset(v as LdapPreset)}>
-            <SelectTrigger id="ldap-preset" aria-label="Type de serveur" className="w-full">
+            <SelectTrigger id="ldap-preset" aria-label="Server type" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -212,44 +212,40 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
 
       <Field
         id="ldap-url"
-        label="Adresse du serveur"
-        hint="ldaps://ldap.entreprise.fr (recommandé) ou ldap://… avec StartTLS. Un mot de passe ne circule jamais en clair."
+        label="Server address"
+        hint="ldaps://ldap.company.example (recommended) or ldap://… with StartTLS. A password never travels in clear text."
       >
         <Input
           id="ldap-url"
           value={form.url}
           onChange={(e) => set("url", e.target.value)}
-          placeholder="ldaps://ldap.entreprise.fr:636"
+          placeholder="ldaps://ldap.company.example:636"
           autoComplete="off"
           spellCheck={false}
         />
       </Field>
       <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
         <label htmlFor="ldap-starttls" className="text-sm">
-          Utiliser StartTLS <span className="text-muted-foreground text-xs">(pour une adresse ldap://)</span>
+          Use StartTLS <span className="text-muted-foreground text-xs">(for an ldap:// address)</span>
         </label>
         <Switch id="ldap-starttls" checked={form.starttls} onCheckedChange={(v) => set("starttls", v)} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field id="ldap-bind" label="Compte de connexion (Bind DN)" hint="Laissez vide pour une lecture anonyme.">
+        <Field id="ldap-bind" label="Sign-in account (Bind DN)" hint="Leave empty for anonymous reading.">
           <Input
             id="ldap-bind"
             value={form.bindDn}
             onChange={(e) => set("bindDn", e.target.value)}
-            placeholder="cn=lecteur,dc=entreprise,dc=fr"
+            placeholder="cn=reader,dc=company,dc=example"
             autoComplete="off"
             spellCheck={false}
           />
         </Field>
         <Field
           id="ldap-password"
-          label="Mot de passe"
-          hint={
-            source
-              ? "Laissez vide pour garder celui qui est enregistré."
-              : "Conservé dans le trousseau du système, jamais dans un fichier."
-          }
+          label="Password"
+          hint={source ? "Leave empty to keep the one that is saved." : "Kept in the system keychain, never in a file."}
         >
           <PasswordInput
             id="ldap-password"
@@ -262,32 +258,32 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-        <Field id="ldap-base" label="Base de recherche (Base DN)">
+        <Field id="ldap-base" label="Search base (Base DN)">
           <Input
             id="ldap-base"
             value={form.baseDn}
             onChange={(e) => set("baseDn", e.target.value)}
-            placeholder="ou=people,dc=entreprise,dc=fr"
+            placeholder="ou=people,dc=company,dc=example"
             autoComplete="off"
             spellCheck={false}
           />
         </Field>
-        <Field id="ldap-scope" label="Portée">
+        <Field id="ldap-scope" label="Scope">
           <Select value={form.scope} onValueChange={(v) => set("scope", v as LdapConfig["scope"])}>
-            <SelectTrigger id="ldap-scope" aria-label="Portée" className="w-44">
+            <SelectTrigger id="ldap-scope" aria-label="Scope" className="w-44">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="subtree">Tout l'arbre</SelectItem>
-              <SelectItem value="oneLevel">Un seul niveau</SelectItem>
+              <SelectItem value="subtree">Whole tree</SelectItem>
+              <SelectItem value="oneLevel">One level only</SelectItem>
             </SelectContent>
           </Select>
         </Field>
       </div>
       <Field
         id="ldap-filter"
-        label="Filtre"
-        hint="Seules les personnes qui répondent au filtre sont lues. Les groupes techniques et de sécurité ne sont pas importés."
+        label="Filter"
+        hint="Only the people matching the filter are read. Technical and security groups are not imported."
       >
         <Input
           id="ldap-filter"
@@ -299,23 +295,22 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
       </Field>
 
       <details className="rounded-lg border px-3 py-2 text-sm">
-        <summary className="cursor-pointer font-medium select-none">Correspondance des champs</summary>
+        <summary className="cursor-pointer font-medium select-none">Field mapping</summary>
         <div className="mt-3 space-y-3">
           <p className="text-muted-foreground text-xs">
-            Pour chaque champ, les attributs du serveur à lire (le premier qui existe est retenu), séparés par des
-            virgules.
+            For each field, the server attributes to read (the first that exists is used), separated by virgules.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {(
               [
-                ["id", "Identifiant stable"],
-                ["displayName", "Nom affiché"],
-                ["firstName", "Prénom"],
-                ["lastName", "Nom"],
+                ["id", "Stable identifier"],
+                ["displayName", "Display name"],
+                ["firstName", "First name"],
+                ["lastName", "Name"],
                 ["email", "E-mail"],
-                ["company", "Entreprise"],
-                ["department", "Service"],
-                ["title", "Fonction"],
+                ["company", "Company"],
+                ["department", "Department"],
+                ["title", "Job title"],
               ] as const
             ).map(([k, label]) => (
               <Field key={k} id={`map-${k}`} label={label}>
@@ -330,11 +325,11 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
             ))}
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-medium">Numéros de téléphone</p>
+            <p className="text-sm font-medium">Phone numbers</p>
             {form.mapping.phones.map((p, i) => (
               <div key={i} className="flex gap-2" data-testid="phone-mapping">
                 <Input
-                  aria-label={`Attribut du numéro ${i + 1}`}
+                  aria-label={`Number attribute ${i + 1}`}
                   value={p.attribute}
                   onChange={(e) =>
                     setMapping({
@@ -352,7 +347,7 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
                     })
                   }
                 >
-                  <SelectTrigger aria-label={`Type du numéro ${i + 1}`} className="w-44 shrink-0">
+                  <SelectTrigger aria-label={`Number type ${i + 1}`} className="w-44 shrink-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -367,7 +362,7 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
                   type="button"
                   variant="ghost"
                   size="sm"
-                  aria-label={`Retirer le numéro ${i + 1}`}
+                  aria-label={`Remove number ${i + 1}`}
                   onClick={() => setMapping({ phones: form.mapping.phones.filter((_, j) => j !== i) })}
                 >
                   <Trash2 className="size-4" aria-hidden />
@@ -380,15 +375,15 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
               size="sm"
               onClick={() => setMapping({ phones: [...form.mapping.phones, { attribute: "", kind: "other" }] })}
             >
-              <Plus className="size-4" aria-hidden /> Ajouter un attribut de numéro
+              <Plus className="size-4" aria-hidden /> Add a number attribute
             </Button>
           </div>
         </div>
       </details>
 
-      <Field id="ldap-interval" label="Synchronisation automatique">
+      <Field id="ldap-interval" label="Automatic sync">
         <Select value={form.interval} onValueChange={(v) => set("interval", v)}>
-          <SelectTrigger id="ldap-interval" aria-label="Synchronisation automatique" className="w-64">
+          <SelectTrigger id="ldap-interval" aria-label="Automatic sync" className="w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -412,15 +407,15 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
       {result?.ok && result.report && (
         <div className="space-y-2" data-testid="ldap-test-ok">
           <Alert tone="info">
-            Connexion réussie{result.report.authenticated ? "" : " (lecture anonyme)"}. Voici les premiers contacts que
-            ces réglages donneront : si c'est bon, enregistrez pour activer la source.
+            Connection successful{result.report.authenticated ? "" : " (anonymous read)"}. Here are the first contacts
+            these settings will give: if it looks right, save to enable the source.
           </Alert>
           {result.report.warnings.map((w) => (
             <Alert key={w} tone="warning">
               {w}
             </Alert>
           ))}
-          <ul className="max-h-48 divide-y overflow-y-auto rounded-xl border text-sm" aria-label="Aperçu des contacts">
+          <ul className="max-h-48 divide-y overflow-y-auto rounded-xl border text-sm" aria-label="Contacts preview">
             {result.report.preview.map((c) => (
               <li key={c.externalId} className="px-3 py-2" data-testid="preview-contact">
                 <p className="font-medium">{c.displayName || `${c.firstName} ${c.lastName}`.trim()}</p>
@@ -437,7 +432,7 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
 
       <div className="flex justify-end gap-2 pt-1">
         <Button type="button" variant="ghost" onClick={onDone}>
-          Annuler
+          Cancel
         </Button>
         <Button
           type="button"
@@ -446,15 +441,15 @@ function LdapForm({ source, onDone }: { source: SourceView | null; onDone: () =>
           disabled={testing || saving}
           onClick={() => void runTest()}
         >
-          Tester la connexion
+          Test the connection
         </Button>
         <Button
           type="submit"
           disabled={!tested || saving}
           loading={saving}
-          title={tested ? undefined : "Testez d'abord la connexion"}
+          title={tested ? undefined : "Test the connection first"}
         >
-          {source ? "Enregistrer" : "Enregistrer et activer"}
+          {source ? "Save" : "Save and enable"}
         </Button>
       </div>
     </form>

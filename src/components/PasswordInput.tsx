@@ -12,9 +12,9 @@ export function PasswordInput({ className, ...props }: Omit<React.ComponentProps
       <Input {...props} type={visible ? "text" : "password"} className={cn("pr-10", className)} spellCheck={false} />
       <button
         type="button"
-        aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        aria-label={visible ? "Hide the password" : "Show the password"}
         aria-pressed={visible}
-        title={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+        title={visible ? "Hide the password" : "Show the password"}
         onClick={() => setVisible((v) => !v)}
         // Keep the caret in the field when toggling with the mouse.
         onMouseDown={(e) => e.preventDefault()}

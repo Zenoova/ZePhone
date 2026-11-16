@@ -44,7 +44,7 @@ function AccountRow({ account }: { account: AccountView }) {
       <Switch
         checked={account.enabled}
         onCheckedChange={(v) => void setEnabled(account.id, v)}
-        aria-label={account.enabled ? `Désactiver ${account.label}` : `Activer ${account.label}`}
+        aria-label={account.enabled ? `Disable ${account.label}` : `Enable ${account.label}`}
       />
     </li>
   );
@@ -70,7 +70,7 @@ export function AccountsDockItem() {
         <PopoverTrigger asChild>
           <DockItem
             fixed
-            aria-label="Comptes SIP"
+            aria-label="SIP accounts"
             data-testid="dock-accounts"
             className="bg-transparent p-0 hover:bg-transparent"
           >
@@ -86,7 +86,7 @@ export function AccountsDockItem() {
               </DockIcon>
             )}
             <DockLabel className="in-data-[state=open]:hidden">
-              {account ? `${account.label} · ${availability(account, current.status)}` : "Comptes SIP"}
+              {account ? `${account.label} · ${availability(account, current.status)}` : "SIP accounts"}
             </DockLabel>
           </DockItem>
         </PopoverTrigger>
@@ -99,13 +99,13 @@ export function AccountsDockItem() {
           data-testid="accounts-popover"
         >
           {accounts.length > 0 ? (
-            <ul className="mb-2 max-h-72 space-y-0.5 overflow-y-auto" aria-label="Comptes SIP">
+            <ul className="mb-2 max-h-72 space-y-0.5 overflow-y-auto" aria-label="SIP accounts">
               {accounts.map((a) => (
                 <AccountRow key={a.id} account={a} />
               ))}
             </ul>
           ) : (
-            <p className="text-muted-foreground px-2 py-3 text-sm">Aucun compte SIP pour l'instant.</p>
+            <p className="text-muted-foreground px-2 py-3 text-sm">No SIP account yet.</p>
           )}
           <Button
             variant="secondary"
@@ -115,7 +115,7 @@ export function AccountsDockItem() {
               setAdding(true);
             }}
           >
-            <Plus className="size-4" aria-hidden /> Ajouter un compte SIP
+            <Plus className="size-4" aria-hidden /> Add a SIP account
           </Button>
         </PopoverContent>
       </Popover>

@@ -428,13 +428,13 @@ async fn the_state_shows_what_the_engine_confirmed_not_what_was_asked() {
     assert_eq!(target.log.lock().unwrap().len(), 3);
 
     // The engine refuses a new device: the old one remains the one in use, and the refusal is shown.
-    *target.refuse.lock().unwrap() = Some("périphérique inconnu".into());
+    *target.refuse.lock().unwrap() = Some("unknown device".into());
     let (r2, _, t2) = service(
         Routing::default(),
         snap(vec![speakers(), mic()], "mic", "spk"),
     );
     r2.refresh().await;
-    *t2.refuse.lock().unwrap() = Some("périphérique inconnu".into());
+    *t2.refuse.lock().unwrap() = Some("unknown device".into());
     let usb = dev("u2", "Desk Speaker", Transport::Usb, 0, 2);
     let (r3, sys3, t3) = service(
         Routing::default(),
@@ -442,7 +442,7 @@ async fn the_state_shows_what_the_engine_confirmed_not_what_was_asked() {
     );
     r3.refresh().await;
     sys3.set(snap(vec![speakers(), mic(), usb], "mic", "u2"));
-    *t3.refuse.lock().unwrap() = Some("périphérique inconnu".into());
+    *t3.refuse.lock().unwrap() = Some("unknown device".into());
     r3.refresh().await;
     let st = r3.state();
     let spk = st.roles.iter().find(|x| x.role == Role::Speaker).unwrap();
@@ -452,7 +452,7 @@ async fn the_state_shows_what_the_engine_confirmed_not_what_was_asked() {
         "still on the previous device"
     );
     assert_eq!(spk.resolution.used.as_ref().unwrap().uid, "u2");
-    assert_eq!(spk.refused.as_deref(), Some("périphérique inconnu"));
+    assert_eq!(spk.refused.as_deref(), Some("unknown device"));
 }
 
 #[tokio::test]

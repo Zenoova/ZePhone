@@ -12,14 +12,14 @@ import { NotificationSettings } from "./NotificationSettings";
 import { ShortcutsSettings } from "./ShortcutsSettings";
 
 const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
-  { id: "accounts", label: "Comptes SIP" },
-  { id: "directory", label: "Annuaire" },
+  { id: "accounts", label: "SIP accounts" },
+  { id: "directory", label: "Directory" },
   { id: "audio", label: "Audio" },
-  { id: "network", label: "Réseau" },
+  { id: "network", label: "Network" },
   { id: "notifications", label: "Notifications" },
-  { id: "shortcuts", label: "Raccourcis" },
-  { id: "general", label: "Général" },
-  { id: "about", label: "À propos" },
+  { id: "shortcuts", label: "Shortcuts" },
+  { id: "general", label: "General" },
+  { id: "about", label: "About" },
 ];
 
 export function SettingsPage() {
@@ -28,10 +28,10 @@ export function SettingsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Paramètres" />
+      <PageHeader title="Settings" />
       <div className="px-6 pb-3">
         <Tabs value={tab} onValueChange={(v) => openSettings(v as SettingsTab)}>
-          <TabsList aria-label="Catégories de paramètres">
+          <TabsList aria-label="Settings categories">
             {TABS.map(({ id, label }) => (
               <TabsTrigger key={id} value={id}>
                 {label}

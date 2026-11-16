@@ -2,7 +2,7 @@
 //! Digest authentication, SIP routing, RTP relaying, hold, DTMF and REFER.
 //!
 //! Opt-in: set `ZEPHONE_TEST_PBX=127.0.0.1:15060` and `ZEPHONE_TEST_PBX_PASSWORD=...` and have
-//! FreeSWITCH running with directory users 1000..1002 (see README "Tester avec FreeSWITCH").
+//! FreeSWITCH running with directory users 1000..1002 (see README "Test with FreeSWITCH").
 //! Skipped otherwise.
 //!
 //! Run: `cargo test --test pbx_freeswitch -- --nocapture --test-threads=1`
@@ -256,7 +256,7 @@ async fn zephone_registers_and_makes_and_receives_calls_through_freeswitch() {
 
     db.save_contact(&zephone_lib::sip::types::ContactInput {
         id: None,
-        first_name: "Poste".into(),
+        first_name: "Extension".into(),
         last_name: "Mille-un".into(),
         company: None,
         number: "1001".into(),
@@ -368,7 +368,10 @@ async fn zephone_registers_and_makes_and_receives_calls_through_freeswitch() {
     let h = db.list_history(&HistoryFilter::default()).unwrap();
     assert_eq!(h[0].result, CallResult::Answered);
     assert_eq!(h[0].direction, CallDirection::Outgoing);
-    assert_eq!(h[0].contact_name.as_deref(), Some("Poste Mille-un"));
+    assert_eq!(
+        h[0].contact_name.as_deref(),
+        Some("Extension Thousand-and-one")
+    );
     assert_eq!(h[0].account_id.as_deref(), Some(view.account.id.as_str()));
 
     // ---- 1001 calls ZePhone: incoming, answered, then transferred to 1002
@@ -386,7 +389,7 @@ async fn zephone_registers_and_makes_and_receives_calls_through_freeswitch() {
     assert_eq!(inc.remote_number, "1001");
     assert_eq!(
         inc.remote_name.as_deref(),
-        Some("Poste Mille-un"),
+        Some("Extension Thousand-and-one"),
         "contact name wins over the PBX display name"
     );
     mgr.answer(&inc.id).await.unwrap();

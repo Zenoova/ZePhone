@@ -21,22 +21,22 @@ export function formatDurationHuman(totalSeconds: number): string {
   return `${m} min ${String(s % 60).padStart(2, "0")} s`;
 }
 
-const timeFmt = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
-const dayFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short" });
-const dayYearFmt = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+const timeFmt = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit" });
+const dayFmt = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short" });
+const dayYearFmt = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", year: "numeric" });
 
 function startOfDay(d: Date): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-/** "Aujourd'hui 14:32", "Hier 09:10", "12 nov. 14:32", "3 janv. 2025 08:00". */
+/** "Today 02:32 PM", "Yesterday 09:10 AM", "Nov 12, 02:32 PM", "Jan 3, 2025, 08:00 AM". */
 export function formatDateTime(iso: string, now: Date = new Date()): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   const dayDiff = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000);
   const time = timeFmt.format(d);
-  if (dayDiff === 0) return `Aujourd'hui ${time}`;
-  if (dayDiff === 1) return `Hier ${time}`;
+  if (dayDiff === 0) return `Today ${time}`;
+  if (dayDiff === 1) return `Yesterday ${time}`;
   const day = d.getFullYear() === now.getFullYear() ? dayFmt.format(d) : dayYearFmt.format(d);
   return `${day} ${time}`;
 }
@@ -58,14 +58,14 @@ export function initials(name: string): string {
 }
 
 export function callDisplayName(call: Pick<Call, "remoteName" | "remoteNumber">): string {
-  return call.remoteName?.trim() || call.remoteNumber || "Numéro inconnu";
+  return call.remoteName?.trim() || call.remoteNumber || "Unknown number";
 }
 
-/** "42 Ko", "3,4 Mo": a file size in French units. */
+/** "42 KB", "3.4 MB": a file size. */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "";
-  if (bytes < 1000) return `${Math.round(bytes)} o`;
-  const units = ["Ko", "Mo", "Go"];
+  if (bytes < 1000) return `${Math.round(bytes)} B`;
+  const units = ["KB", "MB", "GB"];
   let value = bytes;
   let i = -1;
   do {
@@ -73,6 +73,6 @@ export function formatBytes(bytes: number): string {
     i += 1;
   } while (value >= 1000 && i < units.length - 1);
   const tenth = Math.round(value * 10) / 10;
-  const text = value >= 100 || Number.isInteger(tenth) ? String(Math.round(value)) : tenth.toFixed(1).replace(".", ",");
+  const text = value >= 100 || Number.isInteger(tenth) ? String(Math.round(value)) : tenth.toFixed(1);
   return `${text} ${units[i]}`;
 }

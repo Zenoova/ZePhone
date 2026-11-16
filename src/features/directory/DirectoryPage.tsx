@@ -52,14 +52,14 @@ function SourceNotice({ source }: { source: SourceView }) {
   const openSettings = useUiStore((s) => s.openSettings);
   const { action, label } = failureAction(source);
   const kept = source.lastSuccessAt
-    ? ` Les contacts déjà reçus sont conservés (dernière synchronisation ${relativeTime(source.lastSuccessAt)}).`
+    ? ` Contacts already received are kept (last sync ${relativeTime(source.lastSuccessAt)}).`
     : "";
   const text =
     source.state === "needsReauth"
-      ? `${source.name} : reconnexion nécessaire.${kept}`
+      ? `${source.name}: reconnection needed.${kept}`
       : source.state === "error"
-        ? `${source.name} : ${source.lastError ?? "erreur de synchronisation"}${kept}`
-        : `${source.name} : la mémoire locale n'est plus à jour (dernière synchronisation ${relativeTime(source.lastSuccessAt)}).`;
+        ? `${source.name}: ${source.lastError ?? "sync error"}${kept}`
+        : `${source.name}: the local cache is out of date (last sync ${relativeTime(source.lastSuccessAt)}).`;
 
   const act = async () => {
     if (action === "retry" || source.state === "idle") {
@@ -79,7 +79,7 @@ function SourceNotice({ source }: { source: SourceView }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="source-notice">
         <span>{text}</span>
         <Button size="sm" variant="secondary" onClick={() => void act()}>
-          {action === "none" ? "Synchroniser" : label}
+          {action === "none" ? "Sync" : label}
         </Button>
       </div>
     </Alert>
@@ -88,12 +88,7 @@ function SourceNotice({ source }: { source: SourceView }) {
 
 function SkeletonRows() {
   return (
-    <div
-      className="space-y-1 px-1"
-      aria-busy="true"
-      aria-label="Chargement de l'annuaire"
-      data-testid="directory-loading"
-    >
+    <div className="space-y-1 px-1" aria-busy="true" aria-label="Loading the directory" data-testid="directory-loading">
       {Array.from({ length: 7 }, (_, i) => (
         <div key={i} className="flex items-center gap-3 px-3 py-2.5">
           <div className="bg-muted size-10 animate-pulse rounded-full" />
@@ -263,11 +258,11 @@ export function DirectoryPage() {
       return (
         <EmptyState
           icon={Search}
-          title="La recherche a échoué"
+          title="The search failed"
           description={error}
           action={
             <Button variant="secondary" onClick={() => void search()}>
-              Réessayer
+              Try again
             </Button>
           }
         />
@@ -277,11 +272,11 @@ export function DirectoryPage() {
       return (
         <EmptyState
           icon={Search}
-          title="Aucun résultat"
-          description="Personne ne correspond à cette recherche. Essayez un autre nom, un numéro ou retirez un filtre."
+          title="No results"
+          description="Nobody matches this search. Try another name or a number, or remove a filter."
           action={
             <Button variant="secondary" onClick={() => useDirectoryStore.getState().resetFilters()}>
-              Effacer la recherche et les filtres
+              Clear the search and the filters
             </Button>
           }
         />
@@ -291,19 +286,19 @@ export function DirectoryPage() {
       return (
         <EmptyState
           icon={Building2}
-          title="Synchronisation en cours…"
-          description="Les contacts apparaissent dès que la première lecture est terminée."
+          title="Syncing…"
+          description="Contacts appear as soon as the first read is done."
         />
       );
     }
     return (
       <EmptyState
         icon={Users}
-        title="L'annuaire est vide"
+        title="The directory is empty"
         description={
           connected
-            ? "Les sources connectées ne contiennent encore aucun contact joignable."
-            : "Ajoutez un contact local, ou connectez l'annuaire de votre entreprise (LDAP, Microsoft 365) pour retrouver vos collègues en quelques secondes."
+            ? "The connected sources do not contain any reachable contact yet."
+            : "Add a local contact, or connect your company directory (LDAP, Microsoft 365) to find your colleagues in seconds."
         }
         action={
           <div className="flex gap-2">
@@ -313,10 +308,10 @@ export function DirectoryPage() {
                 setFormOpen(true);
               }}
             >
-              <Plus className="size-4" aria-hidden /> Nouveau contact
+              <Plus className="size-4" aria-hidden /> New contact
             </Button>
             <Button variant="secondary" onClick={() => openSettings("directory")}>
-              Connecter un annuaire
+              Connect a directory
             </Button>
           </div>
         }
@@ -327,12 +322,12 @@ export function DirectoryPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Annuaire"
-        description="Retrouvez un collègue ou un client, puis appelez-le ou transférez-lui un appel"
+        title="Directory"
+        description="Find a colleague or a customer, then call them or transfer a call to them"
         actions={
           <>
             <Button variant="ghost" onClick={() => setGroupsOpen(true)}>
-              <FolderPlus className="size-4" aria-hidden /> Groupes
+              <FolderPlus className="size-4" aria-hidden /> Groups
             </Button>
             <Button
               onClick={() => {
@@ -340,7 +335,7 @@ export function DirectoryPage() {
                 setFormOpen(true);
               }}
             >
-              <Plus className="size-4" aria-hidden /> Nouveau contact
+              <Plus className="size-4" aria-hidden /> New contact
             </Button>
           </>
         }
@@ -357,8 +352,8 @@ export function DirectoryPage() {
             value={filters.text}
             onChange={(e) => change({ text: e.target.value })}
             onKeyDown={onSearchKey}
-            placeholder="Nom, prénom, entreprise, service, e-mail ou numéro…"
-            aria-label="Rechercher dans l'annuaire"
+            placeholder="Name, first name, company, department, e-mail or number…"
+            aria-label="Search the directory"
             aria-controls={LIST_ID}
             autoComplete="off"
             spellCheck={false}
@@ -367,7 +362,7 @@ export function DirectoryPage() {
           {filters.text && (
             <button
               type="button"
-              aria-label="Effacer la recherche"
+              aria-label="Clear the search"
               className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2"
               onClick={() => {
                 change({ text: "" });
@@ -379,14 +374,15 @@ export function DirectoryPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtres">
+        <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filters">
           <Button
             size="sm"
             variant={filters.favoritesOnly ? "secondary" : "ghost"}
             aria-pressed={filters.favoritesOnly}
             onClick={() => change({ favoritesOnly: !filters.favoritesOnly })}
           >
-            <Star className={cn("size-4", filters.favoritesOnly && "text-warning fill-current")} aria-hidden /> Favoris
+            <Star className={cn("size-4", filters.favoritesOnly && "text-warning fill-current")} aria-hidden />{" "}
+            Favorites
           </Button>
           {sources.length > 1 &&
             sources.map((s) => (
@@ -403,11 +399,11 @@ export function DirectoryPage() {
             ))}
           {groups.length > 0 && (
             <Select value={filters.groupId ?? ALL} onValueChange={(v) => change({ groupId: v === ALL ? null : v })}>
-              <SelectTrigger aria-label="Filtrer par groupe" className="h-8 w-44">
+              <SelectTrigger aria-label="Filter by group" className="h-8 w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>Tous mes groupes</SelectItem>
+                <SelectItem value={ALL}>All my groups</SelectItem>
                 {groups.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     {g.name} ({g.memberCount})
@@ -421,11 +417,11 @@ export function DirectoryPage() {
               value={filters.department ?? ALL}
               onValueChange={(v) => change({ department: v === ALL ? null : v })}
             >
-              <SelectTrigger aria-label="Filtrer par service" className="h-8 w-44">
+              <SelectTrigger aria-label="Filter by department" className="h-8 w-44">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL}>Tous les services</SelectItem>
+                <SelectItem value={ALL}>All departments</SelectItem>
                 {departments.map((d) => (
                   <SelectItem key={d.name} value={d.name}>
                     {d.name} ({d.count})
@@ -441,7 +437,7 @@ export function DirectoryPage() {
             className="ml-auto"
             onClick={() => useDirectoryStore.getState().setSelecting(!selecting)}
           >
-            <ListChecks className="size-4" aria-hidden /> Sélectionner
+            <ListChecks className="size-4" aria-hidden /> Select
           </Button>
         </div>
 
@@ -453,12 +449,12 @@ export function DirectoryPage() {
           {loaded && total > 0 && (
             <span data-testid="directory-count">
               {total} contact{total > 1 ? "s" : ""}
-              {filtered ? " trouvé" + (total > 1 ? "s" : "") : ""}
+              {filtered ? " found" + (total > 1 ? "s" : "") : ""}
             </span>
           )}
           {syncing.length > 0 && (
             <span className="flex items-center gap-1.5" data-testid="directory-syncing">
-              <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> Synchronisation de{" "}
+              <LoaderCircle className="size-3.5 animate-spin" aria-hidden /> Syncing{" "}
               {syncing.map((s) => s.name).join(", ")}…
             </span>
           )}
@@ -469,15 +465,13 @@ export function DirectoryPage() {
             className="bg-muted/60 flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 text-sm"
             data-testid="selection-bar"
           >
-            <span>
-              {selection.length} sélectionné{selection.length > 1 ? "s" : ""}
-            </span>
+            <span>{selection.length} selected</span>
             <GroupPicker
               entries={selectedEntries}
               onManage={() => setGroupsOpen(true)}
               trigger={
                 <Button size="sm" variant="secondary" disabled={selection.length === 0}>
-                  Ajouter au groupe…
+                  Add to group…
                 </Button>
               }
             />
@@ -491,7 +485,7 @@ export function DirectoryPage() {
                   useDirectoryStore.getState().clearSelection();
                 }}
               >
-                Retirer de ce groupe
+                Remove from this group
               </Button>
             )}
             <Button
@@ -501,7 +495,7 @@ export function DirectoryPage() {
                 items.forEach((i) => !selection.includes(i.id) && useDirectoryStore.getState().toggleSelected(i.id))
               }
             >
-              Tout sélectionner ({items.length})
+              Select all ({items.length})
             </Button>
             <Button
               size="sm"
@@ -524,7 +518,7 @@ export function DirectoryPage() {
           <VirtualList
             ref={listRef}
             id={LIST_ID}
-            label="Résultats de l'annuaire"
+            label="Directory results"
             count={total}
             rowHeight={ROW_HEIGHT}
             activeIndex={activeIndex}
@@ -584,9 +578,9 @@ export function DirectoryPage() {
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(o) => !o && setDeleting(null)}
-        title="Supprimer ce contact ?"
-        description={deleting ? `« ${deleting.displayName} » sera définitivement supprimé de vos contacts locaux.` : ""}
-        confirmLabel="Supprimer"
+        title="Delete this contact?"
+        description={deleting ? `“${deleting.displayName}” will be permanently deleted from your local contacts.` : ""}
+        confirmLabel="Delete"
         onConfirm={() => {
           const id = deleting?.sources[0]?.externalId;
           if (id) void useContactsStore.getState().remove(id);

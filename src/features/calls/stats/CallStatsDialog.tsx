@@ -16,7 +16,7 @@ const NO_SAMPLES: CallStatsSample[] = [];
 const RANGES: Array<{ secs: number; label: string }> = [
   { secs: 60, label: "1 min" },
   { secs: 300, label: "5 min" },
-  { secs: 0, label: "Tout" },
+  { secs: 0, label: "All" },
 ];
 
 const HINT_ICON: Record<HintLevel, typeof Info> = { ok: CircleCheck, info: Info, warn: CircleAlert };
@@ -82,18 +82,18 @@ export function CallStatsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title="Statistiques avancées"
-        description="Ce que le moteur mesure sur le son de l'appel, une fois par seconde."
+        title="Advanced statistics"
+        description="What the engine measures on the call's sound, once per second."
         style={{ width: "min(calc(100vw - 2rem), 980px)" }}
       >
         <div className="space-y-4" data-testid="call-stats">
           <div className="flex items-center justify-between gap-3">
             <p className="text-muted-foreground text-xs" data-testid="stats-count">
               {all.length === 0
-                ? "Les premières mesures arrivent dans une seconde."
-                : `${all.length} ${all.length > 1 ? "secondes mesurées" : "seconde mesurée"}`}
+                ? "The first measurements arrive in a second."
+                : `${all.length} ${all.length > 1 ? "seconds measured" : "second measured"}`}
             </p>
-            <div className="flex gap-1" role="group" aria-label="Période affichée">
+            <div className="flex gap-1" role="group" aria-label="Period shown">
               {RANGES.map((r) => (
                 <Button
                   key={r.secs}
@@ -111,15 +111,18 @@ export function CallStatsDialog({
           {summary && (
             <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" data-testid="stats-summary">
               <Tile label="Codec" value={summary.codec || "—"} sub={`${summary.clockRate / 1000} kHz`} />
-              <Tile label="Gigue reçue" value={ms(summary.rxJitterAvg)} sub={`jusqu'à ${ms(summary.rxJitterMax)}`} />
-              <Tile label="Aller-retour" value={summary.rttMs === null ? "—" : ms(summary.rttMs)} />
-              <Tile label="Mémoire tampon" value={ms(summary.jbufDelayAvg)} sub="retard ajouté" />
-              <Tile label="Paquets perdus" value={`${summary.lossPct.toFixed(1)} %`} />
-              <Tile label="Secondes à incident" value={`${summary.incidents} / ${summary.seconds}`} />
+              <Tile label="Received jitter" value={ms(summary.rxJitterAvg)} sub={`up to ${ms(summary.rxJitterMax)}`} />
+              <Tile label="Round trip" value={summary.rttMs === null ? "—" : ms(summary.rttMs)} />
+              <Tile label="Buffer" value={ms(summary.jbufDelayAvg)} sub="added delay" />
+              <Tile label="Lost packets" value={`${summary.lossPct.toFixed(1)} %`} />
+              <Tile label="Seconds with problems" value={`${summary.incidents} / ${summary.seconds}`} />
             </dl>
           )}
 
-          <section aria-label="Lecture des mesures" className="border-border space-y-3 rounded-xl border p-3 text-sm">
+          <section
+            aria-label="Reading the measurements"
+            className="border-border space-y-3 rounded-xl border p-3 text-sm"
+          >
             <ul className="space-y-3" data-testid="stats-hints">
               {hints.map((h) => (
                 <HintRow key={h.id} hint={h} />
@@ -130,84 +133,84 @@ export function CallStatsDialog({
           <div className="grid grid-cols-1 gap-x-6 gap-y-5 min-[820px]:grid-cols-2">
             <TimeChart
               testId="chart-jitter"
-              title="Gigue et aller-retour"
-              hint={`Irrégularité d'arrivée des paquets : au-dessus de ${JITTER_WARN_MS} ms, le son se dégrade.`}
+              title="Jitter and round trip"
+              hint={`Packet arrival irregularity: above ${JITTER_WARN_MS} ms, the sound degrades.`}
               xs={xs}
               unit="ms"
               minTop={20}
               thresholds={[{ value: JITTER_WARN_MS, label: `${JITTER_WARN_MS} ms` }]}
               series={[
-                { key: "rx", label: "Gigue reçue", slot: 1, values: col((s) => s.rxJitterMs) },
-                { key: "tx", label: "Gigue de notre voix", slot: 2, values: col((s) => s.txJitterMs) },
-                { key: "rtt", label: "Aller-retour", slot: 3, values: col((s) => s.rttMs) },
+                { key: "rx", label: "Received jitter", slot: 1, values: col((s) => s.rxJitterMs) },
+                { key: "tx", label: "Jitter of our voice", slot: 2, values: col((s) => s.txJitterMs) },
+                { key: "rtt", label: "Round trip", slot: 3, values: col((s) => s.rttMs) },
               ]}
             />
             <TimeChart
               testId="chart-incidents"
-              title="Incidents sur le son reçu"
-              hint="Par seconde. Chaque barre est un trou possible dans la voix."
+              title="Problems with the received sound"
+              hint="Per second. Each bar is a possible gap in the voice."
               kind="bars"
               xs={xs}
               unit="paquets"
               minTop={4}
               digits={0}
               series={[
-                { key: "late", label: "Arrivés trop tard", slot: 1, values: col((s) => s.jbufLate) },
+                { key: "late", label: "Arrived too late", slot: 1, values: col((s) => s.jbufLate) },
                 { key: "lost", label: "Perdus", slot: 2, values: col((s) => s.jbufLost) },
-                { key: "overflow", label: "Débordements", slot: 3, values: col((s) => s.jbufOverflow) },
-                { key: "flush", label: "Vidages", slot: 4, values: col((s) => s.jbufFlush) },
+                { key: "overflow", label: "Overflows", slot: 3, values: col((s) => s.jbufOverflow) },
+                { key: "flush", label: "Flushes", slot: 4, values: col((s) => s.jbufFlush) },
               ]}
             />
             <TimeChart
               testId="chart-blocks"
-              title="Régularité des blocs audio"
-              hint={`Attente la plus longue entre deux blocs, par seconde : ${BLOCK_MS} ms quand tout va bien.`}
+              title="Regularity of the audio blocks"
+              hint={`Longest wait between two blocks, per second: ${BLOCK_MS} ms when all is well.`}
               xs={xs}
               unit="ms"
               minTop={50}
               thresholds={[
                 { value: BLOCK_MS, label: `${BLOCK_MS} ms` },
-                { value: GAP_WARN_MS, label: "coupure audible" },
+                { value: GAP_WARN_MS, label: "audible dropout" },
               ]}
               series={[
-                { key: "rx", label: "Vers le haut-parleur", slot: 1, values: col((s) => s.rxGapMaxMs) },
-                { key: "tx", label: "Depuis le micro", slot: 2, values: col((s) => s.txGapMaxMs) },
+                { key: "rx", label: "To the speaker", slot: 1, values: col((s) => s.rxGapMaxMs) },
+                { key: "tx", label: "From the microphone", slot: 2, values: col((s) => s.txGapMaxMs) },
               ]}
             />
             <TimeChart
               testId="chart-buffer"
-              title="Mémoire tampon"
-              hint="Retard que le tampon ajoute pour absorber la gigue : trop bas, la moindre irrégularité coupe."
+              title="Buffer"
+              hint="Delay that the buffer adds to absorb jitter: too low, and the slightest irregularity cuts out."
               xs={xs}
               unit="ms"
               minTop={100}
               digits={0}
-              series={[{ key: "delay", label: "Retard ajouté", slot: 1, values: col((s) => s.jbufDelayMs) }]}
+              series={[{ key: "delay", label: "Added delay", slot: 1, values: col((s) => s.jbufDelayMs) }]}
             />
             <TimeChart
               testId="chart-bitrate"
-              title="Débit"
-              hint="Un codec régulier envoie un débit constant ; des creux sont des paquets manquants."
+              title="Bitrate"
+              hint="A steady codec sends a constant bitrate; dips are missing packets."
               xs={xs}
               unit="kbit/s"
               minTop={16}
               digits={0}
               series={[
-                { key: "rx", label: "Reçu", slot: 1, values: col((s) => s.rxBitrate / 1000) },
-                { key: "tx", label: "Envoyé", slot: 2, values: col((s) => s.txBitrate / 1000) },
+                { key: "rx", label: "Received", slot: 1, values: col((s) => s.rxBitrate / 1000) },
+                { key: "tx", label: "Sent", slot: 2, values: col((s) => s.txBitrate / 1000) },
               ]}
             />
             <TimeChart
               testId="chart-filter"
-              title="Temps de traitement du filtre audio"
-              hint="Le temps le plus long passé par ZePhone sur un bloc : quelques dizaines de µs."
+              title="Audio filter processing time"
+              hint="The longest time ZePhone spent on a block: a few tens of µs."
               xs={xs}
               unit="µs"
               minTop={100}
               digits={0}
               series={[
-                { key: "rx", label: "Son reçu", slot: 1, values: col((s) => s.rxBusyMaxUs) },
-                { key: "tx", label: "Micro", slot: 2, values: col((s) => s.txBusyMaxUs) },
+                { key: "rx", label: "Received audio", slot: 1, values: col((s) => s.rxBusyMaxUs) },
+                { key: "tx", label: "Microphone", slot: 2, values: col((s) => s.txBusyMaxUs) },
               ]}
             />
           </div>

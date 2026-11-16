@@ -40,15 +40,15 @@ export function useDirectoryActions(): DirectoryActions {
     transfer: async (number) => {
       if (!activeCall) return false;
       const ok = await transfer(activeCall.id, await dialable(number));
-      if (ok) toast.success("Transfert demandé");
+      if (ok) toast.success("Transfer requested");
       return ok;
     },
     copy: async (number) => {
       try {
         await navigator.clipboard.writeText(number);
-        toast.success("Numéro copié");
+        toast.success("Number copied");
       } catch {
-        toast.error("Impossible de copier le numéro");
+        toast.error("Cannot copy the number");
       }
     },
   };

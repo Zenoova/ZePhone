@@ -45,30 +45,30 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
     while let Some(a) = it.next() {
         match a {
             "--pretty" => {}
-            "--call" => call = Some(it.next().ok_or("--call attend un identifiant")?.to_owned()),
+            "--call" => call = Some(it.next().ok_or("--call expects an identifier")?.to_owned()),
             "--account" => {
                 account = Some(
                     it.next()
-                        .ok_or("--account attend un identifiant")?
+                        .ok_or("--account expects an identifier")?
                         .to_owned(),
                 )
             }
-            f if f.starts_with("--") => return Err(format!("option inconnue : {f}")),
+            f if f.starts_with("--") => return Err(format!("unknown option: {f}")),
             p => positional.push(p),
         }
     }
-    let (name, rest) = positional.split_first().ok_or("commande manquante")?;
+    let (name, rest) = positional.split_first().ok_or("missing command")?;
 
     let only = |n: usize, what: &str| -> Result<(), String> {
         if rest.len() > n {
-            Err(format!("trop d'arguments pour « {what} »"))
+            Err(format!("too many arguments for “{what}”"))
         } else {
             Ok(())
         }
     };
     let no_flags = |what: &str| -> Result<(), String> {
         if call.is_some() || account.is_some() {
-            Err(format!("« {what} » n'accepte pas cette option"))
+            Err(format!("“{what}” does not accept this option"))
         } else {
             Ok(())
         }
@@ -79,7 +79,7 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
             Some("on" | "yes" | "true") => Ok(Some(true)),
             Some("off" | "no" | "false") => Ok(Some(false)),
             Some(other) => Err(format!(
-                "« {what} » attend on, off ou toggle (reçu : {other})"
+                "“{what}” expects on, off or toggle (received: {other})"
             )),
         }
     };
@@ -88,11 +88,11 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         "dial" => {
             only(1, "dial")?;
             if call.is_some() {
-                return Err("« dial » n'accepte pas --call".into());
+                return Err("“dial” does not accept --call".into());
             }
             let target = rest
                 .first()
-                .ok_or("« dial » attend un numéro ou une adresse SIP")?;
+                .ok_or("“dial” expects a number or a SIP address")?;
             Ok(Command::Dial {
                 target: (*target).to_owned(),
                 account,
@@ -101,7 +101,7 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         "answer" | "reject" | "hangup" => {
             only(0, name)?;
             if account.is_some() {
-                return Err(format!("« {name} » n'accepte pas --account"));
+                return Err(format!("“{name}” does not accept --account"));
             }
             Ok(match *name {
                 "answer" => Command::Answer { call_id: call },
@@ -112,7 +112,7 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         "mute" | "hold" => {
             only(1, name)?;
             if account.is_some() {
-                return Err(format!("« {name} » n'accepte pas --account"));
+                return Err(format!("“{name}” does not accept --account"));
             }
             let wanted = state(name)?;
             Ok(if *name == "mute" {
@@ -144,7 +144,7 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
                 _ => Command::Status,
             })
         }
-        other => Err(format!("commande inconnue : {other}")),
+        other => Err(format!("unknown command: {other}")),
     }
 }
 
@@ -160,7 +160,7 @@ pub fn run(args: &[String]) -> i32 {
     let pretty = args.iter().any(|a| a == "--pretty");
     let outcome = match parse(args) {
         Err(msg) => {
-            eprintln!("zephone ctl : {msg}\n\n{USAGE}");
+            eprintln!("zephone ctl: {msg}\n\n{USAGE}");
             Outcome::of(Status::Invalid, msg)
         }
         Ok(cmd) => match socket::socket_path() {

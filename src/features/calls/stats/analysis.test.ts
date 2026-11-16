@@ -18,16 +18,16 @@ describe("diagnose", () => {
     const hints = diagnose(makeRun(30));
     expect(hints).toHaveLength(1);
     expect(hints[0]).toMatchObject({ id: "clean", level: "ok" });
-    expect(hints[0]?.detail).toContain("avant ZePhone");
-    expect(hints[0]?.detail).toContain("sortie audio");
+    expect(hints[0]?.detail).toContain("before ZePhone");
+    expect(hints[0]?.detail).toContain("audio output");
   });
 
   it("puts the cut in the received stream when packets are lost or late", () => {
     const hints = diagnose(makeRun(20, (i) => (i === 7 ? { jbufLost: 2, jbufLate: 1 } : {})));
     const network = hints.find((h) => h.id === "network");
     expect(network?.level).toBe("warn");
-    expect(network?.detail).toContain("2 paquets perdus");
-    expect(network?.detail).toContain("1 paquet arrivé trop tard");
+    expect(network?.detail).toContain("2 lost packets");
+    expect(network?.detail).toContain("1 packet arrived too late");
     expect(hints.some((h) => h.id === "clean")).toBe(false);
   });
 
@@ -40,7 +40,7 @@ describe("diagnose", () => {
     const hints = diagnose(makeRun(20, (i) => (i === 5 ? { rxGapMaxMs: 64, rxLateBlocks: 1 } : {})));
     const h = hints.find((x) => x.id === "rx-blocks");
     expect(h?.detail).toContain("64 ms");
-    expect(h?.detail).toContain("ce Mac");
+    expect(h?.detail).toContain("this Mac");
     // ...whereas with losses the network explanation stands alone
     const withLoss = ids(makeRun(20, (i) => (i === 5 ? { rxGapMaxMs: 64, jbufLost: 1 } : {})));
     expect(withLoss).toContain("network");
@@ -63,9 +63,9 @@ describe("diagnose", () => {
 
   it("recognises an incident every second as periodic, and says where it probably comes from", () => {
     const fromNetwork = diagnose(makeRun(30, () => ({ jbufLate: 1 })));
-    expect(fromNetwork.find((h) => h.id === "periodic")?.detail).toContain("serveur ou la liaison");
+    expect(fromNetwork.find((h) => h.id === "periodic")?.detail).toContain("server or the link");
     const fromMachine = diagnose(makeRun(30, () => ({ rxGapMaxMs: 50 })));
-    expect(fromMachine.find((h) => h.id === "periodic")?.detail).toContain("cet ordinateur");
+    expect(fromMachine.find((h) => h.id === "periodic")?.detail).toContain("this computer");
     // a few isolated incidents are not periodic
     expect(ids(makeRun(30, (i) => (i % 10 === 0 ? { jbufLate: 1 } : {})))).not.toContain("periodic");
   });

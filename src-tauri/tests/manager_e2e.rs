@@ -243,7 +243,7 @@ async fn unreachable_pbx_does_not_crash_anything() {
     })
     .await;
     let s = last_status(&r.sink).unwrap();
-    assert!(s.message.unwrap().starts_with("Connexion refusée"));
+    assert!(s.message.unwrap().starts_with("Connection refused"));
     assert!(
         r.mgr.engine_info().codecs.contains(&"PCMU".to_string()),
         "engine still alive"
@@ -676,7 +676,7 @@ async fn real_calls_are_named_by_the_company_directory_only_when_it_is_certain()
     // The company directory, on the same database: one person has Bob's SIP address.
     let people = Arc::new(People(Mutex::new(vec![colleague(
         "u1",
-        "Robert Dupont (annuaire)",
+        "Robert Dupont (directory)",
         "sip:bob@127.0.0.1",
     )])));
     let directory = DirectoryService::new(
@@ -688,7 +688,7 @@ async fn real_calls_are_named_by_the_company_directory_only_when_it_is_certain()
     let source = directory
         .add_source(
             SourceKind::Ldap,
-            "Annuaire",
+            "Directory",
             &serde_json::json!({}),
             60,
             None,
@@ -718,7 +718,10 @@ async fn real_calls_are_named_by_the_company_directory_only_when_it_is_certain()
     // ---- 1. The directory knows the number: the ring screen shows its name, not what the caller sent
     let (out, inc) = call_from_bob(1).await;
     assert_eq!(inc.remote_number, "bob");
-    assert_eq!(inc.remote_name.as_deref(), Some("Robert Dupont (annuaire)"));
+    assert_eq!(
+        inc.remote_name.as_deref(),
+        Some("Robert Dupont (directory)")
+    );
     a.mgr.answer(&inc.id).await.unwrap();
     until("answered", 10, || {
         a.mgr
@@ -729,7 +732,7 @@ async fn real_calls_are_named_by_the_company_directory_only_when_it_is_certain()
     .await;
     assert_eq!(
         a.mgr.calls()[0].remote_name.as_deref(),
-        Some("Robert Dupont (annuaire)")
+        Some("Robert Dupont (directory)")
     );
     b.hangup(&out, None).await.unwrap();
     until("history", 10, || {
@@ -747,7 +750,7 @@ async fn real_calls_are_named_by_the_company_directory_only_when_it_is_certain()
     // ---- 2. Two people have that address: nobody is guessed, the caller keeps its own name
     people.0.lock().unwrap().push(colleague(
         "u2",
-        "Roberta Dupont (annuaire)",
+        "Roberta Dupont (directory)",
         "sip:bob@127.0.0.1",
     ));
     directory.sync_now(&source, true).await.unwrap();

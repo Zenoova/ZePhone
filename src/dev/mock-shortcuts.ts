@@ -8,14 +8,14 @@ import type { ShortcutAction, ShortcutItem, ShortcutsView } from "@/types/shortc
 type Args = Record<string, unknown> | undefined;
 
 const LABELS: Record<ShortcutAction, string> = {
-  answer: "Décrocher",
-  reject: "Refuser l'appel entrant",
-  hangup: "Raccrocher",
-  toggleMute: "Couper / réactiver le micro",
-  toggleHold: "Mettre en attente / reprendre",
-  showDialer: "Afficher le clavier",
-  showSearch: "Rechercher un contact",
-  toggleDnd: "Ne pas déranger",
+  answer: "Answer",
+  reject: "Decline the incoming call",
+  hangup: "Hang up",
+  toggleMute: "Mute / unmute the microphone",
+  toggleHold: "Put on hold / resume",
+  showDialer: "Show the keypad",
+  showSearch: "Search for a contact",
+  toggleDnd: "Do not disturb",
 };
 const KEYS: Record<ShortcutAction, string> = {
   answer: "A",
@@ -58,7 +58,7 @@ export function createMockShortcuts(): Record<string, (a: Args) => unknown> {
             : !i.enabled
               ? { kind: "disabled" }
               : i.action === "toggleHold"
-                ? { kind: "failed", message: "Le système a refusé cette combinaison (aperçu : état factice)" }
+                ? { kind: "failed", message: "The system refused this combination (preview: fake state)" }
                 : { kind: "active" },
     })),
   });
@@ -77,7 +77,7 @@ export function createMockShortcuts(): Record<string, (a: Args) => unknown> {
       const it = find(a);
       const accelerator = (a?.accelerator as string | null) ?? null;
       const clash = items.find((o) => o !== it && accelerator && o.accelerator === accelerator);
-      if (clash) throw { kind: "validation", message: `Déjà utilisée pour « ${clash.label} »` };
+      if (clash) throw { kind: "validation", message: `Already used for “${clash.label}”` };
       it.accelerator = accelerator;
       it.display = accelerator ? accelerator.replace("CommandOrControl", "⌘").replace(/\+/g, "") : null;
       it.enabled = Boolean(a?.enabled);

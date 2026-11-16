@@ -138,7 +138,7 @@ fn run(emit: Emit, started: mpsc::Sender<Option<CFRunLoopHandle>>) {
         let manager = IOHIDManagerCreate(std::ptr::null(), 0);
         if manager.is_null() {
             emit(HidMessage::Reading(Reading::Unavailable {
-                message: "Le système n'a pas pu ouvrir la lecture des périphériques HID".into(),
+                message: "The system could not open the reading of HID devices".into(),
             }));
             let _ = started.send(None);
             return;
@@ -176,7 +176,7 @@ fn run(emit: Emit, started: mpsc::Sender<Option<CFRunLoopHandle>>) {
             } else {
                 Reading::Unavailable {
                     message: format!(
-                        "Le système a refusé l'accès aux commandes du casque (code {opened:#x})"
+                        "The system refused access to the headset commands (code {opened:#x})"
                     ),
                 }
             }));
@@ -275,7 +275,7 @@ extern "C" fn on_attached(ctx: *mut c_void, _: IoReturn, _: *mut c_void, device:
     unsafe {
         emit_of(ctx)(HidMessage::Attached(HidDevice {
             id: id_of(device),
-            product: prop_string(device, "Product").unwrap_or_else(|| "Périphérique HID".into()),
+            product: prop_string(device, "Product").unwrap_or_else(|| "HID device".into()),
             manufacturer: prop_string(device, "Manufacturer").unwrap_or_default(),
             transport: prop_string(device, "Transport").unwrap_or_default(),
             buttons: buttons_of(device),

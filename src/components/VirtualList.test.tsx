@@ -3,15 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import { VirtualList } from "./VirtualList";
 
-const row = (i: number) => <span>Ligne {i}</span>;
+const row = (i: number) => <span>Row {i}</span>;
 
 describe("VirtualList", () => {
   it("renders only the rows in view out of thousands", () => {
     render(<VirtualList id="l" label="Contacts" count={5000} rowHeight={60} activeIndex={null} renderRow={row} />);
     const options = screen.getAllByRole("option");
     expect(options.length).toBeLessThan(30); // ten in view (600 px) and a few around them, not 5 000
-    expect(screen.getByText("Ligne 0")).toBeInTheDocument();
-    expect(screen.queryByText("Ligne 4000")).toBeNull();
+    expect(screen.getByText("Row 0")).toBeInTheDocument();
+    expect(screen.queryByText("Row 4000")).toBeNull();
     // the scrollbar is the size of the whole list
     expect(screen.getByRole("listbox").firstElementChild).toHaveStyle({ height: "300000px" });
   });
@@ -42,8 +42,8 @@ describe("VirtualList", () => {
     const box = screen.getByRole("listbox");
     box.scrollTop = 60 * 1000;
     fireEvent.scroll(box);
-    expect(screen.getByText("Ligne 1005")).toBeInTheDocument();
-    expect(screen.queryByText("Ligne 0")).toBeNull();
+    expect(screen.getByText("Row 1005")).toBeInTheDocument();
+    expect(screen.queryByText("Row 0")).toBeNull();
     const [start, end] = onRange.mock.lastCall as [number, number];
     expect(start).toBeGreaterThan(990);
     expect(end).toBeLessThan(1030);

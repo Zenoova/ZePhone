@@ -33,12 +33,12 @@ describe("formatDurationHuman", () => {
 describe("formatDateTime", () => {
   const now = new Date(2026, 10, 11, 15, 0, 0); // 11 Nov 2026 15:00 local
   it("uses relative days", () => {
-    expect(formatDateTime(new Date(2026, 10, 11, 9, 5).toISOString(), now)).toMatch(/^Aujourd'hui 09:05$/);
-    expect(formatDateTime(new Date(2026, 10, 10, 23, 59).toISOString(), now)).toMatch(/^Hier 23:59$/);
+    expect(formatDateTime(new Date(2026, 10, 11, 9, 5).toISOString(), now)).toMatch(/^Today 09:05 AM$/);
+    expect(formatDateTime(new Date(2026, 10, 10, 23, 59).toISOString(), now)).toMatch(/^Yesterday 11:59 PM$/);
   });
   it("uses a short date otherwise, with the year only when different", () => {
-    expect(formatDateTime(new Date(2026, 8, 3, 8, 0).toISOString(), now)).toMatch(/^3 sept\.? 08:00$/);
-    expect(formatDateTime(new Date(2024, 0, 3, 8, 0).toISOString(), now)).toMatch(/2024 08:00$/);
+    expect(formatDateTime(new Date(2026, 8, 3, 8, 0).toISOString(), now)).toMatch(/^Sep 3 08:00 AM$/);
+    expect(formatDateTime(new Date(2024, 0, 3, 8, 0).toISOString(), now)).toMatch(/2024 08:00 AM$/);
   });
   it("tolerates garbage", () => {
     expect(formatDateTime("not a date", now)).toBe("");
@@ -66,20 +66,20 @@ describe("initials / display name", () => {
   it("prefers the name over the number", () => {
     expect(callDisplayName({ remoteName: "Bob", remoteNumber: "1002" })).toBe("Bob");
     expect(callDisplayName({ remoteName: null, remoteNumber: "1002" })).toBe("1002");
-    expect(callDisplayName({ remoteName: " ", remoteNumber: "" })).toBe("Numéro inconnu");
+    expect(callDisplayName({ remoteName: " ", remoteNumber: "" })).toBe("Unknown number");
   });
 });
 
 describe("formatBytes", () => {
-  it("uses French units", () => {
-    expect(formatBytes(0)).toBe("0 o");
-    expect(formatBytes(900)).toBe("900 o");
-    expect(formatBytes(1_000)).toBe("1 Ko");
-    expect(formatBytes(1_536)).toBe("1,5 Ko");
-    expect(formatBytes(4_000_000)).toBe("4 Mo");
-    expect(formatBytes(3_400_000)).toBe("3,4 Mo");
-    expect(formatBytes(250_000_000)).toBe("250 Mo");
-    expect(formatBytes(2_500_000_000)).toBe("2,5 Go");
+  it("uses English units", () => {
+    expect(formatBytes(0)).toBe("0 B");
+    expect(formatBytes(900)).toBe("900 B");
+    expect(formatBytes(1_000)).toBe("1 KB");
+    expect(formatBytes(1_536)).toBe("1.5 KB");
+    expect(formatBytes(4_000_000)).toBe("4 MB");
+    expect(formatBytes(3_400_000)).toBe("3.4 MB");
+    expect(formatBytes(250_000_000)).toBe("250 MB");
+    expect(formatBytes(2_500_000_000)).toBe("2.5 GB");
     expect(formatBytes(-1)).toBe("");
     expect(formatBytes(Number.NaN)).toBe("");
   });

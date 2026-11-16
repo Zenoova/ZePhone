@@ -76,15 +76,15 @@ beforeEach(() => {
 describe("HeadsetButtons", () => {
   it("separates the buttons from the audio, with the limits stated plainly", () => {
     render(<HeadsetButtons />);
-    expect(screen.getByRole("combobox", { name: "Gestion des boutons du casque" })).toHaveTextContent("Automatique");
-    expect(screen.getByText(/ZePhone n'agit sur les boutons que s'il a lui-même un appel/)).toBeInTheDocument();
-    expect(screen.getByText(/il n'accapare pas les boutons/i)).toBeInTheDocument();
-    expect(screen.getByText(/ne peut ni la commander ni l'observer/)).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Headset button handling" })).toHaveTextContent("Automatic");
+    expect(screen.getByText(/ZePhone only acts on the buttons if it has a call itself/)).toBeInTheDocument();
+    expect(screen.getByText(/does not take over the buttons/i)).toBeInTheDocument();
+    expect(screen.getByText(/can neither control nor observe it/)).toBeInTheDocument();
   });
 
   it("turns each action off on its own, keeping the rest of the settings", async () => {
     render(<HeadsetButtons />);
-    fireEvent.click(screen.getByRole("switch", { name: "Couper le micro avec le casque" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Mute the microphone with the headset" }));
     await waitFor(() => expect(backend.calls("update_settings")).toHaveLength(1));
     const sent = backend.calls("update_settings")[0] as { settings: { audio: { headset: Record<string, unknown> } } };
     expect(sent.settings.audio.headset).toMatchObject({ mute: false, answer: true, hangUp: true, mode: "auto" });
@@ -99,10 +99,10 @@ describe("HeadsetButtons", () => {
     });
     render(<HeadsetButtons />);
     for (const name of [
-      "Décrocher avec le casque",
-      "Raccrocher avec le casque",
-      "Couper le micro avec le casque",
-      "Attente avec le casque",
+      "Answer with the headset",
+      "Hang up with the headset",
+      "Mute the microphone with the headset",
+      "Hold with the headset",
     ]) {
       expect(screen.getByRole("switch", { name })).toBeDisabled();
     }
@@ -118,29 +118,29 @@ describe("AudioDiagnostics", () => {
     expect(devices).toHaveLength(3);
     const usb = devices.find((d) => d.textContent?.includes("Jabra"))!;
     expect(within(usb).getByText("USB")).toBeInTheDocument();
-    expect(within(usb).getByText("Utilisé : Microphone")).toBeInTheDocument();
-    expect(within(usb).getByText("Utilisé : Sortie des conversations")).toBeInTheDocument();
-    expect(within(usb).getByText("Utilisé par une application")).toBeInTheDocument();
+    expect(within(usb).getByText("In use: Microphone")).toBeInTheDocument();
+    expect(within(usb).getByText("In use: Conversation output")).toBeInTheDocument();
+    expect(within(usb).getByText("Used by an application")).toBeInTheDocument();
     const spk = devices.find((d) => d.textContent?.includes("Speakers"))!;
-    expect(within(spk).getByText("Haut-parleur public")).toBeInTheDocument();
-    expect(within(spk).getByText("Utilisé : Sonnerie")).toBeInTheDocument();
+    expect(within(spk).getByText("Public speaker")).toBeInTheDocument();
+    expect(within(spk).getByText("In use: Ringtone")).toBeInTheDocument();
   });
 
   it("identifies a missing microphone permission, with a way to fix it", () => {
     useSettingsStore.setState({ micPermission: "denied" });
     open();
-    expect(screen.getByTestId("diag-mic-permission")).toHaveTextContent("Refusée");
-    fireEvent.click(screen.getByRole("button", { name: "Ouvrir les réglages" }));
+    expect(screen.getByTestId("diag-mic-permission")).toHaveTextContent("Denied");
+    fireEvent.click(screen.getByRole("button", { name: "Open settings" }));
     expect(backend.calls("open_microphone_settings")).toHaveLength(1);
   });
 
   it("tests are started on purpose, one action each", async () => {
     open();
     expect(backend.calls("audio_test")).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "Tester la sortie" }));
+    fireEvent.click(screen.getByRole("button", { name: "Test the output" }));
     await waitFor(() => expect(backend.calls("audio_test")).toHaveLength(1));
     expect(backend.calls("audio_test")[0]).toEqual({ kind: "speaker" });
-    fireEvent.click(screen.getByRole("button", { name: "Tester la sonnerie" }));
+    fireEvent.click(screen.getByRole("button", { name: "Test the ringtone" }));
     await waitFor(() => expect(backend.calls("audio_test")).toHaveLength(2));
     expect(backend.calls("audio_test")[1]).toEqual({ kind: "ringtone" });
   });
@@ -148,20 +148,20 @@ describe("AudioDiagnostics", () => {
   it("disables every test during a call and says why, so a call is never disturbed", () => {
     useAudioStore.setState({ state: audio(true) });
     open();
-    expect(screen.getByText(/Un appel est en cours : les tests sont désactivés/)).toBeInTheDocument();
-    for (const name of ["Tester la sortie", "Tester la sonnerie", "Voir le niveau du micro"]) {
+    expect(screen.getByText(/A call is in progress: the tests are disabled/)).toBeInTheDocument();
+    for (const name of ["Test the output", "Test the ringtone", "See the microphone level"]) {
       expect(screen.getByRole("button", { name })).toBeDisabled();
     }
   });
 
   it("shows the microphone level while the test runs, and stops it", async () => {
     open();
-    fireEvent.click(screen.getByRole("button", { name: "Voir le niveau du micro" }));
+    fireEvent.click(screen.getByRole("button", { name: "See the microphone level" }));
     await waitFor(() => expect(backend.calls("audio_meter")[0]).toEqual({ on: true }));
     act(() => useAudioStore.getState().pushLevel(-20));
-    const meter = await screen.findByRole("meter", { name: "Niveau du microphone" });
+    const meter = await screen.findByRole("meter", { name: "Microphone level" });
     expect(meter).toHaveAttribute("aria-valuenow", "-20");
-    fireEvent.click(screen.getByRole("button", { name: "Arrêter le niveau du micro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Stop the microphone level" }));
     await waitFor(() => expect(backend.calls("audio_meter").at(-1)).toEqual({ on: false }));
   });
 
@@ -183,45 +183,45 @@ describe("AudioDiagnostics", () => {
           {
             at: "2026-01-01T10:00:00Z",
             device: "Jabra",
-            button: "Couper le micro",
+            button: "Mute the microphone",
             value: 0,
-            result: "Micro coupé (fait)",
+            result: "Muted (done)",
             acted: true,
           },
           {
             at: "2026-01-01T10:00:05Z",
             device: "Jabra",
-            button: "Décrocher / raccrocher",
+            button: "Answer / hang up",
             value: 1,
-            result: "Aucun appel entrant à décrocher",
+            result: "No incoming call to answer",
             acted: false,
           },
         ],
       }),
     });
     open();
-    expect(screen.getByTestId("diag-headset-reading")).toHaveTextContent("Lecture des commandes du casque active");
+    expect(screen.getByTestId("diag-headset-reading")).toHaveTextContent("Reading of the headset commands is active");
     const [jabra, other] = screen.getAllByTestId("diag-headset-device");
-    expect(jabra).toHaveTextContent("Décrocher / raccrocher, Couper le micro");
-    expect(jabra).toHaveTextContent("Commandes activées");
-    expect(jabra).toHaveTextContent("Casque utilisé");
-    expect(other).toHaveTextContent("aucun bouton téléphonie standard");
-    expect(other).toHaveTextContent("Pas celui de ZePhone");
-    const log = screen.getByLabelText("Derniers événements du casque");
-    expect(log).toHaveTextContent("Micro coupé (fait)");
-    expect(log).toHaveTextContent("Aucun appel entrant à décrocher");
+    expect(jabra).toHaveTextContent("Answer / hang up, Mute the microphone");
+    expect(jabra).toHaveTextContent("Commands enabled");
+    expect(jabra).toHaveTextContent("Headset in use");
+    expect(other).toHaveTextContent("no standard telephony button");
+    expect(other).toHaveTextContent("Not the one ZePhone uses");
+    const log = screen.getByLabelText("Latest headset events");
+    expect(log).toHaveTextContent("Muted (done)");
+    expect(log).toHaveTextContent("No incoming call to answer");
   });
 
   it("explains a refused HID permission and that the audio itself still works", () => {
     useAudioStore.setState({ headset: headsetState({ reading: { kind: "permissionNeeded" } }) });
     open();
-    expect(screen.getByTestId("diag-headset-reading")).toHaveTextContent("macOS demande une autorisation");
-    expect(screen.getByText(/l'audio du casque fonctionne, mais pas ses boutons/)).toBeInTheDocument();
+    expect(screen.getByTestId("diag-headset-reading")).toHaveTextContent("macOS asks for a permission");
+    expect(screen.getByText(/the headset audio works, but not its buttons/)).toBeInTheDocument();
   });
 
   it("does not claim a headset supports its buttons just because it is connected", () => {
     open();
-    expect(screen.getByText(/Aucun casque n'expose de commandes téléphonie standard/)).toBeInTheDocument();
+    expect(screen.getByText(/No headset exposes standard telephony commands/)).toBeInTheDocument();
   });
 
   it("names the commands as disabled when the buttons are off", () => {
@@ -234,6 +234,6 @@ describe("AudioDiagnostics", () => {
       }),
     });
     open();
-    expect(screen.getByTestId("diag-headset-device")).toHaveTextContent("Commandes désactivées");
+    expect(screen.getByTestId("diag-headset-device")).toHaveTextContent("Commands disabled");
   });
 });

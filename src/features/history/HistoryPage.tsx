@@ -31,21 +31,21 @@ import type { HistoryEntry, HistoryKind } from "@/types/telephony";
 import { ContactFormDialog } from "../contacts/ContactForm";
 
 const TABS: ReadonlyArray<{ value: HistoryKind; label: string }> = [
-  { value: "all", label: "Tous" },
+  { value: "all", label: "All" },
   { value: "incoming", label: "Entrants" },
-  { value: "outgoing", label: "Sortants" },
-  { value: "missed", label: "Manqués" },
-  { value: "failed", label: "Échoués" },
+  { value: "outgoing", label: "Outgoing" },
+  { value: "missed", label: "Missed" },
+  { value: "failed", label: "Failed" },
 ];
 
 export function EntryIcon({ entry }: { entry: HistoryEntry }) {
-  if (entry.result === "missed") return <PhoneMissed className="text-destructive size-4" aria-label="Manqué" />;
+  if (entry.result === "missed") return <PhoneMissed className="text-destructive size-4" aria-label="Missed" />;
   if (entry.result === "failed" || entry.result === "rejected" || entry.result === "cancelled")
     return <CircleX className="text-muted-foreground size-4" aria-label={RESULT_LABEL[entry.result]} />;
   return entry.direction === "incoming" ? (
-    <PhoneIncoming className="text-success size-4" aria-label="Entrant" />
+    <PhoneIncoming className="text-success size-4" aria-label="Incoming" />
   ) : (
-    <PhoneForwarded className="text-primary size-4" aria-label="Sortant" />
+    <PhoneForwarded className="text-primary size-4" aria-label="Outgoing" />
   );
 }
 
@@ -79,8 +79,8 @@ export function HistoryPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Historique"
-        description="Vos appels entrants, sortants, manqués et échoués"
+        title="History"
+        description="Your incoming, outgoing, missed and failed calls"
         actions={
           entries.length > 0 && (
             <ArcButton variant="secondary" onClick={() => setConfirmClear(true)}>
@@ -107,8 +107,8 @@ export function HistoryPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher un numéro ou un nom…"
-            aria-label="Rechercher dans l'historique"
+            placeholder="Search for a number or a name…"
+            aria-label="Search the history"
             className="pl-9"
           />
         </div>
@@ -116,7 +116,7 @@ export function HistoryPage() {
 
       <div className="min-h-0 flex-1 overflow-auto px-3 pb-28">
         {loaded && entries.length === 0 ? (
-          <EmptyState icon={History} title="Aucun appel" description="L'historique de vos appels apparaîtra ici." />
+          <EmptyState icon={History} title="No call" description="Your call history will appear here." />
         ) : (
           <ul className="space-y-1">
             {entries.map((e) => {
@@ -151,7 +151,7 @@ export function HistoryPage() {
                     <Button
                       size="icon"
                       className="bg-success text-success-foreground hover:bg-success/90 rounded-full"
-                      aria-label={`Rappeler ${name}`}
+                      aria-label={`Call back ${name}`}
                       onClick={() => void callBack(e)}
                     >
                       <Phone className="size-4" />
@@ -160,7 +160,7 @@ export function HistoryPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        aria-label="Ajouter aux contacts"
+                        aria-label="Add to contacts"
                         onClick={() => setAddContactFor(e.remoteNumber)}
                       >
                         <UserPlus className="size-4" />
@@ -169,7 +169,7 @@ export function HistoryPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Supprimer cette entrée"
+                      aria-label="Delete this entry"
                       onClick={() => void remove(e.id)}
                     >
                       <Trash2 className="text-destructive size-4" />
@@ -185,9 +185,9 @@ export function HistoryPage() {
       <ConfirmDialog
         open={confirmClear}
         onOpenChange={setConfirmClear}
-        title="Effacer tout l'historique ?"
-        description="Toutes les entrées de l'historique des appels seront définitivement supprimées."
-        confirmLabel="Tout effacer"
+        title="Clear the whole history?"
+        description="All the entries of the call history will be permanently deleted."
+        confirmLabel="Clear all"
         onConfirm={() => {
           void clear();
           setConfirmClear(false);

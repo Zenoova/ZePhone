@@ -250,7 +250,7 @@ impl SipManager {
             let st = if acc.enabled {
                 registration::disconnected(&acc.id, None, now)
             } else {
-                registration::disconnected(&acc.id, Some("Compte désactivé"), now)
+                registration::disconnected(&acc.id, Some("Account disabled"), now)
             };
             self.state
                 .lock()
@@ -364,7 +364,7 @@ impl SipManager {
             Some(id) => Some(
                 self.db
                     .get_account(id)?
-                    .ok_or_else(|| AppError::NotFound("compte".into()))?,
+                    .ok_or_else(|| AppError::NotFound("account".into()))?,
             ),
             None => None,
         };
@@ -394,7 +394,7 @@ impl SipManager {
         } else {
             self.set_status(registration::disconnected(
                 &id,
-                Some("Compte désactivé"),
+                Some("Account disabled"),
                 now,
             ));
         }
@@ -427,7 +427,7 @@ impl SipManager {
             self.disconnect_account(id).await?;
             self.set_status(registration::disconnected(
                 id,
-                Some("Compte désactivé"),
+                Some("Account disabled"),
                 Utc::now(),
             ));
             Ok(())
@@ -446,10 +446,10 @@ impl SipManager {
         let acc = self
             .db
             .get_account(id)?
-            .ok_or_else(|| AppError::NotFound("compte".into()))?;
+            .ok_or_else(|| AppError::NotFound("account".into()))?;
         if !acc.enabled {
             return Err(AppError::validation(
-                "Le compte est désactivé : activez-le d'abord",
+                "The account is disabled: enable it first",
             ));
         }
         let now = Utc::now();
@@ -459,7 +459,7 @@ impl SipManager {
         if password.is_none() && acc.register_interval > 0 {
             self.set_status(registration::unconfigured(
                 id,
-                "Mot de passe manquant : renseignez-le dans les paramètres du compte",
+                "Password missing: enter it in the account settings",
                 now,
             ));
             return Ok(());
@@ -504,7 +504,7 @@ impl SipManager {
         let acc = self
             .db
             .get_account(id)?
-            .ok_or_else(|| AppError::NotFound("compte".into()))?;
+            .ok_or_else(|| AppError::NotFound("account".into()))?;
         self.drop_hosted(&acc.aor()).await;
         self.set_status(registration::disconnected(id, None, Utc::now()));
         Ok(())
@@ -569,7 +569,7 @@ impl SipManager {
             Some(id) => self
                 .db
                 .get_account(id)?
-                .ok_or_else(|| AppError::NotFound("compte".into()))?,
+                .ok_or_else(|| AppError::NotFound("account".into()))?,
             None => {
                 let hosted: Vec<String> = self
                     .state
@@ -588,9 +588,7 @@ impl SipManager {
                             .list_accounts()?
                             .into_iter()
                             .find(|a| hosted.contains(&a.id));
-                        first.ok_or_else(|| {
-                            AppError::validation("Aucun compte SIP n'est connecté")
-                        })?
+                        first.ok_or_else(|| AppError::validation("No SIP account is connected"))?
                     }
                 }
             }
@@ -603,7 +601,7 @@ impl SipManager {
             .contains_key(&uri::normalize_aor(&acc.aor()))
         {
             return Err(AppError::validation(format!(
-                "Le compte « {} » n'est pas connecté : connectez-le dans les paramètres",
+                "The account “{}” is not connected: connect it in the settings",
                 acc.label
             )));
         }
@@ -613,7 +611,7 @@ impl SipManager {
     pub async fn dial(&self, target: &str, account_id: Option<&str>) -> AppResult<Call> {
         let acc = self.pick_account(account_id)?;
         let target_uri = uri::normalize_target(target, &acc.domain)
-            .map_err(|e| AppError::validation(format!("Destinataire invalide : {e}")))?;
+            .map_err(|e| AppError::validation(format!("Invalid recipient: {e}")))?;
         if self.calls().iter().any(|c| {
             matches!(
                 c.state,
@@ -621,7 +619,7 @@ impl SipManager {
             ) && c.direction == super::types::CallDirection::Outgoing
         }) {
             return Err(AppError::validation(
-                "Un appel sortant est déjà en cours d'établissement",
+                "An outgoing call is already being set up",
             ));
         }
         let id = self
@@ -655,14 +653,14 @@ impl SipManager {
             .tracker
             .get(id)
             .cloned()
-            .ok_or_else(|| AppError::NotFound("appel".into()))
+            .ok_or_else(|| AppError::NotFound("call".into()))
     }
 
     pub async fn answer(&self, id: &str) -> AppResult<()> {
         let call = self.known(id)?;
         if call.state != CallState::Incoming {
             return Err(AppError::validation(
-                "Cet appel n'est pas un appel entrant en attente",
+                "This call is not an incoming call waiting to be answered",
             ));
         }
         self.engine.accept(id).await.map_err(engine_err)
@@ -673,7 +671,7 @@ impl SipManager {
         let call = self.known(id)?;
         if call.state != CallState::Incoming {
             return Err(AppError::validation(
-                "Cet appel n'est pas un appel entrant en attente",
+                "This call is not an incoming call waiting to be answered",
             ));
         }
         self.state.lock().unwrap().tracker.mark_user_reject(id);
@@ -690,7 +688,7 @@ impl SipManager {
         let c = self.known(id)?;
         if !matches!(c.state, CallState::Connected | CallState::OnHold) || c.held_locally {
             return Err(AppError::validation(
-                "Seul un appel connecté peut être mis en attente",
+                "Only a connected call can be put on hold",
             ));
         }
         self.engine.hold(id).await.map_err(engine_err)?;
@@ -701,7 +699,7 @@ impl SipManager {
     pub async fn resume(&self, id: &str) -> AppResult<()> {
         let c = self.known(id)?;
         if !c.held_locally {
-            return Err(AppError::validation("Cet appel n'est pas en attente"));
+            return Err(AppError::validation("This call is not on hold"));
         }
         self.engine.resume(id).await.map_err(engine_err)?;
         self.emit_local_hold(id, false);
@@ -729,7 +727,7 @@ impl SipManager {
         let c = self.known(id)?;
         if !matches!(c.state, CallState::Connected | CallState::OnHold) {
             return Err(AppError::validation(
-                "Les tonalités ne peuvent être envoyées que pendant un appel établi",
+                "Tones can only be sent during an established call",
             ));
         }
         self.engine.send_dtmf(id, digits).await.map_err(engine_err)
@@ -739,7 +737,7 @@ impl SipManager {
         let c = self.known(id)?;
         if !matches!(c.state, CallState::Connected | CallState::OnHold) {
             return Err(AppError::validation(
-                "Seul un appel établi peut être transféré",
+                "Only an established call can be transferred",
             ));
         }
         let domain = c
@@ -748,18 +746,19 @@ impl SipManager {
             .and_then(|a| self.db.get_account(a).ok().flatten())
             .map(|a| a.domain)
             .unwrap_or_else(|| "invalid".into());
-        let uri = uri::normalize_target(target, &domain).map_err(|e| {
-            AppError::validation(format!("Destinataire du transfert invalide : {e}"))
-        })?;
+        let uri = uri::normalize_target(target, &domain)
+            .map_err(|e| AppError::validation(format!("Invalid transfer recipient: {e}")))?;
         self.engine.transfer(id, &uri).await.map_err(engine_err)
     }
 
     // ----------------------------------------------------------- recording
 
     fn recordings_dir(&self) -> AppResult<PathBuf> {
-        self.recordings_dir.lock().unwrap().clone().ok_or_else(|| {
-            AppError::Other("L'enregistrement des appels n'est pas disponible".into())
-        })
+        self.recordings_dir
+            .lock()
+            .unwrap()
+            .clone()
+            .ok_or_else(|| AppError::Other("Call recording is not available".into()))
     }
 
     /// Starts recording the call in progress (automatically, when it is answered). Only one call is recorded
@@ -768,16 +767,16 @@ impl SipManager {
         let c = self.known(call_id)?;
         if !matches!(c.state, CallState::Connected | CallState::OnHold) {
             return Err(AppError::validation(
-                "Seul un appel établi peut être enregistré",
+                "Only an established call can be recorded",
             ));
         }
         if self.state.lock().unwrap().recording.is_some() {
-            return Err(AppError::validation("Un enregistrement est déjà en cours"));
+            return Err(AppError::validation("A recording is already in progress"));
         }
         let id = Uuid::new_v4().to_string();
         let raw = self.recordings_dir()?.join(".raw");
         std::fs::create_dir_all(&raw)
-            .map_err(|e| AppError::Other(format!("Dossier d'enregistrement inaccessible : {e}")))?;
+            .map_err(|e| AppError::Other(format!("Recordings folder is not accessible: {e}")))?;
         let base = raw.join(&id);
         self.engine
             .start_recording(&base)
@@ -827,9 +826,7 @@ impl SipManager {
             }
             Err(e) => {
                 let _ = std::fs::remove_file(&out);
-                return Err(AppError::Other(format!(
-                    "Enregistrement impossible à finaliser : {e}"
-                )));
+                return Err(AppError::Other(format!("Cannot finish the recording: {e}")));
             }
         };
         let rec = Recording {
@@ -894,13 +891,13 @@ impl SipManager {
             .ok_or_else(|| AppError::NotFound("enregistrement".into()))?;
         // The name is ours (`<uuid>.wav`), but never trust a path read back from a file.
         if rec.file_name.contains(['/', '\\']) || rec.file_name.starts_with('.') {
-            return Err(AppError::validation("Nom de fichier invalide"));
+            return Err(AppError::validation("Invalid file name"));
         }
         match std::fs::remove_file(dir.join(&rec.file_name)) {
             Ok(()) => {}
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
             Err(e) => {
-                return Err(AppError::Other(format!("Suppression impossible : {e}")));
+                return Err(AppError::Other(format!("Cannot delete: {e}")));
             }
         }
         self.db.delete_recording(id)?;
@@ -913,7 +910,7 @@ impl SipManager {
     pub async fn set_audio_gains(&self, input_pct: u16, output_pct: u16) -> AppResult<()> {
         use super::types::MAX_GAIN_PERCENT;
         if input_pct > MAX_GAIN_PERCENT || output_pct > MAX_GAIN_PERCENT {
-            return Err(AppError::validation("Volume hors limites (0 à 200 %)"));
+            return Err(AppError::validation("Volume out of range (0 to 200 %)"));
         }
         self.engine
             .set_gains(f32::from(input_pct) / 100.0, f32::from(output_pct) / 100.0)
@@ -1113,7 +1110,7 @@ impl SipManager {
                             let mut s = self.state.lock().unwrap();
                             s.hosted.clear();
                             let ids: Vec<String> = s.statuses.keys().cloned().collect();
-                            (ids, s.tracker.abort_all("Moteur SIP interrompu", now))
+                            (ids, s.tracker.abort_all("SIP engine interrupted", now))
                         };
                         for u in ended {
                             self.end_recording_for(&u).await;

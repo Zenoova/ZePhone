@@ -52,30 +52,30 @@ pub fn decode_wav(bytes: &[u8]) -> Result<Samples, String> {
             .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
     };
     if bytes.get(0..4) != Some(b"RIFF") || bytes.get(8..12) != Some(b"WAVE") {
-        return Err("fichier WAV invalide".into());
+        return Err("invalid WAV file".into());
     }
     let (mut format, mut channels, mut rate, mut bits) = (0u16, 1u16, 0u32, 16u16);
     let mut data: Option<&[u8]> = None;
     let mut pos = 12;
     while pos + 8 <= bytes.len() {
         let id = &bytes[pos..pos + 4];
-        let size = u32le(pos + 4).ok_or("fichier WAV tronqué")? as usize;
+        let size = u32le(pos + 4).ok_or("truncated WAV file")? as usize;
         let body = pos + 8;
         match id {
             b"fmt " => {
-                format = u16le(body).ok_or("fichier WAV tronqué")?;
-                channels = u16le(body + 2).ok_or("fichier WAV tronqué")?.max(1);
-                rate = u32le(body + 4).ok_or("fichier WAV tronqué")?;
-                bits = u16le(body + 14).ok_or("fichier WAV tronqué")?;
+                format = u16le(body).ok_or("truncated WAV file")?;
+                channels = u16le(body + 2).ok_or("truncated WAV file")?.max(1);
+                rate = u32le(body + 4).ok_or("truncated WAV file")?;
+                bits = u16le(body + 14).ok_or("truncated WAV file")?;
             }
             b"data" => data = bytes.get(body..(body + size).min(bytes.len())),
             _ => {}
         }
         pos = body + size + (size & 1);
     }
-    let data = data.ok_or("fichier WAV sans données")?;
+    let data = data.ok_or("WAV file without data")?;
     if rate == 0 {
-        return Err("fichier WAV sans format".into());
+        return Err("WAV file without a format".into());
     }
     let frames: Vec<f32> = match (format, bits) {
         (1, 16) => data
@@ -85,9 +85,7 @@ pub fn decode_wav(bytes: &[u8]) -> Result<Samples, String> {
         (7, 8) => data.iter().map(|b| mulaw(*b)).collect(),
         (6, 8) => data.iter().map(|b| alaw(*b)).collect(),
         _ => {
-            return Err(format!(
-                "format WAV non pris en charge ({format}, {bits} bits)"
-            ));
+            return Err(format!("unsupported WAV format ({format}, {bits} bits)"));
         }
     };
     let mono = frames
@@ -154,9 +152,9 @@ fn output_named(name: &str) -> Result<cpal::Device, String> {
         .collect();
     match matching.len() {
         1 => Ok(matching.into_iter().next().unwrap()),
-        0 => Err(format!("« {name} » n'est plus disponible")),
+        0 => Err(format!("“{name}” is no longer available")),
         _ => Err(format!(
-            "Plusieurs périphériques s'appellent « {name} » : le test ne saurait pas lequel jouer"
+            "Several devices are called “{name}”: the test would not know which one to play"
         )),
     }
 }
@@ -170,9 +168,9 @@ fn input_named(name: &str) -> Result<cpal::Device, String> {
         .collect();
     match matching.len() {
         1 => Ok(matching.into_iter().next().unwrap()),
-        0 => Err(format!("« {name} » n'est plus disponible")),
+        0 => Err(format!("“{name}” is no longer available")),
         _ => Err(format!(
-            "Plusieurs périphériques s'appellent « {name} » : le test ne saurait pas lequel écouter"
+            "Several devices are called “{name}”: the test would not know which one to listen to"
         )),
     }
 }
@@ -183,10 +181,10 @@ pub fn play(device_name: &str, samples: Samples, gain: f32, max: Duration) -> Re
     let device = output_named(device_name)?;
     let config = device
         .default_output_config()
-        .map_err(|e| format!("Le périphérique ne s'ouvre pas : {e}"))?;
+        .map_err(|e| format!("The device does not open: {e}"))?;
     if config.sample_format() != SampleFormat::F32 {
         return Err(format!(
-            "Format audio non pris en charge ({:?})",
+            "Unsupported audio format ({:?})",
             config.sample_format()
         ));
     }
@@ -207,10 +205,10 @@ pub fn play(device_name: &str, samples: Samples, gain: f32, max: Duration) -> Re
             |e| log::warn!("audio test stream: {e}"),
             None,
         )
-        .map_err(|e| format!("Le périphérique ne s'ouvre pas : {e}"))?;
+        .map_err(|e| format!("The device does not open: {e}"))?;
     stream
         .play()
-        .map_err(|e| format!("Le périphérique ne démarre pas : {e}"))?;
+        .map_err(|e| format!("The device does not start: {e}"))?;
     let started = Instant::now();
     while position.load(Ordering::Relaxed) < data.len() && started.elapsed() < max {
         std::thread::sleep(Duration::from_millis(30));
@@ -243,10 +241,10 @@ impl Meter {
                     let device = input_named(&name)?;
                     let config = device
                         .default_input_config()
-                        .map_err(|e| format!("Le micro ne s'ouvre pas : {e}"))?;
+                        .map_err(|e| format!("The microphone does not open: {e}"))?;
                     if config.sample_format() != SampleFormat::F32 {
                         return Err(format!(
-                            "Format audio non pris en charge ({:?})",
+                            "Unsupported audio format ({:?})",
                             config.sample_format()
                         ));
                     }
@@ -267,10 +265,10 @@ impl Meter {
                             |e| log::warn!("audio meter stream: {e}"),
                             None,
                         )
-                        .map_err(|e| format!("Le micro ne s'ouvre pas : {e}"))?;
+                        .map_err(|e| format!("The microphone does not open: {e}"))?;
                     stream
                         .play()
-                        .map_err(|e| format!("Le micro ne démarre pas : {e}"))?;
+                        .map_err(|e| format!("The microphone does not start: {e}"))?;
                     Ok(stream)
                 })();
                 match opened {
@@ -296,7 +294,7 @@ impl Meter {
                 thread: Some(thread),
             }),
             Ok(Err(e)) => Err(e),
-            Err(_) => Err("Le micro n'a pas répondu à temps".into()),
+            Err(_) => Err("The microphone did not answer in time".into()),
         }
     }
 }
@@ -371,11 +369,7 @@ mod tests {
         mp3ish.extend_from_slice(&8000u32.to_le_bytes());
         mp3ish.extend_from_slice(&[0; 8]);
         mp3ish.extend_from_slice(b"data\x02\0\0\0ab");
-        assert!(
-            decode_wav(&mp3ish)
-                .unwrap_err()
-                .contains("non pris en charge")
-        );
+        assert!(decode_wav(&mp3ish).unwrap_err().contains("nsupported"));
     }
 
     #[test]
@@ -410,13 +404,13 @@ mod tests {
                 Duration::from_secs(1)
             )
             .unwrap_err()
-            .contains("n'est plus disponible")
+            .contains("is no longer available")
         );
         assert!(
             Meter::start("No Such Device Anywhere", Arc::new(|_| {}))
                 .err()
                 .unwrap()
-                .contains("n'est plus disponible")
+                .contains("is no longer available")
         );
     }
 }

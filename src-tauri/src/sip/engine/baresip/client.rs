@@ -42,7 +42,7 @@ pub struct ControlClient {
 fn reject_control_chars(s: &str) -> EngineResult<()> {
     if s.chars().any(char::is_control) {
         return Err(EngineError::Invalid(
-            "caractères de contrôle interdits dans une commande".into(),
+            "control characters not allowed in a command".into(),
         ));
     }
     Ok(())
@@ -127,9 +127,9 @@ async fn read_loop(
     let mut buf = vec![0u8; 16 * 1024];
     let reason = 'outer: loop {
         match read.read(&mut buf).await {
-            Ok(0) => break "connexion fermée par le moteur".to_owned(),
+            Ok(0) => break "connection closed by the engine".to_owned(),
             Ok(n) => decoder.push(&buf[..n]),
-            Err(e) => break format!("erreur de lecture : {e}"),
+            Err(e) => break format!("read error: {e}"),
         }
         loop {
             match decoder.next_frame() {
@@ -148,7 +148,7 @@ async fn read_loop(
                     Err(e) => log::warn!("baresip: ignoring malformed message: {e}"),
                 },
                 Ok(None) => break,
-                Err(e) => break 'outer format!("flux corrompu : {e}"),
+                Err(e) => break 'outer format!("corrupted stream: {e}"),
             }
         }
     };

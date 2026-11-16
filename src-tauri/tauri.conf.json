@@ -35,8 +35,8 @@
     "active": true,
     "targets": "all",
     "category": "Productivity",
-    "shortDescription": "Softphone SIP universel",
-    "longDescription": "ZePhone est un softphone SIP moderne basé sur Baresip : comptes multiples, appels, contacts, historique.",
+    "shortDescription": "Universal SIP softphone",
+    "longDescription": "ZePhone is a modern SIP softphone built on Baresip: multiple accounts, calls, contacts, history.",
     "copyright": "ZePhone",
     "icon": [
       "icons/32x32.png",

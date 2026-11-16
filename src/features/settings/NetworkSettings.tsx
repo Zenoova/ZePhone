@@ -43,7 +43,7 @@ export function NetworkSettings() {
     if (err) toast.error(err);
     else {
       clearRestartRequired();
-      toast.success("Moteur SIP redémarré");
+      toast.success("SIP engine restarted");
     }
   };
 
@@ -52,22 +52,22 @@ export function NetworkSettings() {
       {restartRequired && (
         <Alert tone="warning" className="items-center">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <span>Un redémarrage du moteur SIP est nécessaire pour appliquer ces changements.</span>
+            <span>A SIP engine restart is required to apply these changes.</span>
             <Button size="sm" onClick={() => void doRestart()} disabled={restarting}>
-              <RefreshCw className="size-4" aria-hidden /> Redémarrer maintenant
+              <RefreshCw className="size-4" aria-hidden /> Restart now
             </Button>
           </div>
         </Alert>
       )}
 
       <SettingsSection
-        title="Réseau et transport SIP"
-        description="Le transport (UDP, TCP, TLS) et le port du serveur se règlent compte par compte."
+        title="Network and SIP transport"
+        description="The transport (UDP, TCP, TLS) and the server port are set per account."
       >
         <SettingRow
-          label="Port SIP local"
+          label="Local SIP port"
           htmlFor="net-port"
-          description="Vide = choisi automatiquement. Utile derrière un pare-feu."
+          description="Empty = chosen automatically. Useful behind a firewall."
         >
           <Input
             id="net-port"
@@ -81,9 +81,9 @@ export function NetworkSettings() {
           />
         </SettingRow>
         <SettingRow
-          label="Interface ou adresse locale"
+          label="Local interface or address"
           htmlFor="net-iface"
-          description="Exemple : en0 ou 192.168.1.20. Vide = automatique."
+          description="Example: en0 or 192.168.1.20. Empty = automatic."
         >
           <Input
             id="net-iface"
@@ -98,18 +98,18 @@ export function NetworkSettings() {
       </SettingsSection>
 
       <SettingsSection
-        title="Certificats TLS"
-        description="Les certificats des serveurs sont toujours vérifiés avec les autorités du système."
+        title="TLS certificates"
+        description="Server certificates are always verified with the system's authorities."
       >
         <SettingRow
-          label="Fichier d'autorités de certification (PEM)"
+          label="Certificate authority file (PEM)"
           htmlFor="net-ca"
-          description="Facultatif : pour un PBX utilisant une autorité privée."
+          description="Optional: for a PBX that uses a private authority."
           stacked
         >
           <Input
             id="net-ca"
-            placeholder="/chemin/vers/ca.pem"
+            placeholder="/path/to/ca.pem"
             value={ca}
             onChange={(e) => setCa(e.target.value)}
             onBlur={commit}
@@ -120,21 +120,18 @@ export function NetworkSettings() {
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="Diagnostic" description="Pour comprendre un problème de connexion avec votre serveur.">
+      <SettingsSection title="Diagnostic" description="To understand a connection problem with your server.">
         <SettingRow
-          label="Tracer les messages SIP"
-          description="Affiche les échanges SIP dans le journal du moteur (redémarrage requis)."
+          label="Trace SIP messages"
+          description="Shows the SIP exchanges in the engine log (restart required)."
         >
           <Switch
             checked={net.sipTrace}
             onCheckedChange={(v) => void update({ network: { sipTrace: v } })}
-            aria-label="Tracer les messages SIP"
+            aria-label="Trace SIP messages"
           />
         </SettingRow>
-        <SettingRow
-          label="Journal du moteur SIP"
-          description="Dernières lignes de sortie de Baresip (mots de passe masqués)."
-        >
+        <SettingRow label="SIP engine log" description="Latest lines of Baresip output (passwords masked).">
           <Button
             variant="secondary"
             size="sm"
@@ -143,34 +140,34 @@ export function NetworkSettings() {
                 setLog(await telephony.getEngineLog(300));
                 setLogOpen(true);
               } catch {
-                toast.error("Journal indisponible");
+                toast.error("Log unavailable");
               }
             }}
           >
-            <ScrollText className="size-4" aria-hidden /> Afficher
+            <ScrollText className="size-4" aria-hidden /> Show
           </Button>
         </SettingRow>
         <SettingRow
-          label="Moteur SIP"
-          description={engine ? `${engine.name} ${engine.version ?? ""} — ${engine.state}` : "Indisponible"}
+          label="SIP engine"
+          description={engine ? `${engine.name} ${engine.version ?? ""} — ${engine.state}` : "Unavailable"}
         >
           <Button variant="secondary" size="sm" onClick={() => void doRestart()} disabled={restarting}>
-            <RefreshCw className="size-4" aria-hidden /> Redémarrer
+            <RefreshCw className="size-4" aria-hidden /> Restart
           </Button>
         </SettingRow>
       </SettingsSection>
 
       <Dialog open={logOpen} onOpenChange={setLogOpen}>
         <DialogContent
-          title="Journal du moteur SIP"
-          description="Les mots de passe sont masqués automatiquement."
+          title="SIP engine log"
+          description="Passwords are masked automatically."
           style={{ width: "min(calc(100vw - 2rem), 720px)" }}
         >
           <pre
             data-selectable
             className="bg-muted max-h-96 overflow-auto rounded-lg p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap"
           >
-            {log.length ? log.join("\n") : "(vide)"}
+            {log.length ? log.join("\n") : "(empty)"}
           </pre>
         </DialogContent>
       </Dialog>

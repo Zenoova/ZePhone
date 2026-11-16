@@ -30,23 +30,22 @@ pub enum AccelError {
 impl fmt::Display for AccelError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AccelError::Empty => write!(f, "Aucune combinaison de touches"),
-            AccelError::UnknownModifier(m) => write!(f, "Modificateur inconnu : « {m} »"),
-            AccelError::UnknownKey(k) => write!(f, "Touche non prise en charge : « {k} »"),
-            AccelError::NoKey => write!(
-                f,
-                "Il manque la touche principale (en plus des modificateurs)"
-            ),
-            AccelError::TwoKeys => write!(f, "Une seule touche principale est possible"),
+            AccelError::Empty => write!(f, "No key combination"),
+            AccelError::UnknownModifier(m) => write!(f, "Unknown modifier: “{m}”"),
+            AccelError::UnknownKey(k) => write!(f, "Unsupported key: “{k}”"),
+            AccelError::NoKey => {
+                write!(f, "The main key is missing (in addition to the modifiers)")
+            }
+            AccelError::TwoKeys => write!(f, "Only one main key is possible"),
             AccelError::NeedsModifier => write!(
                 f,
-                "Ajoutez Ctrl, Option/Alt ou ⌘ : une touche seule déclencherait l'action pendant que vous écrivez dans une autre application"
+                "Add Ctrl, Option/Alt or ⌘: a bare key would fire the action while you type in another application"
             ),
             AccelError::AltOnly => write!(
                 f,
-                "Option/Alt seul sert à saisir des caractères : ajoutez Ctrl ou ⌘ pour ne pas gêner la frappe"
+                "Option/Alt alone is used to type characters: add Ctrl or ⌘ so as not to interfere with typing"
             ),
-            AccelError::Reserved(why) => write!(f, "Combinaison réservée par le système ({why})"),
+            AccelError::Reserved(why) => write!(f, "Combination reserved by the system ({why})"),
         }
     }
 }
@@ -236,21 +235,21 @@ impl Accelerator {
         let k = key.as_str();
         if mac {
             return match (ctrl, alt, shift, meta, k) {
-                (false, false, false, true, "Q") => Some("⌘Q quitte l'application active"),
-                (false, false, false, true, "Tab") => Some("⌘Tab change d'application"),
-                (false, false, false, true, "Space") => Some("⌘Espace ouvre Spotlight"),
-                (false, false, false, true, "H") => Some("⌘H masque l'application"),
-                (false, false, false, true, "M") => Some("⌘M réduit la fenêtre"),
-                (true, false, false, true, "Q") => Some("⌃⌘Q verrouille l'écran"),
-                (false, false, true, true, "3" | "4" | "5") => Some("⇧⌘3, 4, 5 : captures d'écran"),
+                (false, false, false, true, "Q") => Some("⌘Q quits the active application"),
+                (false, false, false, true, "Tab") => Some("⌘Tab switches application"),
+                (false, false, false, true, "Space") => Some("⌘Space opens Spotlight"),
+                (false, false, false, true, "H") => Some("⌘H hides the application"),
+                (false, false, false, true, "M") => Some("⌘M minimizes the window"),
+                (true, false, false, true, "Q") => Some("⌃⌘Q locks the screen"),
+                (false, false, true, true, "3" | "4" | "5") => Some("⇧⌘3, 4, 5: screenshots"),
                 _ => None,
             };
         }
         match (ctrl, alt, shift, meta, k) {
-            (false, true, false, false, "Tab") => Some("Alt+Tab change de fenêtre"),
-            (false, true, false, false, "F4") => Some("Alt+F4 ferme la fenêtre"),
+            (false, true, false, false, "Tab") => Some("Alt+Tab switches windows"),
+            (false, true, false, false, "F4") => Some("Alt+F4 closes the window"),
             (true, true, false, false, "Delete") => Some("Ctrl+Alt+Suppr"),
-            (false, false, false, true, "L" | "D" | "E" | "R" | "Tab") => Some("raccourci Windows"),
+            (false, false, false, true, "L" | "D" | "E" | "R" | "Tab") => Some("Windows shortcut"),
             _ => None,
         }
     }

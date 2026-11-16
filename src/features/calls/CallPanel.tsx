@@ -84,7 +84,7 @@ export function CallPanel({ call }: { call: Call }) {
 
   return (
     <section
-      aria-label={`Appel avec ${name}`}
+      aria-label={`Call with ${name}`}
       data-testid="call-panel"
       data-state={call.state}
       className="relative flex h-full min-h-[30rem] w-full flex-col items-center overflow-hidden px-5 pt-7 pb-6"
@@ -116,10 +116,10 @@ export function CallPanel({ call }: { call: Call }) {
           )}
         >
           {CALL_STATE_LABEL[call.state]}
-          {onHold && call.heldRemotely && !call.heldLocally && " par le correspondant"}
+          {onHold && call.heldRemotely && !call.heldLocally && " by the other party"}
         </p>
         {(inDialog || (terminal && call.durationSecs > 0)) && (
-          <p className="tabular text-xl font-light tracking-wider" aria-label="Durée de l'appel">
+          <p className="tabular text-xl font-light tracking-wider" aria-label="Call duration">
             {formatDuration(seconds)}
           </p>
         )}
@@ -164,7 +164,7 @@ export function CallPanel({ call }: { call: Call }) {
             className="bg-success text-success-foreground hover:bg-success/90 h-14 flex-1 rounded-2xl"
             onClick={() => void answer(call.id)}
           >
-            <Phone className="size-5" aria-hidden /> Répondre
+            <Phone className="size-5" aria-hidden /> Answer
           </Button>
         </div>
       )}
@@ -191,10 +191,10 @@ export function CallPanel({ call }: { call: Call }) {
               onKey={(k) => void sendDtmf(call.id, k)}
             />
           </div>
-          <div role="group" aria-label="Commandes de l'appel" className="grid w-full grid-cols-5 gap-2">
+          <div role="group" aria-label="Call controls" className="grid w-full grid-cols-5 gap-2">
             <Control
-              label="Micro"
-              ariaLabel={call.muted ? "Réactiver le micro" : "Couper le micro"}
+              label="Mic"
+              ariaLabel={call.muted ? "Unmute" : "Mute the microphone"}
               active={call.muted}
               disabled={!inDialog}
               onClick={() => void toggleMute(call.id)}
@@ -202,8 +202,8 @@ export function CallPanel({ call }: { call: Call }) {
               {call.muted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
             </Control>
             <Control
-              label="Attente"
-              ariaLabel={call.heldLocally ? "Reprendre l'appel" : "Mettre en attente"}
+              label="Hold"
+              ariaLabel={call.heldLocally ? "Resume the call" : "Put on hold"}
               active={call.heldLocally}
               disabled={!inDialog}
               onClick={() => void toggleHold(call.id)}
@@ -211,8 +211,8 @@ export function CallPanel({ call }: { call: Call }) {
               {call.heldLocally ? <Play className="size-6" /> : <Pause className="size-6" />}
             </Control>
             <Control
-              label="Clavier"
-              ariaLabel="Clavier (tonalités DTMF)"
+              label="Keypad"
+              ariaLabel="Keypad (DTMF tones)"
               active={showKeypad}
               disabled={!inDialog}
               onClick={() => setKeypadOpen((v) => !v)}
@@ -220,14 +220,14 @@ export function CallPanel({ call }: { call: Call }) {
               <Grid3x3 className="size-6" />
             </Control>
             <Control
-              label="Transfert"
-              ariaLabel="Transférer l'appel"
+              label="Transfer"
+              ariaLabel="Transfer the call"
               disabled={!inDialog}
               onClick={() => setTransferOpen(true)}
             >
               <PhoneForwarded className="size-6" />
             </Control>
-            <Control label="Raccrocher" ariaLabel="Raccrocher" danger onClick={() => void hangup(call.id)}>
+            <Control label="Hang up" ariaLabel="Hang up" danger onClick={() => void hangup(call.id)}>
               <PhoneOff className="size-6" />
             </Control>
           </div>

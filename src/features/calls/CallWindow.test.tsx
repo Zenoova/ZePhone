@@ -43,13 +43,13 @@ describe("CallWindow", () => {
     const names = within(screen.getByTestId("call-toolbar"))
       .getAllByRole("button")
       .map((b) => b.getAttribute("aria-label"));
-    expect(names).toEqual(["Périphériques audio", "Volume du son", "Options de l'appel"]);
+    expect(names).toEqual(["Audio devices", "Sound volume", "Call options"]);
   });
 
   it("an incoming call rings in this window, with its answer and reject buttons", () => {
     useCallsStore.setState({ calls: { call1: makeCall({ state: "incoming", direction: "incoming" }) } });
     show();
-    expect(screen.getByRole("button", { name: /Répondre/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Answer/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Refuser/ })).toBeInTheDocument();
   });
 
@@ -107,23 +107,23 @@ describe("the toolbar", () => {
   it("opens the options: developer ones and a few others", async () => {
     useCallsStore.setState({ calls: { call1: connected() } });
     show();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Options de l'appel" }), { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("button", { name: "Call options" }), { key: "Enter" });
     const items = (await screen.findAllByRole("menuitem")).map((i) => i.textContent);
     expect(items).toEqual([
-      "Garder au premier plan",
-      "Ouvrir ZePhone",
-      "Informations de l'appel",
-      "Statistiques avancées",
-      "Journal du moteur SIP",
-      "Copier l'identifiant de l'appel",
+      "Keep on top",
+      "Open ZePhone",
+      "Call information",
+      "Advanced statistics",
+      "SIP engine log",
+      "Copy the call identifier",
     ]);
   });
 
   it("shows what the backend knows about the call", async () => {
     useCallsStore.setState({ calls: { call1: connected() } });
     show();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Options de l'appel" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: /Informations de l'appel/ }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Call options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Call information/ }));
     const info = await screen.findByTestId("call-info");
     expect(info).toHaveTextContent("call1");
     expect(info).toHaveTextContent("1002");
@@ -134,18 +134,18 @@ describe("the toolbar", () => {
     invoke.mockImplementation(async (cmd: string) => (cmd === "get_call_stats" ? run : undefined));
     useCallsStore.setState({ calls: { call1: connected() } });
     show();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Options de l'appel" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: /Statistiques avancées/ }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Call options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Advanced statistics/ }));
     expect(await screen.findByTestId("call-stats")).toBeInTheDocument();
     expect(invoke).toHaveBeenCalledWith("get_call_stats", { callId: "call1" });
-    expect(await screen.findByTestId("stats-count")).toHaveTextContent("8 secondes mesurées");
+    expect(await screen.findByTestId("stats-count")).toHaveTextContent("8 seconds measured");
   });
 
   it("keeps the call window on top on request", async () => {
     useCallsStore.setState({ calls: { call1: connected() } });
     show();
-    fireEvent.keyDown(screen.getByRole("button", { name: "Options de l'appel" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: /Garder au premier plan/ }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Call options" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Keep on top/ }));
     expect(invoke).toHaveBeenCalledWith("set_call_window_on_top", { onTop: true });
   });
 });

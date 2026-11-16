@@ -48,7 +48,7 @@ beforeEach(() => {
 describe("DialerPage keyboard", () => {
   it("has no text input: the number is a display", () => {
     render(<DialerPage />);
-    expect(screen.queryByRole("textbox", { name: "Numéro à appeler" })).toHaveAttribute("aria-readonly", "true");
+    expect(screen.queryByRole("textbox", { name: "Number to call" })).toHaveAttribute("aria-readonly", "true");
     expect(document.querySelector("input")).toBeNull();
   });
 
@@ -87,10 +87,10 @@ describe("DialerPage keyboard", () => {
     render(
       <>
         <DialerPage />
-        <input aria-label="ailleurs" />
+        <input aria-label="elsewhere" />
       </>,
     );
-    press("9", screen.getByLabelText("ailleurs"));
+    press("9", screen.getByLabelText("elsewhere"));
     expect(display().textContent).toBe("");
   });
 
@@ -141,15 +141,15 @@ describe("DialerPage keyboard", () => {
 });
 
 describe("DialerPage redial", () => {
-  it("clicking Appeler with an empty display brings back the last dialled number instead of calling", async () => {
+  it("clicking Call with an empty display brings back the last dialled number instead of calling", async () => {
     render(<DialerPage />);
-    fireEvent.click(screen.getByRole("button", { name: /Appeler/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Call/ }));
     await vi.waitFor(() => expect(display()).toHaveTextContent("1002"));
     expect(invoke).toHaveBeenCalledWith("list_history", { filter: { kind: "outgoing", limit: 1 } });
     expect(invoke.mock.calls.some((c) => c[0] === "dial")).toBe(false);
 
     // A second click now dials it.
-    fireEvent.click(screen.getByRole("button", { name: /Appeler/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Call/ }));
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1002", accountId: "acc1" }));
   });
 
@@ -162,20 +162,20 @@ describe("DialerPage redial", () => {
   it("says so when there is nothing to redial", async () => {
     invoke.mockImplementation(async (cmd: string) => (cmd === "list_history" ? [] : undefined));
     render(<DialerPage />);
-    fireEvent.click(screen.getByRole("button", { name: /Appeler/ }));
-    await vi.waitFor(() => expect(toast.info).toHaveBeenCalledWith("Aucun appel sortant à rappeler"));
+    fireEvent.click(screen.getByRole("button", { name: /Call/ }));
+    await vi.waitFor(() => expect(toast.info).toHaveBeenCalledWith("No outgoing call to redial"));
     expect(display().textContent).toBe("");
   });
 
   it("the button stays enabled with an empty display when an account is connected", () => {
     render(<DialerPage />);
-    expect(screen.getByRole("button", { name: /Appeler/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Call/ })).toBeEnabled();
   });
 
   it("the button is disabled when the engine is not running", () => {
     useEngineStore.setState({ info: { name: "baresip", version: null, codecs: [], state: "stopped" } });
     render(<DialerPage />);
-    expect(screen.getByRole("button", { name: /Appeler/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Call/ })).toBeDisabled();
   });
 });
 
@@ -191,30 +191,30 @@ describe("DialerPage accounts", () => {
     });
   };
   const type = (n: string) => n.split("").forEach((k) => press(k));
-  const choose = () => screen.getByRole("button", { name: "Choisir le compte pour appeler" });
+  const choose = () => screen.getByRole("button", { name: "Choose the account to call with" });
   const openMenu = () => fireEvent.keyDown(choose(), { key: "Enter" });
 
   it("with one account there is nothing to choose and no account name: just the keypad and the call button", () => {
     render(<DialerPage />);
-    expect(screen.queryByText("Bureau")).toBeNull();
-    expect(screen.queryByText("Compte par défaut")).toBeNull();
+    expect(screen.queryByText("Office")).toBeNull();
+    expect(screen.queryByText("Default account")).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Choisir le compte pour appeler" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Appeler" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Choose the account to call with" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Call" })).toBeInTheDocument();
   });
 
   it("with several accounts the list is not on top of the keypad any more", () => {
     two();
     render(<DialerPage />);
     expect(screen.queryByRole("combobox")).toBeNull();
-    expect(screen.queryByText("Compte par défaut")).toBeNull();
+    expect(screen.queryByText("Default account")).toBeNull();
     expect(screen.queryByText("Mobile VoIP")).toBeNull(); // only in the menu, once opened
   });
 
   it("with several accounts a menu sits next to the call button", () => {
     two();
     render(<DialerPage />);
-    const call = screen.getByRole("button", { name: "Appeler" });
+    const call = screen.getByRole("button", { name: "Call" });
     expect(call.parentElement).toContainElement(choose());
   });
 
@@ -222,7 +222,7 @@ describe("DialerPage accounts", () => {
     two();
     render(<DialerPage />);
     type("1002");
-    fireEvent.click(screen.getByRole("button", { name: "Appeler" }));
+    fireEvent.click(screen.getByRole("button", { name: "Call" }));
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1002", accountId: "acc1" }));
   });
 
@@ -252,14 +252,14 @@ describe("DialerPage accounts", () => {
     type("1002");
     openMenu();
     const items = await screen.findAllByRole("menuitem");
-    expect(items.map((i) => i.textContent)).toEqual(["Bureau · par défaut", "Mobile VoIP"]);
+    expect(items.map((i) => i.textContent)).toEqual(["Office · default", "Mobile VoIP"]);
     fireEvent.click(within(document.body).getByRole("menuitem", { name: "Mobile VoIP" }));
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1002", accountId: "acc2" }));
-    // the choice was for this call only: the next "Appeler" is the default account again
+    // the choice was for this call only: the next “Call” is the default account again
     await vi.waitFor(() => expect(display().textContent).toBe("")); // the call went out: the display is clear
     invoke.mockClear();
     type("1003");
-    fireEvent.click(await screen.findByRole("button", { name: "Appeler" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Call" }));
     await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1003", accountId: "acc1" }));
   });
 
@@ -278,14 +278,14 @@ describe("DialerPage accounts", () => {
       loaded: true,
     });
     render(<DialerPage />);
-    expect(screen.queryByRole("button", { name: "Choisir le compte pour appeler" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Choose the account to call with" })).toBeNull();
   });
 
   it("two accounts with the same name are told apart by their address", async () => {
     useAccountsStore.setState({
       accounts: [
-        makeAccount({ label: "Bureau", username: "1001" }),
-        makeAccount({ id: "acc2", label: "Bureau", username: "2002", isDefault: false }),
+        makeAccount({ label: "Office", username: "1001" }),
+        makeAccount({ id: "acc2", label: "Office", username: "2002", isDefault: false }),
       ],
       statuses: { acc1: makeStatus(), acc2: makeStatus({ accountId: "acc2" }) },
       loaded: true,
@@ -294,6 +294,6 @@ describe("DialerPage accounts", () => {
     type("1");
     openMenu();
     const items = (await screen.findAllByRole("menuitem")).map((i) => i.textContent);
-    expect(items).toEqual(["Bureau (1001@example.com) · par défaut", "Bureau (2002@example.com)"]);
+    expect(items).toEqual(["Office (1001@example.com) · default", "Office (2002@example.com)"]);
   });
 });

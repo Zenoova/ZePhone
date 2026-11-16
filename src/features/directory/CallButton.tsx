@@ -28,7 +28,7 @@ export function CallButton({
       <Button
         size="icon"
         className={ROUND}
-        aria-label={`Appeler ${name}`}
+        aria-label={`Call ${name}`}
         disabled={phones.length === 0}
         tabIndex={tabIndex}
         onClick={(e) => {
@@ -47,7 +47,7 @@ export function CallButton({
         <Button
           size="icon"
           className={ROUND}
-          aria-label={`Appeler ${name} : choisir le numéro`}
+          aria-label={`Call ${name}: choose the number`}
           tabIndex={tabIndex}
           onClick={(e) => e.stopPropagation()}
         >
@@ -55,7 +55,7 @@ export function CallButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72" data-testid="number-chooser">
-        <p className="text-muted-foreground px-2 pb-1 text-xs font-medium">Appeler quel numéro ?</p>
+        <p className="text-muted-foreground px-2 pb-1 text-xs font-medium">Call which number?</p>
         <ul className="space-y-0.5">
           {phones.map((p) => (
             <li key={`${p.kind}-${p.number}`}>

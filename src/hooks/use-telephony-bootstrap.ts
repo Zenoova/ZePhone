@@ -36,7 +36,7 @@ export function useTelephonyBootstrap(): void {
           if (isTerminal(call)) useCallStatsStore.getState().drop(call.id);
         },
         onHistoryChanged: () => void useHistoryStore.getState().load(),
-        onAudioError: (message) => toast.error(`Erreur audio : ${message}`),
+        onAudioError: (message) => toast.error(`Audio error: ${message}`),
         onAudioLevel: (l) => pushLevel(l.callId, l.tx, l.db),
         onCallStats: (sample) => useCallStatsStore.getState().push(sample),
         onRecordingsChanged: () => void useRecordingsStore.getState().load(),
@@ -58,7 +58,7 @@ export function useTelephonyBootstrap(): void {
         useEngineStore.getState().apply(snap.engine);
       } catch (e) {
         toast.error(
-          e instanceof Object && "message" in e ? String((e as { message: unknown }).message) : "Chargement impossible",
+          e instanceof Object && "message" in e ? String((e as { message: unknown }).message) : "Cannot load",
         );
       }
       void useSettingsStore.getState().load();

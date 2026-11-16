@@ -27,9 +27,9 @@ export function CallToolbar({ call }: { call: Call }) {
   const copyId = async () => {
     try {
       await navigator.clipboard.writeText(call.id);
-      toast.success("Identifiant copié", { description: call.id });
+      toast.success("Call ID copied", { description: call.id });
     } catch {
-      toast.error("Impossible de copier l'identifiant");
+      toast.error("Cannot copy the identifier");
     }
   };
 
@@ -45,7 +45,7 @@ export function CallToolbar({ call }: { call: Call }) {
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" aria-label="Volume du son" title="Volume du son">
+          <Button variant="ghost" size="sm" aria-label="Sound volume" title="Sound volume">
             <Volume2 className="size-4" />
           </Button>
         </PopoverTrigger>
@@ -57,35 +57,35 @@ export function CallToolbar({ call }: { call: Call }) {
       <DropdownMenu
         label="Options"
         trigger={
-          <Button variant="ghost" size="sm" aria-label="Options de l'appel" title="Options de l'appel">
+          <Button variant="ghost" size="sm" aria-label="Call options" title="Call options">
             <Menu className="size-4" />
           </Button>
         }
         items={[
           {
-            label: onTop ? "Ne plus garder au premier plan" : "Garder au premier plan",
+            label: onTop ? "Stop keeping on top" : "Keep on top",
             icon: <Pin className="size-4" />,
             onSelect: toggleOnTop,
           },
           {
-            label: "Ouvrir ZePhone",
+            label: "Open ZePhone",
             icon: <AppWindow className="size-4" />,
             onSelect: () => void telephony.showMain(),
           },
           {
-            label: "Informations de l'appel",
+            label: "Call information",
             icon: <Info className="size-4" />,
             onSelect: () => setInfoOpen(true),
             separatorBefore: true,
           },
           {
-            label: "Statistiques avancées",
+            label: "Advanced statistics",
             icon: <ChartLine className="size-4" />,
             onSelect: () => setStatsOpen(true),
           },
-          { label: "Journal du moteur SIP", icon: <ScrollText className="size-4" />, onSelect: () => setLogOpen(true) },
+          { label: "SIP engine log", icon: <ScrollText className="size-4" />, onSelect: () => setLogOpen(true) },
           {
-            label: "Copier l'identifiant de l'appel",
+            label: "Copy the call identifier",
             icon: <Copy className="size-4" />,
             onSelect: () => void copyId(),
           },

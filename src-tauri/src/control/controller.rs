@@ -74,9 +74,9 @@ impl Controller {
         }
         let outcome = match &cmd {
             // These do not touch a call: no need to queue behind one.
-            Command::ShowApp => self.show(None, "Fenêtre affichée"),
-            Command::ShowDialer => self.show(Some(Focus::Dialer), "Clavier affiché"),
-            Command::ShowSearch => self.show(Some(Focus::Search), "Recherche de contacts affichée"),
+            Command::ShowApp => self.show(None, "Window shown"),
+            Command::ShowDialer => self.show(Some(Focus::Dialer), "Keypad shown"),
+            Command::ShowSearch => self.show(Some(Focus::Search), "Contact search shown"),
             Command::Status => self.status(),
             _ => {
                 let _turn = self.gate.lock().await;
@@ -109,7 +109,7 @@ impl Controller {
             return self.dnd(*enabled).await;
         }
         if !self.phone.engine_running() {
-            return Outcome::of(Status::Disconnected, "Le moteur SIP n'est pas démarré");
+            return Outcome::of(Status::Disconnected, "The SIP engine is not started");
         }
         match cmd {
             Command::Dial { target, account } => self.dial(target, account.as_deref()).await,
@@ -119,7 +119,7 @@ impl Controller {
                     Err(o) => return o,
                 };
                 let r = self.phone.answer(&call.id).await;
-                self.accepted(r, &call, "Appel décroché")
+                self.accepted(r, &call, "Call answered")
             }
             Command::Reject { call_id } => {
                 let call = match self.pick(Need::Incoming, call_id.as_deref()) {
@@ -127,7 +127,7 @@ impl Controller {
                     Err(o) => return o,
                 };
                 let r = self.phone.reject(&call.id).await;
-                self.accepted(r, &call, "Appel refusé")
+                self.accepted(r, &call, "Declined call")
             }
             Command::Hangup { call_id } => {
                 let call = match self.pick(Need::Hangup, call_id.as_deref()) {
@@ -135,7 +135,7 @@ impl Controller {
                     Err(o) => return o,
                 };
                 let r = self.phone.hangup(&call.id).await;
-                self.accepted(r, &call, "Appel raccroché")
+                self.accepted(r, &call, "Call ended")
             }
             Command::Mute { call_id, muted } => self.mute(call_id.as_deref(), *muted).await,
             Command::Hold { call_id, held } => self.hold(call_id.as_deref(), *held).await,
@@ -151,7 +151,7 @@ impl Controller {
     fn pick(&self, need: Need, id: Option<&str>) -> Result<Call, Outcome> {
         let calls = self.phone.calls();
         select(&calls, need, id).cloned().map_err(|e| match e {
-            SelectError::NotFound => Outcome::of(Status::NotFound, "Appel introuvable"),
+            SelectError::NotFound => Outcome::of(Status::NotFound, "Call not found"),
             SelectError::Unavailable(why) => Outcome::of(Status::Unavailable, why),
             SelectError::Ambiguous(candidates) => ambiguous(candidates),
         })
@@ -176,7 +176,7 @@ impl Controller {
 
     fn failed(&self, e: AppError, call_id: Option<&str>) -> Outcome {
         let mut o = match e {
-            AppError::NotFound(_) => Outcome::of(Status::NotFound, "Appel introuvable"),
+            AppError::NotFound(_) => Outcome::of(Status::NotFound, "Call not found"),
             AppError::Validation(m) => Outcome::of(Status::Unavailable, m),
             other => Outcome::of(Status::Failed, other.to_string()),
         };
@@ -188,7 +188,7 @@ impl Controller {
     async fn dial(&self, target: &str, account: Option<&str>) -> Outcome {
         // The same rules as the dialer: extensions, numbers and SIP addresses are accepted as they are there.
         if let Err(e) = uri::normalize_target(target, "invalid") {
-            return Outcome::of(Status::Invalid, format!("Destinataire invalide : {e}"));
+            return Outcome::of(Status::Invalid, format!("Invalid recipient: {e}"));
         }
         let app = match self.phone.status() {
             Ok(a) => a,
@@ -196,22 +196,22 @@ impl Controller {
         };
         match account {
             Some(id) => match app.accounts.iter().find(|a| a.id == id) {
-                None => return Outcome::of(Status::NotFound, "Compte introuvable"),
+                None => return Outcome::of(Status::NotFound, "Account not found"),
                 Some(a) if !a.connected => {
                     return Outcome::of(
                         Status::Disconnected,
-                        format!("Le compte « {} » n'est pas connecté", a.label),
+                        format!("The account “{}” is not connected", a.label),
                     );
                 }
                 Some(_) => {}
             },
             None if !app.accounts.iter().any(|a| a.connected) => {
-                return Outcome::of(Status::Disconnected, "Aucun compte SIP n'est connecté");
+                return Outcome::of(Status::Disconnected, "No SIP account is connected");
             }
             None => {}
         }
         match self.phone.dial(target.trim(), account).await {
-            Ok(call) => Outcome::ok("Appel lancé", Some(call), false),
+            Ok(call) => Outcome::ok("Call started", Some(call), false),
             Err(e) => self.failed(e, None),
         }
     }
@@ -225,9 +225,9 @@ impl Controller {
         if call.muted == wanted {
             return Outcome::unchanged(
                 if wanted {
-                    "Le micro est déjà coupé"
+                    "The microphone is already muted"
                 } else {
-                    "Le micro est déjà actif"
+                    "The microphone is already on"
                 },
                 Some(call),
             );
@@ -242,9 +242,9 @@ impl Controller {
             settled,
             ..Outcome::ok(
                 if wanted {
-                    "Micro coupé"
+                    "Muted"
                 } else {
-                    "Micro réactivé"
+                    "Microphone unmuted"
                 },
                 after,
                 settled,
@@ -266,9 +266,9 @@ impl Controller {
         if call.held_locally == wanted {
             return Outcome::unchanged(
                 if wanted {
-                    "L'appel est déjà en attente"
+                    "The call is already on hold"
                 } else {
-                    "L'appel n'est pas en attente"
+                    "The call is not on hold"
                 },
                 Some(call),
             );
@@ -285,9 +285,9 @@ impl Controller {
         let settled = after.as_ref().is_some_and(|c| c.held_locally == wanted);
         Outcome::ok(
             if wanted {
-                "Appel mis en attente"
+                "Call put on hold"
             } else {
-                "Appel repris"
+                "Call resumed"
             },
             after,
             settled,
@@ -303,9 +303,9 @@ impl Controller {
         if wanted == current {
             return Outcome::unchanged(
                 if wanted {
-                    "« Ne pas déranger » est déjà activé"
+                    "“Do not disturb” is already on"
                 } else {
-                    "« Ne pas déranger » est déjà désactivé"
+                    "“Do not disturb” is already off"
                 },
                 None,
             );
@@ -313,9 +313,9 @@ impl Controller {
         match self.phone.set_do_not_disturb(wanted).await {
             Ok(()) => Outcome::ok(
                 if wanted {
-                    "« Ne pas déranger » activé"
+                    "“Do not disturb” on"
                 } else {
-                    "« Ne pas déranger » désactivé"
+                    "“Do not disturb” off"
                 },
                 None,
                 true,
@@ -332,7 +332,7 @@ fn ambiguous(candidates: Vec<Candidate>) -> Outcome {
         .collect::<Vec<_>>()
         .join(", ");
     Outcome::ambiguous(
-        format!("Plusieurs appels correspondent : {list}. Précisez l'appel."),
+        format!("Several calls match: {list}. Specify the call."),
         candidates,
     )
 }

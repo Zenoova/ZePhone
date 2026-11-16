@@ -9,47 +9,44 @@ export function NotificationSettings() {
   const update = useSettingsStore((s) => s.update);
   return (
     <div className="space-y-6">
-      <SettingsSection title="Disponibilité">
+      <SettingsSection title="Availability">
         <SettingRow
-          label="Ne pas déranger"
-          description="Les appels entrants sont refusés (486 « Occupé ») sans sonner ni notifier. Ils restent dans l'historique, comme manqués. Les appels que vous passez ne sont pas touchés."
+          label="Do not disturb"
+          description="Incoming calls are declined (486 “Busy”) without ringing or notifying. They stay in the history, as missed. The calls you make are not affected."
         >
           <Switch
             checked={g.doNotDisturb}
             onCheckedChange={(v) => void update({ general: { doNotDisturb: v } })}
-            aria-label="Ne pas déranger"
+            aria-label="Do not disturb"
           />
         </SettingRow>
       </SettingsSection>
       <SettingsSection
         title="Notifications"
-        description="L'appel entrant s'affiche toujours dans l'application, même si la fenêtre était réduite."
+        description="The incoming call is always shown in the application, even if the window was minimized."
       >
         <SettingRow
-          label="Notification système pour un appel entrant"
-          description="Notification native du système à l'arrivée d'un appel"
+          label="System notification for an incoming call"
+          description="Native system notification when a call arrives"
         >
           <Switch
             checked={n.incomingCall}
             onCheckedChange={(v) => void update({ notifications: { incomingCall: v } })}
-            aria-label="Notification pour un appel entrant"
+            aria-label="Notification for an incoming call"
           />
         </SettingRow>
-        <SettingRow label="Notification pour un appel manqué">
+        <SettingRow label="Notification for a missed call">
           <Switch
             checked={n.missedCall}
             onCheckedChange={(v) => void update({ notifications: { missedCall: v } })}
-            aria-label="Notification pour un appel manqué"
+            aria-label="Notification for a missed call"
           />
         </SettingRow>
-        <SettingRow
-          label="Sonnerie"
-          description="Joue une sonnerie sur la sortie audio choisie pendant un appel entrant"
-        >
+        <SettingRow label="Ringtone" description="Plays a ringtone on the chosen audio output during an incoming call">
           <Switch
             checked={n.ringtone}
             onCheckedChange={(v) => void update({ notifications: { ringtone: v } })}
-            aria-label="Sonnerie"
+            aria-label="Ringtone"
           />
         </SettingRow>
       </SettingsSection>

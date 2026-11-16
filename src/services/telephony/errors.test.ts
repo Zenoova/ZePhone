@@ -4,18 +4,18 @@ import { errorMessage, toAppError } from "./errors";
 
 describe("toAppError", () => {
   it("keeps the backend's {kind, message}", () => {
-    expect(toAppError({ kind: "validation", message: "Port invalide" })).toEqual({
+    expect(toAppError({ kind: "validation", message: "Invalid port" })).toEqual({
       kind: "validation",
-      message: "Port invalide",
+      message: "Invalid port",
     });
   });
   it("accepts plain strings and unknown shapes", () => {
     expect(toAppError("boom")).toEqual({ kind: "unknown", message: "boom" });
     expect(toAppError({ message: "x" })).toEqual({ kind: "unknown", message: "x" });
-    expect(toAppError(42)).toEqual({ kind: "unknown", message: "Erreur inattendue" });
-    expect(toAppError(null)).toEqual({ kind: "unknown", message: "Erreur inattendue" });
+    expect(toAppError(42)).toEqual({ kind: "unknown", message: "Unexpected error" });
+    expect(toAppError(null)).toEqual({ kind: "unknown", message: "Unexpected error" });
   });
   it("errorMessage extracts the text", () => {
-    expect(errorMessage({ kind: "engine", message: "pas de moteur" })).toBe("pas de moteur");
+    expect(errorMessage({ kind: "engine", message: "no engine" })).toBe("no engine");
   });
 });

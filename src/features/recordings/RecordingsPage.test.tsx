@@ -23,7 +23,7 @@ const rec = (over: Partial<Recording> = {}): Recording => ({
   sizeBytes: 4_000_000,
   remoteNumber: "1002",
   remoteName: "Bob Martin",
-  accountLabel: "Bureau",
+  accountLabel: "Office",
   direction: "incoming",
   peaks: [0, 128, 255, 64],
   ...over,
@@ -38,7 +38,7 @@ beforeEach(() => {
 describe("RecordingsPage", () => {
   it("explains how to record when there is nothing yet", () => {
     render(<RecordingsPage />);
-    expect(screen.getByText("Aucun enregistrement")).toBeInTheDocument();
+    expect(screen.getByText("No recordings")).toBeInTheDocument();
     expect(screen.queryAllByTestId("recording")).toHaveLength(0);
   });
 
@@ -54,12 +54,12 @@ describe("RecordingsPage", () => {
     expect(items).toHaveLength(2);
     expect(within(items[0]!).getByText("Bob Martin")).toBeInTheDocument();
     expect(items[0]).toHaveTextContent("2 min 05 s");
-    expect(items[0]).toHaveTextContent("4 Mo");
+    expect(items[0]).toHaveTextContent("4 MB");
     expect(within(items[1]!).getByText("2000")).toBeInTheDocument();
-    expect(screen.getByText(/2 appels · 4 Mo sur ce Mac/)).toBeInTheDocument();
+    expect(screen.getByText(/2 calls · 4 MB on this Mac/)).toBeInTheDocument();
     // The Detent voice note: play button, position, speed — and no transcript, there is none.
     expect(within(items[0]!).getByRole("button", { name: "Lecture" })).toBeInTheDocument();
-    expect(within(items[0]!).getByRole("slider", { name: "Position de lecture" })).toBeInTheDocument();
+    expect(within(items[0]!).getByRole("slider", { name: "Playback position" })).toBeInTheDocument();
     expect(within(items[0]!).getByRole("button", { name: /Vitesse/ })).toBeInTheDocument();
     expect(within(items[0]!).queryByText("Transcription")).toBeNull();
   });
@@ -68,20 +68,20 @@ describe("RecordingsPage", () => {
     invoke.mockResolvedValue(undefined);
     useRecordingsStore.setState({ recordings: [rec()] });
     render(<RecordingsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer l'enregistrement de Bob Martin" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete the recording of Bob Martin" }));
     expect(invoke).not.toHaveBeenCalled();
-    fireEvent.click(await screen.findByRole("button", { name: "Supprimer" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("delete_recording", { id: "r1" }));
     expect(useRecordingsStore.getState().recordings).toHaveLength(0);
   });
 
   it("puts the recording back and says so when the deletion fails", async () => {
-    invoke.mockRejectedValue({ kind: "other", message: "Suppression impossible" });
+    invoke.mockRejectedValue({ kind: "other", message: "Cannot delete" });
     useRecordingsStore.setState({ recordings: [rec()] });
     render(<RecordingsPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Supprimer l'enregistrement de Bob Martin" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Supprimer" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Suppression impossible"));
+    fireEvent.click(screen.getByRole("button", { name: "Delete the recording of Bob Martin" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Cannot delete"));
     expect(useRecordingsStore.getState().recordings).toHaveLength(1);
   });
 });

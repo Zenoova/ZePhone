@@ -37,7 +37,7 @@ fn check_interval(n: u32) -> AppResult<()> {
         Ok(())
     } else {
         Err(AppError::validation(
-            "La fréquence doit être « manuelle » ou comprise entre 5 minutes et 7 jours",
+            "The frequency must be “manual” or between 5 minutes and 7 days",
         ))
     }
 }
@@ -52,9 +52,7 @@ fn ca_pem(state: &AppState) -> AppResult<Option<Vec<u8>>> {
         return Ok(None);
     };
     std::fs::read(&path).map(Some).map_err(|_| {
-        AppError::validation(
-            "Le fichier de l'autorité de certification (Paramètres → Réseau) est illisible",
-        )
+        AppError::validation("The certificate authority file (Settings → Network) is unreadable")
     })
 }
 
@@ -133,7 +131,7 @@ fn ldap_password(state: &AppState, input: &LdapSourceInput) -> AppResult<Option<
     }
 }
 
-/// "Tester la connexion": connects, signs in, and returns the first contacts the configuration would produce, so
+/// "Test the connection": connects, signs in, and returns the first contacts the configuration would produce, so
 /// that the source can be seen before it is turned on. Nothing is saved.
 #[tauri::command]
 pub async fn directory_test_ldap(
@@ -234,7 +232,7 @@ pub async fn directory_connect_microsoft(
         input.kind,
         SourceKind::MicrosoftOrg | SourceKind::MicrosoftPersonal
     ) {
-        return Err(AppError::validation("Source Microsoft attendue"));
+        return Err(AppError::validation("Microsoft source expected"));
     }
     input
         .config
@@ -249,7 +247,7 @@ pub async fn directory_connect_microsoft(
         open_in_browser(&auth.url).map_err(|_| {
             SyncError::new(
                 SyncErrorKind::Config,
-                "Impossible d'ouvrir votre navigateur pour la connexion Microsoft.",
+                "Cannot open your browser for the Microsoft sign-in.",
             )
         })?;
         let http = http_client(ca.as_deref())?;
@@ -298,7 +296,7 @@ pub fn directory_cancel_connect(state: S) {
 pub struct SystemContactsInfo {
     /// This platform has an address book ZePhone can read.
     pub available: bool,
-    /// What it is called here ("Contacts du Mac").
+    /// What it is called here ("Mac contacts").
     pub name: &'static str,
     pub access: Access,
 }
@@ -321,7 +319,7 @@ pub fn directory_system_contacts_info() -> SystemContactsInfo {
 pub async fn directory_connect_system_contacts(state: S<'_>) -> AppResult<SourceView> {
     if !system_contacts::AVAILABLE {
         return Err(AppError::validation(
-            "Cet appareil n'a pas de contacts que ZePhone puisse lire",
+            "This device has no contacts that ZePhone can read",
         ));
     }
     let provider = system_contacts::platform_provider();
@@ -346,7 +344,7 @@ pub fn directory_open_contacts_privacy_settings() -> AppResult<()> {
     #[cfg(not(target_os = "macos"))]
     {
         Err(AppError::validation(
-            "Les réglages de confidentialité ne s'ouvrent pas depuis ZePhone sur ce système",
+            "The privacy settings cannot be opened from ZePhone on this system",
         ))
     }
 }
@@ -450,7 +448,7 @@ mod tests {
     #[test]
     fn a_form_with_a_password_is_read_but_never_printed() {
         let input: LdapSourceInput = serde_json::from_value(serde_json::json!({
-            "name": "Annuaire",
+            "name": "Directory",
             "config": {"url": "ldaps://ldap.example.com", "baseDn": "dc=example,dc=com"},
             "password": "hunter2"
         }))
@@ -460,7 +458,7 @@ mod tests {
         // the result of a test carries a report or a failure, never the password
         let failure = serde_json::to_string(&Failure {
             kind: SyncErrorKind::Auth,
-            message: "refusé".into(),
+            message: "declined".into(),
         })
         .unwrap();
         assert!(!failure.contains("hunter2"));

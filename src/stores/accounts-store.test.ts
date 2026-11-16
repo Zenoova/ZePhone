@@ -14,7 +14,7 @@ describe("account statuses", () => {
     const { hydrate, applyStatus } = useAccountsStore.getState();
     hydrate([makeAccount()], [makeStatus({ state: "connecting", sipCode: null })]);
     expect(useAccountsStore.getState().statuses.acc1?.state).toBe("connecting");
-    applyStatus(makeStatus({ state: "error", sipCode: 403, message: "Accès refusé (403)" }));
+    applyStatus(makeStatus({ state: "error", sipCode: 403, message: "Access denied (403)" }));
     expect(useAccountsStore.getState().statuses.acc1).toMatchObject({ state: "error", sipCode: 403 });
   });
 });

@@ -71,9 +71,7 @@ impl HeadsetRuntime {
     fn set_listening(&self, _: bool) {
         self.service
             .set_reading(super::service::Reading::Unavailable {
-                message:
-                    "La lecture des boutons du casque n'est pas encore disponible sur ce système"
-                        .into(),
+                message: "Reading the headset buttons is not available on this system yet".into(),
             });
     }
 }

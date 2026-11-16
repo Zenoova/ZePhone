@@ -55,7 +55,7 @@ fn engine_paths(app: &AppHandle, work_dir: PathBuf) -> AppResult<BaresipPaths> {
         .map_err(|e| AppError::Engine(e.to_string()))?
         .parent()
         .map(Path::to_path_buf)
-        .ok_or_else(|| AppError::Engine("dossier de l'exécutable introuvable".into()))?;
+        .ok_or_else(|| AppError::Engine("executable folder not found".into()))?;
     let exe = exe_dir.join(if cfg!(windows) {
         "baresip.exe"
     } else {

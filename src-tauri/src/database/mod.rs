@@ -184,7 +184,7 @@ impl Database {
             conn.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))? as usize;
         if current > MIGRATIONS.len() {
             return Err(AppError::Database(format!(
-                "la base de données est plus récente (v{current}) que cette version de l'application"
+                "the database is newer (v{current}) than this version of the application"
             )));
         }
         for (i, sql) in MIGRATIONS.iter().enumerate().skip(current) {

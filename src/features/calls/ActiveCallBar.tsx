@@ -31,13 +31,13 @@ export function ActiveCallBar() {
       >
         {callDisplayName(call)} ·{" "}
         {connected ? <span className="tabular">{formatDuration(seconds)}</span> : CALL_STATE_LABEL[call.state]}
-        {call.state === "onHold" && " (en attente)"}
+        {call.state === "onHold" && " (on hold)"}
       </button>
       {connected && (
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={call.muted ? "Réactiver le micro" : "Couper le micro"}
+          aria-label={call.muted ? "Unmute" : "Mute the microphone"}
           className="hover:bg-white/20 hover:text-white"
           onClick={() => void toggleMute(call.id)}
         >
@@ -47,7 +47,7 @@ export function ActiveCallBar() {
       <Button
         variant="ghost"
         size="icon-sm"
-        aria-label="Raccrocher"
+        aria-label="Hang up"
         className="hover:bg-white/20 hover:text-white"
         onClick={() => void hangup(call.id)}
       >

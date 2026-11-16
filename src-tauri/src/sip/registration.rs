@@ -53,11 +53,7 @@ pub fn apply_registration_event(
     match event {
         RegistrationEvent::Created => {
             if register_interval == 0 {
-                disconnected(
-                    id,
-                    Some("Enregistrement désactivé : appels directs uniquement"),
-                    now,
-                )
+                disconnected(id, Some("Registration disabled: direct calls only"), now)
             } else {
                 connecting(id, now)
             }
@@ -96,12 +92,12 @@ pub fn status_for_engine_state(
         EngineState::Running => None,
         EngineState::Starting => Some(connecting(account_id, now)),
         EngineState::Restarting { reason, .. } => Some(AccountStatus {
-            message: Some(format!("Moteur SIP en cours de redémarrage ({reason})")),
+            message: Some(format!("SIP engine restarting ({reason})")),
             ..status(account_id, RegistrationState::Connecting, now)
         }),
-        EngineState::Stopped => Some(disconnected(account_id, Some("Moteur SIP arrêté"), now)),
+        EngineState::Stopped => Some(disconnected(account_id, Some("SIP engine stopped"), now)),
         EngineState::Failed { reason } => Some(AccountStatus {
-            message: Some(format!("Moteur SIP indisponible : {reason}")),
+            message: Some(format!("SIP engine unavailable: {reason}")),
             ..status(account_id, RegistrationState::Error, now)
         }),
     }
@@ -179,7 +175,7 @@ mod tests {
         );
         assert_eq!(s.state, RegistrationState::Error);
         assert_eq!(s.sip_code, None);
-        assert!(s.message.unwrap().starts_with("Connexion refusée"));
+        assert!(s.message.unwrap().starts_with("Connection refused"));
     }
 
     #[test]

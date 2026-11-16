@@ -37,7 +37,7 @@ export function AudioNoticeBanner() {
             {needsChoice && (
               <>
                 <Button size="sm" variant="secondary" onClick={() => setChoosing((c) => !c)} aria-expanded={choosing}>
-                  Choisir un autre périphérique
+                  Choose another device
                 </Button>
                 {choosing && <DeviceChoices role={r.role} remember={false} />}
               </>

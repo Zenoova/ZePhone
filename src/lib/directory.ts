@@ -1,20 +1,20 @@
 import type { DirectoryEntry, PhoneEntry, PhoneKind, SourceKind, SourceView, SyncErrorKind } from "@/types/directory";
 
 export const PHONE_KIND_LABEL: Record<PhoneKind, string> = {
-  work: "Professionnel",
+  work: "Work",
   mobile: "Mobile",
-  extension: "Poste interne",
+  extension: "Internal extension",
   home: "Domicile",
-  sip: "Adresse SIP",
-  other: "Numéro",
+  sip: "SIP address",
+  other: "Number",
 };
 
 export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
-  local: "Contacts locaux",
-  ldap: "Annuaire LDAP",
-  microsoftOrg: "Microsoft 365 · annuaire de l'organisation",
-  microsoftPersonal: "Outlook · contacts personnels",
-  systemContacts: "Contacts de l'appareil",
+  local: "Local contacts",
+  ldap: "LDAP directory",
+  microsoftOrg: "Microsoft 365 · organization directory",
+  microsoftPersonal: "Outlook · personal contacts",
+  systemContacts: "Device contacts",
 };
 
 /** Short names for the badge that tells where a person comes from. */
@@ -23,10 +23,10 @@ export const SOURCE_BADGE: Record<SourceKind, string> = {
   ldap: "LDAP",
   microsoftOrg: "Microsoft 365",
   microsoftPersonal: "Outlook",
-  systemContacts: "Appareil",
+  systemContacts: "Device",
 };
 
-/** "Directrice · Société · Comptabilité": what is known about the person's role, without the name. */
+/** "Director · Company · Accounting": what is known about the person's role, without the name. */
 export function entrySubtitle(e: Pick<DirectoryEntry, "title" | "company" | "department">): string {
   return [e.title, e.company, e.department].filter((x): x is string => !!x && x.trim() !== "").join(" · ");
 }
@@ -39,29 +39,29 @@ export function sortedPhones(phones: PhoneEntry[]): PhoneEntry[] {
 
 const MINUTE = 60_000;
 
-/** "à l'instant", "il y a 5 min", "il y a 3 h", "il y a 2 j", or the date beyond a month. */
+/** "just now", "5 min ago", "3 h ago", "2 d ago", or the date beyond a month. */
 export function relativeTime(iso: string | null, now: Date = new Date()): string {
-  if (!iso) return "jamais";
+  if (!iso) return "never";
   const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return "jamais";
+  if (Number.isNaN(t)) return "never";
   const diff = Math.max(0, now.getTime() - t);
-  if (diff < MINUTE) return "à l'instant";
-  if (diff < 60 * MINUTE) return `il y a ${Math.round(diff / MINUTE)} min`;
-  if (diff < 24 * 60 * MINUTE) return `il y a ${Math.round(diff / (60 * MINUTE))} h`;
-  if (diff < 30 * 24 * 60 * MINUTE) return `il y a ${Math.round(diff / (24 * 60 * MINUTE))} j`;
-  return `le ${new Date(t).toLocaleDateString("fr-FR")}`;
+  if (diff < MINUTE) return "just now";
+  if (diff < 60 * MINUTE) return `${Math.round(diff / MINUTE)} min ago`;
+  if (diff < 24 * 60 * MINUTE) return `${Math.round(diff / (60 * MINUTE))} h ago`;
+  if (diff < 30 * 24 * 60 * MINUTE) return `${Math.round(diff / (24 * 60 * MINUTE))} d ago`;
+  return `on ${new Date(t).toLocaleDateString("en-US")}`;
 }
 
 export const INTERVAL_OPTIONS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: "0", label: "Manuelle seulement" },
-  { value: "15", label: "Toutes les 15 minutes" },
-  { value: "60", label: "Toutes les heures" },
-  { value: "360", label: "Toutes les 6 heures" },
-  { value: "1440", label: "Une fois par jour" },
+  { value: "0", label: "Manual only" },
+  { value: "15", label: "Every 15 minutes" },
+  { value: "60", label: "Every hour" },
+  { value: "360", label: "Every 6 hours" },
+  { value: "1440", label: "Once a day" },
 ];
 
 export function intervalLabel(min: number): string {
-  return INTERVAL_OPTIONS.find((o) => o.value === String(min))?.label ?? `Toutes les ${min} minutes`;
+  return INTERVAL_OPTIONS.find((o) => o.value === String(min))?.label ?? `Every ${min} minutes`;
 }
 
 export type SourceAction = "retry" | "reconnect" | "configure" | "none";
@@ -70,20 +70,20 @@ export type SourceAction = "retry" | "reconnect" | "configure" | "none";
 export function failureAction(source: Pick<SourceView, "errorKind" | "kind">): { action: SourceAction; label: string } {
   const k: SyncErrorKind | null = source.errorKind;
   // The device's address book has no password: what it lacks is the user's permission.
-  if (source.kind === "systemContacts" && k === "forbidden") return { action: "reconnect", label: "Autoriser l'accès" };
+  if (source.kind === "systemContacts" && k === "forbidden") return { action: "reconnect", label: "Allow access" };
   switch (k) {
     case "auth":
-      return { action: "reconnect", label: source.kind === "ldap" ? "Saisir le mot de passe" : "Reconnecter" };
+      return { action: "reconnect", label: source.kind === "ldap" ? "Enter the password" : "Reconnect" };
     case "forbidden":
-      return { action: "reconnect", label: "Reconnecter" };
+      return { action: "reconnect", label: "Reconnect" };
     case "config":
-      return { action: "configure", label: "Modifier la configuration" };
+      return { action: "configure", label: "Edit the configuration" };
     case "invalid":
-      return { action: "configure", label: "Vérifier la source" };
+      return { action: "configure", label: "Check the source" };
     case "network":
     case "server":
     case "throttled":
-      return { action: "retry", label: "Réessayer" };
+      return { action: "retry", label: "Try again" };
     default:
       return { action: "none", label: "" };
   }
@@ -93,16 +93,14 @@ export function failureAction(source: Pick<SourceView, "errorKind" | "kind">): {
 export function sourceStatus(s: SourceView, now: Date = new Date()): string {
   switch (s.state) {
     case "disabled":
-      return "Déconnectée";
+      return "Disconnected";
     case "syncing":
-      return "Synchronisation en cours…";
+      return "Syncing…";
     case "needsReauth":
-      return "Reconnexion nécessaire";
+      return "Reconnection needed";
     case "error":
-      return s.lastSuccessAt
-        ? `Erreur · contacts conservés (dernière synchronisation ${relativeTime(s.lastSuccessAt, now)})`
-        : "Erreur";
+      return s.lastSuccessAt ? `Error · contacts kept (last sync ${relativeTime(s.lastSuccessAt, now)})` : "Error";
     default:
-      return s.kind === "local" ? "Stockés sur cet ordinateur" : `Synchronisée ${relativeTime(s.lastSuccessAt, now)}`;
+      return s.kind === "local" ? "Stored on this computer" : `Synced ${relativeTime(s.lastSuccessAt, now)}`;
   }
 }

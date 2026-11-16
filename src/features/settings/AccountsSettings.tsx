@@ -57,7 +57,7 @@ function AccountCard({
             <h3 className="truncate font-semibold">{account.label}</h3>
             {account.isDefault && (
               <Badge tone="neutral" icon={<Star className="size-3" aria-hidden />}>
-                Par défaut
+                Default
               </Badge>
             )}
             <RegistrationBadge state={state} />
@@ -70,7 +70,7 @@ function AccountCard({
         <Switch
           checked={account.enabled}
           onCheckedChange={(v) => void setEnabled(account.id, v)}
-          aria-label={account.enabled ? `Désactiver ${account.label}` : `Activer ${account.label}`}
+          aria-label={account.enabled ? `Disable ${account.label}` : `Enable ${account.label}`}
         />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -81,16 +81,16 @@ function AccountCard({
             onClick={() => void (online ? disconnect(account.id) : connect(account.id))}
           >
             {online ? <PlugZap className="size-4" aria-hidden /> : <Plug className="size-4" aria-hidden />}
-            {online ? "Déconnecter" : "Connecter"}
+            {online ? "Disconnect" : "Connect"}
           </ArcButton>
         )}
         {!account.isDefault && (
           <ArcButton size="sm" variant="ghost" onClick={() => void setDefault(account.id)}>
-            <Star className="size-4" aria-hidden /> Définir par défaut
+            <Star className="size-4" aria-hidden /> Set as default
           </ArcButton>
         )}
         <ArcButton size="sm" variant="ghost" onClick={onEdit}>
-          <Pencil className="size-4" aria-hidden /> Modifier
+          <Pencil className="size-4" aria-hidden /> Edit
         </ArcButton>
         <Button
           size="sm"
@@ -98,7 +98,7 @@ function AccountCard({
           className="text-destructive hover:text-destructive ml-auto"
           onClick={onDelete}
         >
-          <Trash2 className="size-4" aria-hidden /> Supprimer
+          <Trash2 className="size-4" aria-hidden /> Delete
         </Button>
       </div>
     </li>
@@ -117,8 +117,8 @@ export function AccountsSettings() {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold">Comptes SIP</h2>
-          <p className="text-muted-foreground text-sm">Plusieurs comptes peuvent être connectés en même temps.</p>
+          <h2 className="text-base font-semibold">SIP accounts</h2>
+          <p className="text-muted-foreground text-sm">Several accounts can be connected at the same time.</p>
         </div>
         <ArcButton
           onClick={() => {
@@ -126,15 +126,15 @@ export function AccountsSettings() {
             setFormOpen(true);
           }}
         >
-          <Plus className="size-4" aria-hidden /> Ajouter
+          <Plus className="size-4" aria-hidden /> Add
         </ArcButton>
       </div>
 
       {accounts.length === 0 ? (
         <EmptyState
           icon={UserPlus}
-          title="Aucun compte SIP"
-          description="Ajoutez votre serveur, votre identifiant et votre mot de passe pour commencer."
+          title="No SIP account"
+          description="Add your server, your username and your password to get started."
         />
       ) : (
         <ul className="space-y-3">
@@ -155,13 +155,13 @@ export function AccountsSettings() {
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(o) => !o && setDeleting(null)}
-        title="Supprimer ce compte ?"
+        title="Delete this account?"
         description={
           deleting
-            ? `Le compte « ${deleting.label} » et son mot de passe seront supprimés de cet ordinateur. L'historique des appels est conservé.`
+            ? `The account “${deleting.label}” and its password will be deleted from this computer. The call history is kept.`
             : ""
         }
-        confirmLabel="Supprimer"
+        confirmLabel="Delete"
         onConfirm={() => {
           if (deleting) void remove(deleting.id);
           setDeleting(null);

@@ -34,8 +34,8 @@ describe("call lifecycle in the store", () => {
 
   it("shows the failure reason and does not drop a call that resumed before the timer fired", () => {
     const { apply } = useCallsStore.getState();
-    apply(makeCall({ state: "failed", reason: "Occupé (486)" }));
-    expect(toast.error).toHaveBeenCalledWith("Occupé (486)");
+    apply(makeCall({ state: "failed", reason: "Busy (486)" }));
+    expect(toast.error).toHaveBeenCalledWith("Busy (486)");
     apply(makeCall({ state: "connected" })); // same id reused: timer must be cancelled
     vi.advanceTimersByTime(ENDED_LINGER_MS * 2);
     expect(useCallsStore.getState().calls.call1?.state).toBe("connected");
@@ -58,10 +58,10 @@ describe("intents sent to the backend", () => {
   });
 
   it("dial failure becomes a toast, not an exception", async () => {
-    invoke.mockRejectedValueOnce({ kind: "validation", message: "Aucun compte SIP n'est connecté" });
+    invoke.mockRejectedValueOnce({ kind: "validation", message: "No SIP account is connected" });
     const call = await useCallsStore.getState().dial("1002");
     expect(call).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Aucun compte SIP n'est connecté");
+    expect(toast.error).toHaveBeenCalledWith("No SIP account is connected");
     expect(useCallsStore.getState().dialing).toBe(false);
   });
 
@@ -106,9 +106,9 @@ describe("intents sent to the backend", () => {
   });
 
   it("transfer reports failure", async () => {
-    invoke.mockRejectedValueOnce({ kind: "engine", message: "refusé" });
+    invoke.mockRejectedValueOnce({ kind: "engine", message: "declined" });
     expect(await useCallsStore.getState().transfer("x", "1")).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith("refusé");
+    expect(toast.error).toHaveBeenCalledWith("declined");
   });
 });
 

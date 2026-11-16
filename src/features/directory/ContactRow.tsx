@@ -48,7 +48,7 @@ export function ContactRow({
           checked={selected}
           readOnly
           tabIndex={-1}
-          aria-label={`Sélectionner ${entry.displayName}`}
+          aria-label={`Select ${entry.displayName}`}
           className="accent-primary size-4 shrink-0"
         />
       ) : null}
@@ -56,7 +56,7 @@ export function ContactRow({
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 truncate font-medium">
           <span className="truncate">{entry.displayName}</span>
-          {entry.favorite && <Star className="text-warning size-3.5 shrink-0 fill-current" aria-label="Favori" />}
+          {entry.favorite && <Star className="text-warning size-3.5 shrink-0 fill-current" aria-label="Favorite" />}
         </p>
         <p className="text-muted-foreground truncate text-sm">
           {subtitle && <span>{subtitle} · </span>}
@@ -78,7 +78,7 @@ export function ContactRow({
             size="icon"
             tabIndex={-1}
             aria-label={
-              entry.favorite ? `Retirer ${entry.displayName} des favoris` : `Ajouter ${entry.displayName} aux favoris`
+              entry.favorite ? `Remove ${entry.displayName} from favorites` : `Add ${entry.displayName} to favorites`
             }
             aria-pressed={entry.favorite}
             className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[on=true]:opacity-100"

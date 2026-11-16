@@ -303,7 +303,7 @@ impl CallTracker {
             (CallResult::Failed, None) if !reason.is_empty() => {
                 Some(describe_engine_reason(reason))
             }
-            (CallResult::Failed, None) => Some("Appel non abouti".to_owned()),
+            (CallResult::Failed, None) => Some("Call not completed".to_owned()),
             _ => (!reason.is_empty()).then(|| reason.to_owned()),
         };
 
@@ -682,7 +682,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(end.history.unwrap().result, CallResult::Failed);
-        assert!(end.call.reason.unwrap().contains("délai dépassé"));
+        assert!(end.call.reason.unwrap().contains("timed out"));
     }
 
     #[test]

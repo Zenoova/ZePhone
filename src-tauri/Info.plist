@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
   <key>NSMicrophoneUsageDescription</key>
-  <string>ZePhone a besoin du microphone pour que votre correspondant vous entende pendant un appel.</string>
+  <string>ZePhone needs the microphone so that the other party can hear you during a call.</string>
   <key>NSContactsUsageDescription</key>
-  <string>ZePhone lit vos contacts pour les retrouver dans l'annuaire, les appeler en un clic et afficher leur nom quand ils vous appellent. Ils restent sur cet ordinateur et ne sont jamais modifiés.</string>
+  <string>ZePhone reads your contacts so you can find them in the directory, call them in one click and see their name when they call you. They stay on this computer and are never modified.</string>
   <key>NSLocalNetworkUsageDescription</key>
-  <string>ZePhone se connecte à votre serveur SIP/PBX, y compris sur votre réseau local.</string>
+  <string>ZePhone connects to your SIP/PBX server, including on your local network.</string>
 </dict>
 </plist>

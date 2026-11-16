@@ -83,10 +83,10 @@ describe("directory store: searching", () => {
   it("reports a failed search without losing what is shown", async () => {
     invoke.mockResolvedValueOnce(page([makeEntry()], 1));
     await useDirectoryStore.getState().search();
-    invoke.mockRejectedValueOnce({ kind: "database", message: "base illisible" });
+    invoke.mockRejectedValueOnce({ kind: "database", message: "unreadable database" });
     await useDirectoryStore.getState().search();
     const s = useDirectoryStore.getState();
-    expect(s.error).toContain("base illisible");
+    expect(s.error).toContain("unreadable database");
     expect(s.items).toHaveLength(1);
   });
 
@@ -103,7 +103,7 @@ describe("directory store: sources, groups and refresh", () => {
     const answers: Record<string, unknown> = {
       directory_sources: [makeSource()],
       directory_groups: [makeGroup()],
-      directory_departments: [{ name: "Comptabilité", count: 3 }],
+      directory_departments: [{ name: "Accounting", count: 3 }],
       directory_search: page([makeEntry()], 1),
       ...over,
     };
@@ -116,12 +116,12 @@ describe("directory store: sources, groups and refresh", () => {
     const s = useDirectoryStore.getState();
     expect(s.sources).toHaveLength(1);
     expect(s.groups[0]?.name).toBe("Direction");
-    expect(s.departments[0]?.name).toBe("Comptabilité");
+    expect(s.departments[0]?.name).toBe("Accounting");
   });
 
   it("forgets a group or a department that no longer exists", async () => {
     backend({ directory_groups: [], directory_departments: [] });
-    useDirectoryStore.getState().setFilters({ groupId: "gone", department: "Disparu" });
+    useDirectoryStore.getState().setFilters({ groupId: "gone", department: "Disappeared" });
     await useDirectoryStore.getState().loadSources();
     expect(useDirectoryStore.getState().filters).toMatchObject({ groupId: null, department: null });
   });
@@ -164,10 +164,10 @@ describe("directory store: favourites and groups", () => {
   it("puts the favourite back and says so when it could not be saved", async () => {
     const entry = makeEntry();
     useDirectoryStore.setState({ items: [entry] });
-    invoke.mockRejectedValue({ kind: "database", message: "disque plein" });
+    invoke.mockRejectedValue({ kind: "database", message: "disk full" });
     await useDirectoryStore.getState().toggleFavorite(entry);
     expect(useDirectoryStore.getState().items[0]?.favorite).toBe(false);
-    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("disque plein"));
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("disk full"));
   });
 
   it("adds several contacts to a group in one go, every record of each", async () => {
@@ -185,9 +185,9 @@ describe("directory store: favourites and groups", () => {
   });
 
   it("explains a refused group name", async () => {
-    invoke.mockRejectedValue({ kind: "validation", message: "Un groupe porte déjà ce nom" });
+    invoke.mockRejectedValue({ kind: "validation", message: "A group already has this name" });
     expect(await useDirectoryStore.getState().createGroup("Direction")).toBeNull();
-    expect(toast.error).toHaveBeenCalledWith("Un groupe porte déjà ce nom");
+    expect(toast.error).toHaveBeenCalledWith("A group already has this name");
   });
 
   it("keeps a selection that is cleared when selecting stops", () => {

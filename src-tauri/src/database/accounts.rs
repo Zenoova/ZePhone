@@ -136,7 +136,7 @@ impl Database {
         if changed {
             Ok(())
         } else {
-            Err(AppError::NotFound("compte".into()))
+            Err(AppError::NotFound("account".into()))
         }
     }
 
@@ -148,7 +148,7 @@ impl Database {
             )
         })?;
         if n == 0 {
-            Err(AppError::NotFound("compte".into()))
+            Err(AppError::NotFound("account".into()))
         } else {
             Ok(())
         }
@@ -170,7 +170,7 @@ mod tests {
     fn acc(id: &str, default: bool) -> Account {
         Account {
             id: id.into(),
-            label: format!("Compte {id}"),
+            label: format!("Account {id}"),
             display_name: Some("Ada".into()),
             server: "sip.example.com".into(),
             port: 5061,
@@ -222,14 +222,14 @@ mod tests {
         db.upsert_account(&acc("a", false)).unwrap();
         db.upsert_account(&acc("b", false)).unwrap();
         let mut edited = acc("a", false);
-        edited.label = "Renommé".into();
+        edited.label = "Renamed".into();
         db.upsert_account(&edited).unwrap();
         let list = db.list_accounts().unwrap();
         assert_eq!(
             list.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(),
             vec!["a", "b"]
         );
-        assert_eq!(list[0].label, "Renommé");
+        assert_eq!(list[0].label, "Renamed");
         assert!(
             list[0].is_default,
             "an edit without the default flag must not demote the default account"

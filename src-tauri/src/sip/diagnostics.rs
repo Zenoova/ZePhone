@@ -4,34 +4,32 @@
 /// Short French description of a SIP response code in the registration / call context.
 pub fn describe_sip_code(code: u16) -> &'static str {
     match code {
-        200 => "Enregistré",
-        400 => "Requête invalide (400) : vérifiez le domaine et l'identifiant",
-        401 => {
-            "Authentification refusée (401) : identifiant d'authentification ou mot de passe incorrect"
-        }
-        403 => "Accès refusé (403) : le serveur rejette ce compte ou ce mot de passe",
-        404 => "Compte ou domaine introuvable sur le serveur (404)",
-        407 => "Authentification du proxy refusée (407)",
-        408 => "Le serveur ne répond pas (408, délai dépassé)",
-        410 => "Destinataire disparu (410)",
-        480 => "Destinataire temporairement indisponible (480)",
-        481 => "Transaction inconnue du serveur (481)",
-        482 => "Boucle détectée (482)",
-        484 => "Adresse incomplète (484)",
-        486 => "Occupé (486)",
-        487 => "Appel annulé (487)",
-        488 | 606 => "Médias refusés (codecs ou chiffrement incompatibles)",
-        500 => "Erreur interne du serveur (500)",
-        502 => "Passerelle défaillante (502)",
-        503 => "Service indisponible (503) : le serveur est surchargé ou en maintenance",
-        504 => "Délai de la passerelle dépassé (504)",
-        600 => "Occupé partout (600)",
-        603 => "Appel refusé (603)",
-        604 => "Destinataire inexistant (604)",
-        c if (400..500).contains(&c) => "Requête refusée par le serveur",
-        c if (500..600).contains(&c) => "Erreur côté serveur",
-        c if (600..700).contains(&c) => "Appel refusé de manière définitive",
-        _ => "Réponse SIP inattendue",
+        200 => "Saved",
+        400 => "Invalid request (400): check the domain and the identifier",
+        401 => "Authentication refused (401): wrong authentication username or password",
+        403 => "Access denied (403): the server rejects this account or this password",
+        404 => "Account or domain not found on the server (404)",
+        407 => "Proxy authentication refused (407)",
+        408 => "The server is not answering (408, timed out)",
+        410 => "Recipient gone (410)",
+        480 => "Recipient temporarily unavailable (480)",
+        481 => "Transaction unknown to the server (481)",
+        482 => "Loop detected (482)",
+        484 => "Incomplete address (484)",
+        486 => "Busy (486)",
+        487 => "Call cancelled (487)",
+        488 | 606 => "Media refused (incompatible codecs or encryption)",
+        500 => "Internal server error (500)",
+        502 => "Bad gateway (502)",
+        503 => "Service unavailable (503): the server is overloaded or under maintenance",
+        504 => "Gateway timeout (504)",
+        600 => "Busy everywhere (600)",
+        603 => "Call declined (603)",
+        604 => "Recipient does not exist (604)",
+        c if (400..500).contains(&c) => "Request refused by the server",
+        c if (500..600).contains(&c) => "Server-side error",
+        c if (600..700).contains(&c) => "Call permanently refused",
+        _ => "Unexpected SIP response",
     }
 }
 
@@ -42,42 +40,36 @@ pub fn describe_engine_reason(reason: &str) -> String {
     let known = [
         (
             "connection refused",
-            "Connexion refusée : aucun serveur SIP n'écoute à cette adresse/ce port",
+            "Connection refused: no SIP server is listening at this address/port",
         ),
-        ("connection reset", "Connexion interrompue par le serveur"),
+        ("connection reset", "Connection interrupted by the server"),
         (
             "connection timed out",
-            "Le serveur ne répond pas (délai dépassé)",
+            "The server is not answering (timed out)",
         ),
         (
             "operation timed out",
-            "Le serveur ne répond pas (délai dépassé)",
+            "The server is not answering (timed out)",
         ),
-        ("no route to host", "Serveur injoignable (aucune route)"),
-        ("network is unreachable", "Réseau inaccessible"),
-        ("host is down", "Le serveur est hors ligne"),
-        ("network is down", "Aucune connexion réseau"),
+        ("no route to host", "Server unreachable (no route)"),
+        ("network is unreachable", "Network unreachable"),
+        ("host is down", "The server is offline"),
+        ("network is down", "No network connection"),
         (
             "no such file or directory",
-            "Serveur introuvable (résolution DNS impossible ?)",
+            "Server not found (DNS resolution failed?)",
         ),
-        (
-            "dns",
-            "Résolution DNS impossible : vérifiez le nom du serveur",
-        ),
-        ("authentication", "Échec de l'authentification"),
-        (
-            "certificate",
-            "Certificat TLS du serveur invalide ou non approuvé",
-        ),
-        ("ssl", "Échec de la négociation TLS"),
-        ("tls", "Échec de la négociation TLS"),
-        ("local timeout", "Pas de réponse locale : l'appel a expiré"),
+        ("dns", "DNS resolution failed: check the server name"),
+        ("authentication", "Authentication failed"),
+        ("certificate", "Invalid or untrusted server TLS certificate"),
+        ("ssl", "TLS negotiation failed"),
+        ("tls", "TLS negotiation failed"),
+        ("local timeout", "No local answer: the call timed out"),
         (
             "mediaenc failed",
-            "Chiffrement des médias (SRTP) refusé par le correspondant",
+            "Media encryption (SRTP) refused by the other party",
         ),
-        ("rejected by user", "Appel refusé"),
+        ("rejected by user", "Declined call"),
     ];
     for (needle, text) in known {
         if l.contains(needle) {
@@ -85,7 +77,7 @@ pub fn describe_engine_reason(reason: &str) -> String {
         }
     }
     if r.is_empty() {
-        "Erreur inconnue".to_owned()
+        "Unknown error".to_owned()
     } else {
         r.to_owned()
     }
@@ -122,7 +114,7 @@ pub fn describe_registration_failure(code: Option<u16>, reason: &str) -> String 
             if redundant {
                 base.to_owned()
             } else {
-                format!("{base} — « {r} »")
+                format!("{base} — “{r}”")
             }
         }
         None => describe_engine_reason(reason),
@@ -139,41 +131,39 @@ mod tests {
             let d = describe_sip_code(code);
             assert!(d.contains(&code.to_string()), "{code}: {d}");
         }
-        assert_eq!(describe_sip_code(499), "Requête refusée par le serveur");
-        assert_eq!(describe_sip_code(599), "Erreur côté serveur");
-        assert_eq!(describe_sip_code(666), "Appel refusé de manière définitive");
-        assert_eq!(describe_sip_code(0), "Réponse SIP inattendue");
+        assert_eq!(describe_sip_code(499), "Request refused by the server");
+        assert_eq!(describe_sip_code(599), "Server-side error");
+        assert_eq!(describe_sip_code(666), "Call permanently refused");
+        assert_eq!(describe_sip_code(0), "Unexpected SIP response");
     }
 
     #[test]
     fn engine_reasons_are_translated() {
-        assert!(describe_engine_reason("Connection refused [61]").starts_with("Connexion refusée"));
-        assert!(describe_engine_reason("Connection timed out").contains("délai dépassé"));
+        assert!(
+            describe_engine_reason("Connection refused [61]").starts_with("Connection refused")
+        );
+        assert!(describe_engine_reason("Connection timed out").contains("timed out"));
         assert_eq!(describe_engine_reason("something weird"), "something weird");
-        assert_eq!(describe_engine_reason(""), "Erreur inconnue");
+        assert_eq!(describe_engine_reason(""), "Unknown error");
     }
 
     #[test]
     fn registration_failure_messages() {
         let m = describe_registration_failure(Some(403), "Forbidden");
         assert!(
-            m.contains("403") && !m.contains('«'),
+            m.contains("403") && !m.contains('“'),
             "standard phrase is not repeated: {m}"
         );
         let m = describe_registration_failure(Some(403), "Account disabled");
-        assert!(
-            m.contains("403") && m.contains("« Account disabled »"),
-            "{m}"
-        );
+        assert!(m.contains("403") && m.contains("“Account disabled”"), "{m}");
         let m = describe_registration_failure(Some(401), "Unauthorized");
         assert!(m.contains("401"), "{m}");
         assert!(
             describe_registration_failure(None, "Connection refused [61]")
-                .starts_with("Connexion refusée")
+                .starts_with("Connection refused")
         );
         assert!(
-            describe_registration_failure(Some(408), "Connection timed out")
-                .contains("délai dépassé")
+            describe_registration_failure(Some(408), "Connection timed out").contains("timed out")
         );
     }
 }

@@ -43,7 +43,7 @@ const GAP = 2; // between stacked segments, in the colour of the surface
 
 function fmt(v: number | null, digits: number): string {
   if (v === null) return "—";
-  return v.toLocaleString("fr-FR", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
+  return v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: 0 });
 }
 
 /** Width of the element, kept up to date (480 where nothing can be measured). */
@@ -124,9 +124,9 @@ export function TimeChart({
     .map((s) => {
       const vals = s.values.filter((v): v is number => v !== null);
       const last = vals.at(-1) ?? null;
-      return `${s.label} : ${fmt(last, digits)} ${unit} (maximum ${fmt(vals.length ? Math.max(...vals) : null, digits)})`;
+      return `${s.label}: ${fmt(last, digits)} ${unit} (maximum ${fmt(vals.length ? Math.max(...vals) : null, digits)})`;
     })
-    .join(" ; ");
+    .join("; ");
 
   const tip = cursor !== null && cursor < n ? cursor : null;
   const tipLeft = tip !== null ? px(xAt(tip)) : 0;
@@ -138,7 +138,7 @@ export function TimeChart({
         {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
       </figcaption>
       {series.length > 1 && (
-        <ul className="mb-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs" aria-label="Légende">
+        <ul className="mb-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs" aria-label="Legend">
           {series.map((s) => (
             <li key={s.key} className="text-muted-foreground flex items-center gap-1.5">
               <span
@@ -154,7 +154,7 @@ export function TimeChart({
       <div ref={box} className="relative" style={{ height }}>
         {n === 0 ? (
           <p className="text-muted-foreground flex h-full items-center justify-center text-xs">
-            En attente des premières mesures…
+            Waiting for the first measurements…
           </p>
         ) : (
           <>

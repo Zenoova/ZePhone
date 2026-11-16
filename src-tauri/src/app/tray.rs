@@ -19,10 +19,10 @@ static STATUS_ITEM: OnceLock<MenuItem<Wry>> = OnceLock::new();
 static DND_ITEM: OnceLock<CheckMenuItem<Wry>> = OnceLock::new();
 
 pub fn setup(app: &AppHandle, visible: bool) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Ouvrir ZePhone", true, None::<&str>)?;
-    let status = MenuItem::with_id(app, "status", "Aucun compte", false, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quitter ZePhone", true, Some("CmdOrCtrl+Q"))?;
-    let dnd = CheckMenuItem::with_id(app, "dnd", "Ne pas déranger", true, false, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open ZePhone", true, None::<&str>)?;
+    let status = MenuItem::with_id(app, "status", "No account", false, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit ZePhone", true, Some("CmdOrCtrl+Q"))?;
+    let dnd = CheckMenuItem::with_id(app, "dnd", "Do not disturb", true, false, None::<&str>)?;
     let _ = STATUS_ITEM.set(status.clone());
     let _ = DND_ITEM.set(dnd.clone());
     let menu = Menu::with_items(

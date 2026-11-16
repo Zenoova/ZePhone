@@ -96,11 +96,11 @@ impl MicrosoftConfig {
             kind,
             SourceKind::MicrosoftOrg | SourceKind::MicrosoftPersonal
         ) {
-            return Err("Ce n'est pas une source Microsoft".into());
+            return Err("This is not a Microsoft source".into());
         }
         if uuid::Uuid::parse_str(self.client_id.trim()).is_err() {
             return Err(
-                "L'identifiant d'application (client ID) doit être un GUID, par exemple 00000000-0000-0000-0000-000000000000".into(),
+                "The application (client) ID must be a GUID, for example 00000000-0000-0000-0000-000000000000".into(),
             );
         }
         let t = self.tenant.trim();
@@ -110,10 +110,13 @@ impl MicrosoftConfig {
             && t.chars()
                 .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-'));
         if !named && !id_or_domain {
-            return Err("Le tenant doit être « organizations », « common », un identifiant de tenant ou un domaine".into());
+            return Err(
+                "The tenant must be “organizations”, “common”, a tenant identifier or a domain"
+                    .into(),
+            );
         }
         if kind == SourceKind::MicrosoftOrg && t == "consumers" {
-            return Err("Les comptes personnels n'ont pas d'annuaire d'organisation".into());
+            return Err("Personal accounts do not have an organization directory".into());
         }
         Ok(())
     }
@@ -136,15 +139,14 @@ fn err(kind: SyncErrorKind, msg: &str) -> SyncError {
 
 /// Only HTTPS, except to the loopback (tests): tokens never travel in the clear.
 fn require_secure(url: &str) -> Result<Url, SyncError> {
-    let u =
-        Url::parse(url).map_err(|_| err(SyncErrorKind::Config, "Adresse de service invalide."))?;
+    let u = Url::parse(url).map_err(|_| err(SyncErrorKind::Config, "Invalid service address."))?;
     let local = matches!(u.host_str(), Some("127.0.0.1" | "localhost" | "[::1]"));
     if u.scheme() == "https" || (u.scheme() == "http" && local) {
         Ok(u)
     } else {
         Err(err(
             SyncErrorKind::Config,
-            "Les échanges avec Microsoft doivent être chiffrés (HTTPS).",
+            "Exchanges with Microsoft must be encrypted (HTTPS).",
         ))
     }
 }
@@ -180,7 +182,7 @@ pub fn http_client(ca_pem: Option<&[u8]>) -> Result<Client, SyncError> {
         let cert = reqwest::Certificate::from_pem(pem).map_err(|_| {
             err(
                 SyncErrorKind::Config,
-                "Le fichier de l'autorité de certification (Paramètres → Réseau) n'est pas un certificat PEM valide.",
+                "The certificate authority file (Settings → Network) is not a valid PEM certificate.",
             )
         })?;
         b = b.add_root_certificate(cert);
@@ -188,7 +190,7 @@ pub fn http_client(ca_pem: Option<&[u8]>) -> Result<Client, SyncError> {
     b.build().map_err(|_| {
         err(
             SyncErrorKind::Config,
-            "Connexion sécurisée impossible à préparer.",
+            "Cannot prepare the secure connection.",
         )
     })
 }
@@ -197,18 +199,15 @@ fn network_error(e: &reqwest::Error) -> SyncError {
     if e.is_timeout() {
         err(
             SyncErrorKind::Network,
-            "Microsoft ne répond pas (délai dépassé).",
+            "Microsoft is not answering (timed out).",
         )
     } else if e.is_connect() {
         err(
             SyncErrorKind::Network,
-            "Impossible de joindre Microsoft : vérifiez votre connexion, ou le certificat de votre proxy d'entreprise (Paramètres → Réseau).",
+            "Cannot reach Microsoft: check your connection, or your company proxy's certificate (Settings → Network).",
         )
     } else {
-        err(
-            SyncErrorKind::Network,
-            "La connexion avec Microsoft a échoué.",
-        )
+        err(SyncErrorKind::Network, "The Microsoft sign-in failed.")
     }
 }
 
@@ -237,8 +236,8 @@ pub fn token_error(status: StatusCode, body: &Value) -> SyncError {
     {
         return err(
             SyncErrorKind::Forbidden,
-            "L'administrateur de votre organisation doit autoriser l'application à lire l'annuaire (consentement administrateur). \
-             Transmettez-lui la liste des autorisations demandées, puis reconnectez la source.",
+            "Your organization's administrator must allow the application to read the directory (admin consent). \
+             Give them the list of requested permissions, then reconnect the source.",
         );
     }
     if aadsts("700016")
@@ -249,13 +248,13 @@ pub fn token_error(status: StatusCode, body: &Value) -> SyncError {
     {
         return err(
             SyncErrorKind::Config,
-            "L'application n'est pas reconnue : vérifiez l'identifiant d'application (client ID) et le tenant, et que l'inscription autorise les clients publics.",
+            "The application is not recognized: check the application (client) ID and the tenant, and that the registration allows public clients.",
         );
     }
     if aadsts("53003") || aadsts("53000") || aadsts("53001") {
         return err(
             SyncErrorKind::Forbidden,
-            "Une règle d'accès conditionnel de votre organisation bloque cette connexion.",
+            "A conditional access policy of your organization blocks this sign-in.",
         );
     }
     if code == "invalid_grant"
@@ -266,24 +265,24 @@ pub fn token_error(status: StatusCode, body: &Value) -> SyncError {
     {
         return err(
             SyncErrorKind::Auth,
-            "La connexion Microsoft a expiré ou a été révoquée : reconnectez la source.",
+            "The Microsoft sign-in has expired or was revoked: reconnect the source.",
         );
     }
     if status == StatusCode::TOO_MANY_REQUESTS {
         return err(
             SyncErrorKind::Throttled,
-            "Microsoft demande de patienter avant la prochaine tentative.",
+            "Microsoft asks you to wait before the next attempt.",
         );
     }
     if status.is_server_error() {
         return err(
             SyncErrorKind::Server,
-            "Le service d'authentification Microsoft est indisponible.",
+            "The Microsoft authentication service is unavailable.",
         );
     }
     err(
         SyncErrorKind::Auth,
-        "Microsoft a refusé la connexion : reconnectez la source.",
+        "Microsoft refused the connection: reconnect the source.",
     )
 }
 
@@ -327,7 +326,7 @@ async fn post_token(
     serde_json::from_value(json).map_err(|_| {
         err(
             SyncErrorKind::Invalid,
-            "Réponse d'authentification Microsoft illisible.",
+            "Unreadable Microsoft authentication response.",
         )
     })
 }
@@ -349,10 +348,10 @@ pub struct Authorization {
 
 const DONE_PAGE: &str = "<!doctype html><meta charset=utf-8><title>ZePhone</title>\
 <body style=\"font-family:system-ui;max-width:32rem;margin:4rem auto;padding:0 1rem\">\
-<h2>Connexion terminée</h2><p>Vous pouvez fermer cet onglet et revenir à ZePhone.</p></body>";
+<h2>Sign-in complete</h2><p>You can close this tab and go back to ZePhone.</p></body>";
 const FAILED_PAGE: &str = "<!doctype html><meta charset=utf-8><title>ZePhone</title>\
 <body style=\"font-family:system-ui;max-width:32rem;margin:4rem auto;padding:0 1rem\">\
-<h2>Connexion non aboutie</h2><p>Revenez à ZePhone pour voir ce qu'il faut faire.</p></body>";
+<h2>Sign-in did not complete</h2><p>Go back to ZePhone to see what to do.</p></body>";
 
 async fn respond(sock: &mut tokio::net::TcpStream, status: &str, body: &str) {
     let msg = format!(
@@ -382,12 +381,12 @@ impl Authorization {
         let listener = TcpListener::bind("127.0.0.1:0").await.map_err(|_| {
             err(
                 SyncErrorKind::Config,
-                "Impossible d'ouvrir le port local nécessaire à la connexion.",
+                "Cannot open the local port needed for the sign-in.",
             )
         })?;
         let port = listener
             .local_addr()
-            .map_err(|_| err(SyncErrorKind::Config, "Port local indisponible."))?
+            .map_err(|_| err(SyncErrorKind::Config, "Local port unavailable."))?
             .port();
         let redirect_uri = format!("http://localhost:{port}/");
         let verifier = random_token(48);
@@ -429,9 +428,9 @@ impl Authorization {
     ) -> Result<SecretString, SyncError> {
         let redirect = tokio::select! {
             r = self.wait_for_redirect() => r,
-            _ = cancel => return Err(err(SyncErrorKind::Auth, "Connexion annulée.")),
+            _ = cancel => return Err(err(SyncErrorKind::Auth, "Connection cancelled.")),
             () = tokio::time::sleep(wait) => {
-                return Err(err(SyncErrorKind::Auth, "La connexion n'a pas abouti à temps. Réessayez."));
+                return Err(err(SyncErrorKind::Auth, "The connection did not complete in time. Try again."));
             }
         };
         let code = match redirect {
@@ -456,7 +455,7 @@ impl Authorization {
             Some(t) => Ok(SecretString::from(t)),
             None => Err(err(
                 SyncErrorKind::Forbidden,
-                "Microsoft n'a pas accordé l'accès permanent (offline_access) : vérifiez les autorisations de l'application.",
+                "Microsoft did not grant permanent access (offline_access): check the application's permissions.",
             )),
         }
     }
@@ -466,7 +465,7 @@ impl Authorization {
             let Ok((mut sock, _)) = self.listener.accept().await else {
                 return Redirect::Failed(err(
                     SyncErrorKind::Network,
-                    "Le port local de connexion a été fermé.",
+                    "The local sign-in port was closed.",
                 ));
             };
             let mut buf = vec![0u8; 8192];
@@ -517,7 +516,7 @@ impl Authorization {
                 {
                     err(
                         SyncErrorKind::Auth,
-                        "Vous avez refusé l'accès, ou la connexion a été annulée.",
+                        "You refused access, or the sign-in was cancelled.",
                     )
                 } else {
                     token_error(StatusCode::BAD_REQUEST, &body)
@@ -601,11 +600,11 @@ impl MicrosoftConnector {
         let refresh = self
             .secrets
             .get(&key)
-            .map_err(|_| err(SyncErrorKind::Config, "Le trousseau est inaccessible."))?
+            .map_err(|_| err(SyncErrorKind::Config, "The keychain is not accessible."))?
             .ok_or_else(|| {
                 err(
                     SyncErrorKind::Auth,
-                    "Cette source n'est plus connectée : reconnectez-la.",
+                    "This source is no longer connected: reconnect it.",
                 )
             })?;
         let token = post_token(
@@ -629,7 +628,7 @@ impl MicrosoftConnector {
         token.access_token.filter(|t| !t.is_empty()).ok_or_else(|| {
             err(
                 SyncErrorKind::Invalid,
-                "Microsoft n'a pas renvoyé de jeton d'accès.",
+                "Microsoft did not return an access token.",
             )
         })
     }
@@ -640,14 +639,14 @@ impl MicrosoftConnector {
         let target = Url::parse(url).map_err(|_| {
             err(
                 SyncErrorKind::Invalid,
-                "Microsoft a renvoyé une adresse illisible.",
+                "Microsoft returned an unreadable address.",
             )
         })?;
         // The origin first: a link to another host is a security problem whatever its scheme.
         if target.origin() != allowed.origin() {
             return Err(err(
                 SyncErrorKind::Invalid,
-                "Microsoft a renvoyé une adresse inattendue : synchronisation interrompue par sécurité.",
+                "Microsoft returned an unexpected address: sync stopped for safety.",
             )
             .into());
         }
@@ -669,28 +668,28 @@ impl MicrosoftConnector {
             StatusCode::GONE => Err(Fail::Gone),
             StatusCode::UNAUTHORIZED => Err(err(
                 SyncErrorKind::Auth,
-                "Microsoft a refusé l'accès : reconnectez la source.",
+                "Microsoft refused access: reconnect the source.",
             )
             .into()),
             StatusCode::FORBIDDEN => Err(err(
                 SyncErrorKind::Forbidden,
-                "Ce compte n'a pas l'autorisation de lire ces contacts. Votre administrateur doit accorder l'autorisation demandée à l'application, puis reconnectez la source.",
+                "This account is not allowed to read these contacts. Your administrator must grant the permission requested by the application, then reconnect the source.",
             )
             .into()),
             StatusCode::NOT_FOUND if graph_code.contains("MailboxNotEnabled") || graph_code == "ErrorItemNotFound" || self.kind == SourceKind::MicrosoftPersonal => {
                 Err(err(
                     SyncErrorKind::Forbidden,
-                    "Ce compte n'a pas de boîte aux lettres Outlook : il n'a pas de contacts personnels à lire.",
+                    "This account has no Outlook mailbox: it has no personal contacts to read.",
                 )
                 .into())
             }
             StatusCode::TOO_MANY_REQUESTS | StatusCode::SERVICE_UNAVAILABLE => {
-                let mut e = err(SyncErrorKind::Throttled, "Microsoft demande de patienter : nouvelle tentative plus tard.");
+                let mut e = err(SyncErrorKind::Throttled, "Microsoft asks to wait: new attempt later.");
                 e.retry_after = wait.or(Some(Duration::from_secs(60)));
                 Err(e.into())
             }
-            s if s.is_server_error() => Err(err(SyncErrorKind::Server, "Le service Microsoft est indisponible.").into()),
-            _ => Err(err(SyncErrorKind::Invalid, "Microsoft a refusé la requête.").into()),
+            s if s.is_server_error() => Err(err(SyncErrorKind::Server, "The Microsoft service is unavailable.").into()),
+            _ => Err(err(SyncErrorKind::Invalid, "Microsoft refused the request.").into()),
         }
     }
 
@@ -722,7 +721,7 @@ impl MicrosoftConnector {
         }
         Err(err(
             SyncErrorKind::Invalid,
-            "Microsoft renvoie trop de pages : synchronisation interrompue.",
+            "Microsoft returns too many pages: sync stopped.",
         )
         .into())
     }
@@ -792,7 +791,7 @@ impl MicrosoftConnector {
             Err(Fail::Gone) if continuing => Box::pin(self.fetch_inner(None)).await,
             Err(Fail::Gone) => Err(err(
                 SyncErrorKind::Server,
-                "Microsoft a invalidé la synchronisation : réessayez.",
+                "Microsoft invalidated the sync: try again.",
             )),
             Err(Fail::Error(e)) => Err(e),
         }
@@ -969,7 +968,7 @@ mod tests {
             "AADSTS65001: The user or administrator has not consented",
         );
         assert_eq!(admin.kind, SyncErrorKind::Forbidden);
-        assert!(admin.message.contains("administrateur"));
+        assert!(admin.message.contains("administrator"));
         assert_eq!(
             e(
                 "invalid_grant",
@@ -978,7 +977,7 @@ mod tests {
             .kind,
             SyncErrorKind::Auth
         );
-        assert!(e("invalid_grant", "x").message.contains("reconnectez"));
+        assert!(e("invalid_grant", "x").message.contains("reconnect"));
         assert_eq!(
             e("invalid_client", "AADSTS700016: Application not found").kind,
             SyncErrorKind::Config
@@ -1009,7 +1008,7 @@ mod tests {
         let user = json!({
             "id": "00000000-aaaa-bbbb-cccc-000000000001",
             "displayName": "Élodie Dupont", "givenName": "Élodie", "surname": "Dupont",
-            "mail": "elodie.dupont@contoso.com", "jobTitle": "Directrice", "department": "Finance",
+            "mail": "elodie.dupont@contoso.com", "jobTitle": "Director", "department": "Finance",
             "companyName": "Contoso", "businessPhones": ["+33 1 23 45 67 89", " "], "mobilePhone": "+33 6 12 34 56 78"
         });
         let c = map_item(&user, SourceKind::MicrosoftOrg).unwrap();

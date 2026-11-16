@@ -37,8 +37,8 @@ describe("animated icons", () => {
   });
 
   it("is exposed as an image when it has a label", () => {
-    render(<Mic aria-label="Micro" />);
-    expect(screen.getByRole("img", { name: "Micro" })).toBeInTheDocument();
+    render(<Mic aria-label="Mic" />);
+    expect(screen.getByRole("img", { name: "Mic" })).toBeInTheDocument();
   });
 
   it("animates when the button that contains it is hovered or focused", () => {
@@ -46,7 +46,7 @@ describe("animated icons", () => {
     stop.mockClear();
     render(
       <button type="button">
-        <Phone /> Appeler
+        <Phone /> Call
       </button>,
     );
     const button = screen.getByRole("button");

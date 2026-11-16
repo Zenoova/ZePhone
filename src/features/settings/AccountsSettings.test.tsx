@@ -16,14 +16,14 @@ beforeEach(() => {
 describe("AccountsSettings", () => {
   it("invites to add a first account", () => {
     render(<AccountsSettings />);
-    expect(screen.getByText("Aucun compte SIP")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Ajouter/ })).toBeInTheDocument();
+    expect(screen.getByText("No SIP account")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Add/ })).toBeInTheDocument();
   });
 
   it("lists the accounts, each with its own little face and state", () => {
     useAccountsStore.setState({
       accounts: [
-        makeAccount({ id: "a1", label: "Bureau", username: "1001", domain: "example.com" }),
+        makeAccount({ id: "a1", label: "Office", username: "1001", domain: "example.com" }),
         makeAccount({ id: "a2", label: "Mobile", username: "0987", domain: "voip.fr", isDefault: false }),
       ],
       statuses: { a1: makeStatus({ accountId: "a1", state: "registered" }) },
@@ -31,7 +31,7 @@ describe("AccountsSettings", () => {
     render(<AccountsSettings />);
     const cards = screen.getAllByTestId("account-card");
     expect(cards).toHaveLength(2);
-    expect(within(cards[0]!).getByText("Bureau")).toBeInTheDocument();
+    expect(within(cards[0]!).getByText("Office")).toBeInTheDocument();
     expect(within(cards[0]!).getByTestId("account-avatar")).toBeInTheDocument();
     const faces = cards.map((c) => c.querySelector("svg")?.innerHTML);
     expect(faces[0]).toBeTruthy();

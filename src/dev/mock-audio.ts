@@ -42,18 +42,18 @@ export function createMockAudio(emit: (event: string, payload: unknown) => void)
   const devices: DeviceInfo[] = [
     dev("mic", "MacBook Pro Microphone", "builtIn", 1, 0),
     dev("spk", "MacBook Pro Speakers", "builtIn", 0, 2),
-    dev("usb", "Jabra Evolve2 65 (aperçu)", "usb", 1, 2, { inUseElsewhere: true }),
-    dev("bt", "AirPods (aperçu)", "bluetooth", 1, 2),
+    dev("usb", "Jabra Evolve2 65 (preview)", "usb", 1, 2, { inUseElsewhere: true }),
+    dev("bt", "AirPods (preview)", "bluetooth", 1, 2),
   ];
   // The headset the user chose for the conversation is absent: the speaker role shows what happens meanwhile.
   const routing: Routing = {
     ...DEFAULT_SETTINGS.audio.routing,
     speaker: {
-      selection: { kind: "explicit", device: { uid: "gone", name: "Casque de bureau (aperçu)" } },
+      selection: { kind: "explicit", device: { uid: "gone", name: "Desk headset (preview)" } },
       fallback: null,
     },
     microphone: {
-      selection: { kind: "explicit", device: { uid: "usb", name: "Jabra Evolve2 65 (aperçu)" } },
+      selection: { kind: "explicit", device: { uid: "usb", name: "Jabra Evolve2 65 (preview)" } },
       fallback: { uid: "mic", name: "MacBook Pro Microphone" },
     },
   };
@@ -90,7 +90,7 @@ export function createMockAudio(emit: (event: string, payload: unknown) => void)
       const used = inUse[role] ? devices.find((d) => d.uid === inUse[role]) : undefined;
       return {
         role,
-        label: { microphone: "Microphone", speaker: "Sortie des conversations", ringer: "Sonnerie" }[role],
+        label: { microphone: "Microphone", speaker: "Conversation output", ringer: "Ringtone" }[role],
         choice,
         resolution,
         inUse: used ?? resolution.used,
@@ -106,8 +106,8 @@ export function createMockAudio(emit: (event: string, payload: unknown) => void)
     devices: [
       {
         id: "0b0e:0412:1",
-        product: "Jabra Evolve2 65 (aperçu)",
-        manufacturer: "GN Audio (aperçu)",
+        product: "Jabra Evolve2 65 (preview)",
+        manufacturer: "GN Audio (preview)",
         transport: "USB",
         buttons: ["hookSwitch", "phoneMute"],
         inUse: true,
@@ -116,10 +116,10 @@ export function createMockAudio(emit: (event: string, payload: unknown) => void)
     log: [
       {
         at: new Date(Date.now() - 60_000).toISOString(),
-        device: "Jabra Evolve2 65 (aperçu)",
-        button: "Décrocher / raccrocher",
+        device: "Jabra Evolve2 65 (preview)",
+        button: "Answer / hang up",
         value: 1,
-        result: "Aucun appel entrant à décrocher",
+        result: "No incoming call to answer",
         acted: false,
       },
     ],

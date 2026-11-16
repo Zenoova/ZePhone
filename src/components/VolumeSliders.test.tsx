@@ -8,8 +8,8 @@ vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn() } }));
 import { VolumeSliders } from "@/components/VolumeSliders";
 import { DEFAULT_SETTINGS, useSettingsStore } from "@/stores/settings-store";
 
-const incoming = () => screen.getByRole("slider", { name: /son entrant/i });
-const outgoing = () => screen.getByRole("slider", { name: /son sortant/i });
+const incoming = () => screen.getByRole("slider", { name: /incoming sound/i });
+const outgoing = () => screen.getByRole("slider", { name: /outgoing sound/i });
 
 beforeEach(() => {
   invoke.mockReset();

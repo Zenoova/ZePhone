@@ -13,7 +13,7 @@ const NO_CALL_GRACE_MS = 4000;
 
 /**
  * The content of the call window: the call in progress on the full call screen (a call that just ended stays
- * for a few seconds, as "Terminé" or with its failure), any other call as a compact line, and the toolbar at
+ * for a few seconds, as "Ended" or with its failure), any other call as a compact line, and the toolbar at
  * the top right. The window closes itself once there is nothing left to show.
  */
 export function CallWindow() {

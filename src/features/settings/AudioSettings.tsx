@@ -39,42 +39,40 @@ export function AudioSettings() {
 
       <SettingsSection
         title="Diagnostic"
-        description="Voir les périphériques détectés et ceux réellement utilisés, tester la sortie et la sonnerie, regarder le niveau du micro, comprendre une erreur."
+        description="See the detected devices and those actually used, test the output and the ringtone, watch the microphone level, understand an error."
       >
         <div className="flex items-center justify-between gap-4 px-4 py-3.5">
-          <p className="text-muted-foreground text-sm">
-            Rien ne démarre sans votre action, et jamais pendant un appel.
-          </p>
+          <p className="text-muted-foreground text-sm">Nothing starts without your action, and never during a call.</p>
           <Button variant="secondary" onClick={() => setDiagOpen(true)}>
-            Ouvrir le diagnostic audio
+            Open the audio diagnostic
           </Button>
         </div>
       </SettingsSection>
 
       <SettingsSection
         title="Volumes"
-        description="Son entrant : ce que vous entendez. Son sortant : ce que votre correspondant entend de votre micro. Le réglage s'applique tout de suite, y compris pendant un appel."
+        description="Incoming sound: what you hear. Outgoing sound: what your correspondent hears from your microphone. The setting applies at once, including during a call."
       >
         <VolumeSliders className="px-4 py-4" />
       </SettingsSection>
 
       <SettingsSection
-        title="Enregistrement des appels"
-        description="Les enregistrements restent sur ce Mac, dans le dossier de données de ZePhone. Vous les retrouvez dans l'onglet Enregistrements du dock."
+        title="Call recording"
+        description="Recordings stay on this Mac, in ZePhone's data folder. You will find them in the Recordings tab of the dock."
       >
         <SettingRow
-          label="Enregistrer automatiquement les appels"
-          description="Chaque appel est enregistré dès qu'il est décroché. Désactivez-le si vous ne le souhaitez pas : informer votre correspondant peut être une obligation légale."
+          label="Record calls automatically"
+          description="Each call is recorded as soon as it is answered. Turn it off if you do not want that: informing your correspondent may be a legal obligation."
         >
           <Switch
             checked={settings.recording.autoRecord}
             onCheckedChange={(v) => void update({ recording: { autoRecord: v } })}
-            aria-label="Enregistrer automatiquement les appels"
+            aria-label="Record calls automatically"
           />
         </SettingRow>
       </SettingsSection>
 
-      <SettingsSection title="Autorisation du microphone">
+      <SettingsSection title="Microphone permission">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
           <div className="flex items-center gap-3">
             {mic === "authorized" ? (
@@ -86,32 +84,32 @@ export function AudioSettings() {
             )}
             <div>
               <p className="text-sm font-medium" data-testid="mic-status">
-                {mic === "authorized" && "Accès au microphone autorisé"}
-                {mic === "notDetermined" && "Autorisation non encore demandée"}
-                {mic === "denied" && "Accès au microphone refusé"}
-                {mic === "restricted" && "Accès restreint par le système"}
-                {mic === null && "Vérification…"}
+                {mic === "authorized" && "Microphone access allowed"}
+                {mic === "notDetermined" && "Permission not requested yet"}
+                {mic === "denied" && "Microphone access denied"}
+                {mic === "restricted" && "Access restricted by the system"}
+                {mic === null && "Checking…"}
               </p>
               {mic === "denied" && (
                 <p className="text-muted-foreground text-xs">
-                  Autorisez ZePhone dans Réglages Système › Confidentialité › Microphone.
+                  Allow ZePhone in System Settings › Privacy › Microphone.
                 </p>
               )}
             </div>
           </div>
-          {mic === "notDetermined" && <Button onClick={() => void requestMic()}>Autoriser le microphone</Button>}
+          {mic === "notDetermined" && <Button onClick={() => void requestMic()}>Allow the microphone</Button>}
           {(mic === "denied" || mic === "restricted") && (
             <Button variant="secondary" onClick={() => void telephony.openMicrophoneSettings()}>
-              Ouvrir les réglages
+              Open settings
             </Button>
           )}
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Codecs audio" description="Négociés automatiquement avec votre correspondant.">
+      <SettingsSection title="Audio codecs" description="Negotiated automatically with your correspondent.">
         <div className="space-y-3 px-4 py-3.5">
           <div className="flex flex-wrap gap-2">
-            {codecs.length === 0 && <span className="text-muted-foreground text-sm">Moteur non démarré</span>}
+            {codecs.length === 0 && <span className="text-muted-foreground text-sm">Engine not started</span>}
             {codecs.map((c) => (
               <Badge key={c} tone="neutral">
                 {c}
@@ -120,9 +118,8 @@ export function AudioSettings() {
           </div>
           {codecs.length > 0 && lacking.length > 0 && (
             <Alert>
-              {lacking.map((c) => (c === "G722" ? "G.722" : "Opus")).join(" et ")}{" "}
-              {lacking.length > 1 ? "ne sont" : "n'est"} pas inclus dans cette build de Baresip (PCMA/PCMU sont toujours
-              disponibles).
+              {lacking.map((c) => (c === "G722" ? "G.722" : "Opus")).join(" and ")} {lacking.length > 1 ? "are" : "is"}{" "}
+              not included in this Baresip build (PCMA/PCMU are always available).
             </Alert>
           )}
         </div>

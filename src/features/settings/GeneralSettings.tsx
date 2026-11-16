@@ -5,7 +5,7 @@ import type { Theme } from "@/types/telephony";
 
 import { SettingRow, SettingsSection } from "./parts";
 
-const THEMES: Record<Theme, string> = { system: "Automatique (système)", light: "Clair", dark: "Sombre" };
+const THEMES: Record<Theme, string> = { system: "Automatic (system)", light: "Light", dark: "Dark" };
 
 export function GeneralSettings() {
   const g = useSettingsStore((s) => s.settings.general);
@@ -15,7 +15,7 @@ export function GeneralSettings() {
   return (
     <div className="space-y-6">
       <SettingsSection title="Apparence">
-        <SettingRow label="Thème" htmlFor="theme">
+        <SettingRow label="Theme" htmlFor="theme">
           <Select value={g.theme} onValueChange={(v) => void update({ general: { theme: v as Theme } })}>
             <SelectTrigger id="theme" className="w-56">
               <SelectValue />
@@ -32,54 +32,51 @@ export function GeneralSettings() {
       </SettingsSection>
 
       {isMac && (
-        <SettingsSection title="Fenêtre">
+        <SettingsSection title="Window">
           <SettingRow
-            label="Fond translucide (effet verre)"
-            description="Laisse transparaître le bureau derrière la fenêtre, comme les apps macOS récentes"
+            label="Translucent background (glass effect)"
+            description="Lets the desktop show through behind the window, like recent macOS apps"
           >
             <Switch
               checked={g.translucent}
               onCheckedChange={(v) => void update({ general: { translucent: v } })}
-              aria-label="Fond translucide"
+              aria-label="Translucent background"
             />
           </SettingRow>
         </SettingsSection>
       )}
 
-      <SettingsSection title="Démarrage et fenêtre">
-        <SettingRow
-          label="Lancer ZePhone à l'ouverture de session"
-          description="Pour recevoir les appels dès que vous vous connectez"
-        >
+      <SettingsSection title="Startup and window">
+        <SettingRow label="Launch ZePhone at login" description="To receive calls as soon as you sign in">
           <Switch
             checked={g.launchAtLogin}
             onCheckedChange={(v) => void update({ general: { launchAtLogin: v } })}
-            aria-label="Lancer à l'ouverture de session"
+            aria-label="Launch at login"
           />
         </SettingRow>
-        <SettingRow label="Démarrer réduit" description="Ne pas afficher la fenêtre au lancement">
+        <SettingRow label="Start minimized" description="Do not show the window at launch">
           <Switch
             checked={g.startMinimized}
             onCheckedChange={(v) => void update({ general: { startMinimized: v } })}
-            aria-label="Démarrer réduit"
+            aria-label="Start minimized"
           />
         </SettingRow>
-        <SettingRow label={isMac ? "Icône dans la barre des menus" : "Icône dans la zone de notification"}>
+        <SettingRow label={isMac ? "Menu bar icon" : "Notification area icon"}>
           <Switch
             checked={g.showTrayIcon}
             onCheckedChange={(v) => void update({ general: { showTrayIcon: v } })}
-            aria-label="Afficher l'icône de la barre des menus"
+            aria-label="Show the menu bar icon"
           />
         </SettingRow>
         <SettingRow
-          label="Garder ZePhone actif à la fermeture de la fenêtre"
-          description="Les appels entrants restent reçus tant que l'application est active et enregistrée. Nécessite l'icône ci-dessus."
+          label="Keep ZePhone running when the window is closed"
+          description="Incoming calls are still received as long as the application is running and registered. Requires the icon above."
         >
           <Switch
             checked={g.closeToTray && g.showTrayIcon}
             disabled={!g.showTrayIcon}
             onCheckedChange={(v) => void update({ general: { closeToTray: v } })}
-            aria-label="Garder actif à la fermeture"
+            aria-label="Keep running when the window is closed"
           />
         </SettingRow>
       </SettingsSection>

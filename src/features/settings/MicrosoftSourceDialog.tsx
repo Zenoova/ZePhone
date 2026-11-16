@@ -16,27 +16,27 @@ type Kind = "microsoftOrg" | "microsoftPersonal";
 
 const CUSTOM = "custom";
 const TENANTS: Record<string, string> = {
-  organizations: "Comptes professionnels ou scolaires (organizations)",
-  common: "Comptes professionnels et personnels (common)",
-  [CUSTOM]: "Un tenant précis (identifiant ou domaine)",
+  organizations: "Work or school accounts (organizations)",
+  common: "Work, school and personal accounts (common)",
+  [CUSTOM]: "A specific tenant (identifier or domain)",
 };
 
 /** The permissions each source asks for, in Microsoft's own words, and what they allow. */
 function permissions(kind: Kind, level: MicrosoftLevel): Array<[string, string]> {
   if (kind === "microsoftPersonal") {
     return [
-      ["Contacts.Read", "lire vos contacts Outlook (jamais les modifier)"],
-      ["offline_access", "rester connecté sans vous redemander votre mot de passe"],
+      ["Contacts.Read", "read your Outlook contacts (never modify them)"],
+      ["offline_access", "stay signed in without asking for your password again"],
     ];
   }
   return [
     level === "full"
       ? [
           "User.Read.All",
-          "lire le profil des personnes de l'annuaire : e-mail, fonction, service, numéros. Exige le consentement d'un administrateur.",
+          "read the profile of the people in the directory: e-mail, job title, department, numbers. Requires an administrator's consent.",
         ]
-      : ["User.ReadBasic.All", "lire le nom et l'e-mail des personnes de l'annuaire, sans numéro de téléphone."],
-    ["offline_access", "rester connecté sans vous redemander votre mot de passe"],
+      : ["User.ReadBasic.All", "read the name and e-mail of the people in the directory, without a phone number."],
+    ["offline_access", "stay signed in without asking for your password again"],
   ];
 }
 
@@ -62,15 +62,15 @@ export function MicrosoftSourceDialog({
       <DialogContent
         title={
           source
-            ? `Reconnecter ${source.name}`
+            ? `Reconnect ${source.name}`
             : org
-              ? "Connecter l'annuaire de l'organisation"
-              : "Connecter vos contacts Outlook"
+              ? "Connect the organization directory"
+              : "Connect your Outlook contacts"
         }
         description={
           org
-            ? "Microsoft 365 · les personnes de votre organisation (Microsoft Entra ID). Ce ne sont pas vos contacts Outlook personnels."
-            : "Outlook · vos contacts personnels. Ce n'est pas l'annuaire de votre organisation."
+            ? "Microsoft 365 · the people in your organization (Microsoft Entra ID). These are not your personal Outlook contacts."
+            : "Outlook · your personal contacts. This is not your organization's directory."
         }
         style={{ width: "min(calc(100vw - 2rem), 600px)" }}
       >
@@ -83,7 +83,7 @@ export function MicrosoftSourceDialog({
 function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceView | null; onDone: () => void }) {
   const org = kind === "microsoftOrg";
   const saved = (source?.config ?? {}) as Partial<MicrosoftConfig>;
-  const [name, setName] = useState(source?.name ?? (org ? "Annuaire Microsoft 365" : "Contacts Outlook"));
+  const [name, setName] = useState(source?.name ?? (org ? "Microsoft 365 directory" : "Outlook contacts"));
   const [clientId, setClientId] = useState(saved.clientId ?? "");
   const [tenantChoice, setTenantChoice] = useState(
     saved.tenant && saved.tenant !== "organizations" && saved.tenant !== "common"
@@ -106,11 +106,11 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
       await telephony.directoryConnectMicrosoft({
         sourceId: source?.id,
         kind,
-        name: name.trim() || (org ? "Annuaire Microsoft 365" : "Contacts Outlook"),
+        name: name.trim() || (org ? "Microsoft 365 directory" : "Outlook contacts"),
         config: { clientId: clientId.trim(), tenant, level: org ? level : "full" },
         syncIntervalMin: Number.parseInt(interval, 10),
       });
-      toast.success("Microsoft connecté : synchronisation en cours");
+      toast.success("Microsoft connected: syncing");
       onDone();
     } catch (e) {
       setError(errorMessage(e));
@@ -128,13 +128,13 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
       }}
     >
       <div className="space-y-1.5">
-        <Label htmlFor="ms-name">Nom affiché</Label>
+        <Label htmlFor="ms-name">Display name</Label>
         <Input id="ms-name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="ms-client">Identifiant d'application (client ID)</Label>
+          <Label htmlFor="ms-client">Application (client) ID</Label>
           <Input
             id="ms-client"
             value={clientId}
@@ -144,9 +144,7 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
             spellCheck={false}
             className="font-mono text-xs"
           />
-          <p className="text-muted-foreground text-xs">
-            Ce n'est pas un secret : l'application n'a pas de mot de passe.
-          </p>
+          <p className="text-muted-foreground text-xs">This is not a secret: the application has no password.</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="ms-tenant">Tenant</Label>
@@ -164,7 +162,7 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
           </Select>
           {tenantChoice === CUSTOM && (
             <Input
-              aria-label="Identifiant ou domaine du tenant"
+              aria-label="Tenant identifier or domain"
               value={customTenant}
               onChange={(e) => setCustomTenant(e.target.value)}
               placeholder="contoso.onmicrosoft.com"
@@ -176,23 +174,23 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
 
       {org && (
         <div className="space-y-1.5">
-          <Label htmlFor="ms-level">Niveau de détail</Label>
+          <Label htmlFor="ms-level">Level of detail</Label>
           <Select value={level} onValueChange={(v) => setLevel(v as MicrosoftLevel)}>
-            <SelectTrigger id="ms-level" aria-label="Niveau de détail" className="w-full">
+            <SelectTrigger id="ms-level" aria-label="Level of detail" className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="full">Complet : numéros, fonction, service (consentement administrateur)</SelectItem>
-              <SelectItem value="basic">Basique : nom et e-mail seulement (sans numéros)</SelectItem>
+              <SelectItem value="full">Full: numbers, job title, department (admin consent)</SelectItem>
+              <SelectItem value="basic">Basic: name and e-mail only (no numbers)</SelectItem>
             </SelectContent>
           </Select>
         </div>
       )}
 
       <div className="space-y-1.5">
-        <Label htmlFor="ms-interval">Synchronisation automatique</Label>
+        <Label htmlFor="ms-interval">Automatic sync</Label>
         <Select value={interval} onValueChange={setInterval}>
-          <SelectTrigger id="ms-interval" aria-label="Synchronisation automatique" className="w-64">
+          <SelectTrigger id="ms-interval" aria-label="Automatic sync" className="w-64">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -205,8 +203,8 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
         </Select>
       </div>
 
-      <section className="bg-muted/50 space-y-2 rounded-xl p-3 text-xs" aria-label="Autorisations demandées">
-        <p className="text-sm font-medium">Autorisations demandées (lecture seule)</p>
+      <section className="bg-muted/50 space-y-2 rounded-xl p-3 text-xs" aria-label="Requested permissions">
+        <p className="text-sm font-medium">Requested permissions (read-only)</p>
         <ul className="space-y-1">
           {permissions(kind, level).map(([scope, what]) => (
             <li key={scope}>
@@ -216,42 +214,36 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
         </ul>
         <p className="text-muted-foreground">
           {org
-            ? "Selon votre organisation, un administrateur doit peut-être approuver l'application pour tous, ou une règle d'accès conditionnel peut bloquer la connexion. ZePhone vous l'indique alors, avec ce qu'il faut demander."
-            : "Aucune autorisation d'administrateur n'est nécessaire pour vos contacts personnels."}{" "}
-          Vous vous connectez sur la page de Microsoft, dans votre navigateur : ZePhone ne voit jamais votre mot de
-          passe.
+            ? "Depending on your organization, an administrator may need to approve the application for everyone, or a conditional access policy may block the sign-in. ZePhone then tells you, with what to ask for."
+            : "No administrator permission is needed for your personal contacts."}{" "}
+          You sign in on the Microsoft page, in your browser: ZePhone never sees your password.
         </p>
       </section>
 
       <details className="rounded-lg border px-3 py-2 text-xs">
-        <summary className="cursor-pointer text-sm font-medium select-none">
-          Où trouver l'identifiant d'application ?
-        </summary>
+        <summary className="cursor-pointer text-sm font-medium select-none">Where to find the application ID?</summary>
         <ol className="text-muted-foreground mt-2 list-decimal space-y-1 pl-4">
-          <li>Dans le centre d'administration Microsoft Entra : Inscriptions d'applications → Nouvelle inscription.</li>
+          <li>In the Microsoft Entra admin center: App registrations → New registration.</li>
           <li>
-            Types de comptes pris en charge :{" "}
+            Supported account types:{" "}
             {org
-              ? "« Comptes de cet annuaire organisationnel uniquement »"
-              : "« Comptes dans un annuaire organisationnel et comptes Microsoft personnels »"}
+              ? "“Accounts in this organizational directory only”"
+              : "“Accounts in any organizational directory and personal Microsoft accounts”"}
             .
           </li>
           <li>
-            URI de redirection : plateforme « Application mobile et de bureau », valeur{" "}
+            Redirect URI: platform “Mobile and desktop applications”, value{" "}
             <code className="font-mono">http://localhost</code>.
           </li>
-          <li>Authentification → « Autoriser les flux clients publics » : Oui.</li>
+          <li>Authentication → “Allow public client flows”: Yes.</li>
           <li>
-            Autorisations d'API → Microsoft Graph → Déléguées :{" "}
+            API permissions → Microsoft Graph → Delegated:{" "}
             {permissions(kind, level)
               .map(([s]) => s)
               .join(", ")}
-            {org && level === "full" ? ", puis « Accorder le consentement de l'administrateur »" : ""}.
+            {org && level === "full" ? ", then “Grant admin consent”" : ""}.
           </li>
-          <li>
-            Copiez l'identifiant d'application (client) ci-dessus ; le tenant est l'identifiant d'annuaire (ou «
-            organizations »).
-          </li>
+          <li>Copy the application (client) ID above; the tenant is the directory ID (or “organizations”).</li>
         </ol>
       </details>
 
@@ -263,7 +255,7 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
       {waiting && (
         <Alert tone="info">
           <span data-testid="ms-waiting">
-            En attente de la connexion dans votre navigateur… Terminez-la sur la page de Microsoft, puis revenez ici.
+            Waiting for the sign-in in your browser… Finish it on the Microsoft page, then come back here.
           </span>
         </Alert>
       )}
@@ -277,10 +269,10 @@ function MicrosoftForm({ kind, source, onDone }: { kind: Kind; source: SourceVie
             else onDone();
           }}
         >
-          {waiting ? "Annuler la connexion" : "Fermer"}
+          {waiting ? "Cancel the connection" : "Close"}
         </Button>
         <Button type="submit" disabled={!ready || waiting} loading={waiting}>
-          Se connecter avec Microsoft
+          Sign in with Microsoft
         </Button>
       </div>
     </form>

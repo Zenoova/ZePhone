@@ -6,7 +6,7 @@ import { playMuteSound } from "@/lib/ui-sounds";
 import { errorMessage, telephony } from "@/services/telephony";
 import type { Call } from "@/types/telephony";
 
-/** How long a finished call stays visible ("Terminé" / "Échec") before disappearing. */
+/** How long a finished call stays visible (“Ended” / “Failed”) before disappearing. */
 export const ENDED_LINGER_MS = 4000;
 
 interface CallsState {
@@ -54,7 +54,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
         call.id,
         setTimeout(() => get().dismiss(call.id), ENDED_LINGER_MS),
       );
-      if (call.state === "failed") toast.error(call.reason ?? "L'appel a échoué");
+      if (call.state === "failed") toast.error(call.reason ?? "The call failed");
     } else {
       timers.delete(call.id);
     }

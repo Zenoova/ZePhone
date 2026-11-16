@@ -33,7 +33,7 @@ export const FILTER_ACTIVE_DIRECTORY =
 export type LdapPreset = "openldap" | "activedirectory";
 
 export const LDAP_PRESET_LABEL: Record<LdapPreset, string> = {
-  openldap: "OpenLDAP et autres (inetOrgPerson)",
+  openldap: "OpenLDAP and others (inetOrgPerson)",
   activedirectory: "Microsoft Active Directory",
 };
 

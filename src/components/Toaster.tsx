@@ -8,7 +8,7 @@ export function Toaster() {
     <Ding
       position="top-center"
       theme={theme === "light" || theme === "dark" ? theme : "system"}
-      labels={{ region: "Notifications", dismiss: "Fermer la notification" }}
+      labels={{ region: "Notifications", dismiss: "Close the notification" }}
     />
   );
 }

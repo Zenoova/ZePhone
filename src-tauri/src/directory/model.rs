@@ -302,8 +302,8 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(c.name(), "Élodie Dupont");
-        c.display_name = "Dupont, Élodie (Compta)".into();
-        assert_eq!(c.name(), "Dupont, Élodie (Compta)");
+        c.display_name = "Dupont, Élodie (Accounting)".into();
+        assert_eq!(c.name(), "Dupont, Élodie (Accounting)");
         c.display_name.clear();
         c.first_name.clear();
         c.last_name.clear();

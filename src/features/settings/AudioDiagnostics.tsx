@@ -13,27 +13,27 @@ import type { HeadsetButton, Reading } from "@/types/audio";
 import { Alert } from "./alert";
 
 const BUTTON_LABEL: Record<string, string> = {
-  hookSwitch: "Décrocher / raccrocher",
-  phoneMute: "Couper le micro",
-  hold: "Attente",
-  drop: "Raccrocher",
-  flash: "Flash (non utilisé)",
+  hookSwitch: "Answer / hang up",
+  phoneMute: "Mute the microphone",
+  hold: "Hold",
+  drop: "Hang up",
+  flash: "Flash (not used)",
 };
 
 function buttonName(b: HeadsetButton): string {
-  return typeof b === "string" ? (BUTTON_LABEL[b] ?? b) : "Autre";
+  return typeof b === "string" ? (BUTTON_LABEL[b] ?? b) : "Other";
 }
 
 function readingText(r: Reading | undefined): string {
   switch (r?.kind) {
     case "listening":
-      return "Lecture des commandes du casque active";
+      return "Reading of the headset commands is active";
     case "permissionNeeded":
-      return "macOS demande une autorisation (« Surveillance de l'entrée ») avant de laisser ZePhone lire les boutons";
+      return "macOS asks for a permission (“Input Monitoring”) before letting ZePhone read the buttons";
     case "unavailable":
       return r.message;
     default:
-      return "Lecture des commandes du casque inactive (désactivée dans les réglages)";
+      return "Reading of the headset commands is inactive (disabled in the settings)";
   }
 }
 
@@ -71,19 +71,19 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         title="Diagnostic audio"
-        description="Les tests ne démarrent que si vous les lancez. Ils jouent le son directement sur le périphérique : votre correspondant ne les entend jamais."
+        description="Tests only start when you launch them. They play the sound directly on the device: your correspondent never hears them."
         className="max-w-3xl"
       >
         <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1" data-testid="audio-diagnostics">
           {inCall && (
             <Alert tone="warning">
-              Un appel est en cours : les tests sont désactivés pour ne pas le perturber. Le niveau du micro de l'appel
-              s'affiche sur l'écran d'appel.
+              A call is in progress: the tests are disabled so as not to disturb it. The call's microphone level is
+              shown on the call screen.
             </Alert>
           )}
 
-          <section aria-label="Périphériques détectés" className="space-y-2">
-            <h3 className="text-sm font-semibold">Périphériques détectés</h3>
+          <section aria-label="Detected devices" className="space-y-2">
+            <h3 className="text-sm font-semibold">Detected devices</h3>
             <div className="divide-y rounded-xl border text-sm">
               {state.snapshot.devices.map((d) => {
                 const uses = usedFor(d.uid);
@@ -92,36 +92,36 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
                     <span className="font-medium">{d.name}</span>
                     <Badge tone="neutral">{TRANSPORT_LABEL[d.transport]}</Badge>
                     <span className="text-muted-foreground text-xs">
-                      {[d.inputChannels > 0 && "entrée", d.outputChannels > 0 && "sortie"].filter(Boolean).join(" + ")}
+                      {[d.inputChannels > 0 && "input", d.outputChannels > 0 && "sortie"].filter(Boolean).join(" + ")}
                     </span>
                     {(d.uid === state.snapshot.defaultInput || d.uid === state.snapshot.defaultOutput) && (
-                      <Badge tone="info">Défaut du système</Badge>
+                      <Badge tone="info">System default</Badge>
                     )}
-                    {d.publicSpeaker && <Badge tone="warning">Haut-parleur public</Badge>}
-                    {d.inUseElsewhere && <Badge tone="neutral">Utilisé par une application</Badge>}
+                    {d.publicSpeaker && <Badge tone="warning">Public speaker</Badge>}
+                    {d.inUseElsewhere && <Badge tone="neutral">Used by an application</Badge>}
                     {uses.map((u) => (
                       <Badge key={u} tone="success">
-                        Utilisé : {u}
+                        In use: {u}
                       </Badge>
                     ))}
-                    {!d.selectable && <Badge tone="danger">Nom non pris en charge</Badge>}
-                    {d.duplicateName && <Badge tone="warning">Nom en double</Badge>}
+                    {!d.selectable && <Badge tone="danger">Name not supported</Badge>}
+                    {d.duplicateName && <Badge tone="warning">Duplicate name</Badge>}
                   </div>
                 );
               })}
               {state.snapshot.devices.length === 0 && (
-                <p className="text-muted-foreground px-3 py-2">Aucun périphérique audio.</p>
+                <p className="text-muted-foreground px-3 py-2">No audio device.</p>
               )}
             </div>
           </section>
 
-          <section aria-label="Ce que ZePhone utilise" className="space-y-2">
-            <h3 className="text-sm font-semibold">Ce que ZePhone utilise</h3>
+          <section aria-label="What ZePhone uses" className="space-y-2">
+            <h3 className="text-sm font-semibold">What ZePhone uses</h3>
             <ul className="space-y-1.5 text-sm">
               {state.roles.map((r) => (
                 <li key={r.role} className="flex flex-wrap items-center gap-2">
                   <span className="w-44 shrink-0 font-medium">{ROLE_LABEL[r.role]}</span>
-                  <span>{(r.inUse ?? r.resolution.used)?.name ?? "aucun"}</span>
+                  <span>{(r.inUse ?? r.resolution.used)?.name ?? "none"}</span>
                   <Badge
                     tone={
                       r.resolution.source === "chosen" || r.resolution.source === "following" ? "neutral" : "warning"
@@ -129,7 +129,7 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
                   >
                     {SOURCE_LABEL[r.resolution.source]}
                   </Badge>
-                  {r.refused && <span className="text-destructive text-xs">Refusé par le moteur : {r.refused}</span>}
+                  {r.refused && <span className="text-destructive text-xs">Refused by the engine: {r.refused}</span>}
                 </li>
               ))}
             </ul>
@@ -150,18 +150,18 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
             ))}
           </section>
 
-          <section aria-label="Permission du microphone" className="space-y-2">
-            <h3 className="text-sm font-semibold">Permission du microphone</h3>
+          <section aria-label="Microphone permission" className="space-y-2">
+            <h3 className="text-sm font-semibold">Microphone permission</h3>
             <p className="flex flex-wrap items-center gap-2 text-sm" data-testid="diag-mic-permission">
               <Mic className="size-4" aria-hidden />
-              {mic === "authorized" && "Accès au microphone autorisé"}
-              {mic === "notDetermined" && "Pas encore demandée : ZePhone la demandera au premier appel"}
-              {mic === "denied" && "Refusée : ZePhone n'entendra rien, et vous non plus vous ne le saurez qu'en appel"}
-              {mic === "restricted" && "Restreinte par le système (profil de gestion)"}
-              {mic === null && "Vérification…"}
+              {mic === "authorized" && "Microphone access allowed"}
+              {mic === "notDetermined" && "Not requested yet: ZePhone will ask at the first call"}
+              {mic === "denied" && "Denied: ZePhone will hear nothing, and you will only notice it during a call"}
+              {mic === "restricted" && "Restricted by the system (management profile)"}
+              {mic === null && "Checking…"}
               {(mic === "denied" || mic === "restricted") && (
                 <Button size="sm" variant="secondary" onClick={() => void telephony.openMicrophoneSettings()}>
-                  Ouvrir les réglages
+                  Open settings
                 </Button>
               )}
             </p>
@@ -171,10 +171,10 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
             <h3 className="text-sm font-semibold">Tests</h3>
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="secondary" disabled={inCall || busy !== null} onClick={() => void run("speaker")}>
-                {busy === "speaker" ? "Lecture…" : "Tester la sortie"}
+                {busy === "speaker" ? "Playing…" : "Test the output"}
               </Button>
               <Button variant="secondary" disabled={inCall || busy !== null} onClick={() => void run("ringtone")}>
-                {busy === "ringtone" ? "Lecture…" : "Tester la sonnerie"}
+                {busy === "ringtone" ? "Playing…" : "Test the ringtone"}
               </Button>
               <Button
                 variant={metering ? "primary" : "secondary"}
@@ -182,13 +182,13 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
                 onClick={() => void meter(!metering)}
                 aria-pressed={metering}
               >
-                {metering ? "Arrêter le niveau du micro" : "Voir le niveau du micro"}
+                {metering ? "Stop the microphone level" : "See the microphone level"}
               </Button>
             </div>
             {metering && (
               <div
                 role="meter"
-                aria-label="Niveau du microphone"
+                aria-label="Microphone level"
                 aria-valuemin={-60}
                 aria-valuemax={0}
                 aria-valuenow={level ?? -60}
@@ -201,27 +201,26 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
               </div>
             )}
             <p className="text-muted-foreground text-xs">
-              Le test de sortie joue une courte tonalité sur « {state.roles[1]?.resolution.used?.name ?? "—"} », celui
-              de la sonnerie la vraie sonnerie sur « {state.roles[2]?.resolution.used?.name ?? "—"} ». Aucun
-              enregistrement n'est fait.
+              The output test plays a short tone on “{state.roles[1]?.resolution.used?.name ?? "—"}”, the ringtone test
+              the real ringtone on “{state.roles[2]?.resolution.used?.name ?? "—"}”. No recording is made.
             </p>
           </section>
 
-          <section aria-label="Boutons du casque" className="space-y-2">
-            <h3 className="text-sm font-semibold">Boutons du casque</h3>
+          <section aria-label="Headset buttons" className="space-y-2">
+            <h3 className="text-sm font-semibold">Headset buttons</h3>
             <p className="text-sm" data-testid="diag-headset-reading">
               {readingText(headset?.reading)}
             </p>
             {headset?.reading.kind === "permissionNeeded" && (
               <Alert tone="warning">
-                Réglages Système › Confidentialité et sécurité › Surveillance de l'entrée : autorisez ZePhone, puis
-                relancez-le. Sans cela, l'audio du casque fonctionne, mais pas ses boutons.
+                System Settings › Privacy & Security › Input Monitoring: allow ZePhone, then relaunch it. Without it,
+                the headset audio works, but not its buttons.
               </Alert>
             )}
             {headset && headset.devices.length === 0 && headset.reading.kind === "listening" && (
               <p className="text-muted-foreground text-sm">
-                Aucun casque n'expose de commandes téléphonie standard. Un casque peut servir pour l'audio sans que ses
-                boutons soient lisibles par ZePhone (Bluetooth, boutons réservés au constructeur).
+                No headset exposes standard telephony commands. A headset can be used for audio without its buttons
+                readable by ZePhone (Bluetooth, buttons reserved for the manufacturer).
               </p>
             )}
             {headset?.devices.map((d) => (
@@ -231,27 +230,27 @@ export function AudioDiagnostics({ open, onOpenChange }: { open: boolean; onOpen
                   {d.manufacturer && <span className="text-muted-foreground text-xs">{d.manufacturer}</span>}
                   <Badge tone="neutral">{d.transport || "HID"}</Badge>
                   <Badge tone={d.inUse ? "success" : "neutral"}>
-                    {d.inUse ? "Casque utilisé" : "Pas celui de ZePhone"}
+                    {d.inUse ? "Headset in use" : "Not the one ZePhone uses"}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Boutons déclarés :{" "}
-                  {d.buttons.length ? d.buttons.map(buttonName).join(", ") : "aucun bouton téléphonie standard"}.{" "}
+                  Declared buttons:{" "}
+                  {d.buttons.length ? d.buttons.map(buttonName).join(", ") : "no standard telephony button"}.{" "}
                   {headset.settings.mode === "auto" || headset.settings.mode === "system"
-                    ? "Commandes activées."
-                    : "Commandes désactivées."}
+                    ? "Commands enabled."
+                    : "Commands disabled."}
                 </p>
               </div>
             ))}
             {headset && headset.log.length > 0 && (
-              <div className="divide-y rounded-xl border text-xs" aria-label="Derniers événements du casque">
+              <div className="divide-y rounded-xl border text-xs" aria-label="Latest headset events">
                 {[...headset.log].reverse().map((e, i) => (
                   <div key={i} className="flex flex-wrap items-center gap-2 px-3 py-1.5">
                     <span className="text-muted-foreground tabular-nums">
-                      {new Date(e.at).toLocaleTimeString("fr-FR")}
+                      {new Date(e.at).toLocaleTimeString("en-US")}
                     </span>
                     <span>{e.button}</span>
-                    <Badge tone={e.acted ? "success" : "neutral"}>{e.acted ? "Action" : "Ignoré"}</Badge>
+                    <Badge tone={e.acted ? "success" : "neutral"}>{e.acted ? "Action" : "Ignored"}</Badge>
                     <span className="text-muted-foreground">{e.result}</span>
                   </div>
                 ))}

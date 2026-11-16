@@ -2,7 +2,7 @@
  * DEV-ONLY stand-in for the directory commands of the Rust backend, used by the browser preview (`/?mock`).
  *
  * Everything here is FICTIONAL DEMO DATA: invented people, an invented LDAP server, an invented Microsoft sign-in.
- * Every demo source carries "DÉMO" in its name so it can never be taken for a real one. None of this exists in the
+ * Every demo source carries "DEMO" in its name so it can never be taken for a real one. None of this exists in the
  * application itself, which only ever shows what a real source gave it.
  */
 import type {
@@ -92,25 +92,16 @@ const LAST = [
   "Henry",
   "Perrin",
 ];
-const DEPARTMENTS = [
-  "Comptabilité",
-  "Ventes",
-  "Support",
-  "Ressources humaines",
-  "Informatique",
-  "Juridique",
-  "Marketing",
-  "Logistique",
-];
+const DEPARTMENTS = ["Accounting", "Sales", "Support", "Human resources", "IT", "Legal", "Marketing", "Logistics"];
 const TITLES = [
-  "Chargé de mission",
-  "Responsable",
-  "Directrice",
+  "Project officer",
+  "Manager",
+  "Director",
   "Assistant",
-  "Ingénieur",
-  "Technicien",
-  "Conseillère",
-  "Chef de projet",
+  "Engineer",
+  "Technician",
+  "Advisor",
+  "Project manager",
 ];
 
 const DEMO_LDAP = "demo-ldap";
@@ -123,9 +114,9 @@ function ref(sourceId: string, name: string, kind: SourceKind, external: string)
 }
 
 export function createMockDirectory(emit: (event: string, payload: unknown) => void, getLocal: () => Contact[]) {
-  const ldapName = "DÉMO · Annuaire LDAP (fictif)";
-  const msName = "DÉMO · Microsoft 365 (fictif)";
-  const outlookName = "DÉMO · Contacts Outlook (fictif)";
+  const ldapName = "DEMO · LDAP directory (fictional)";
+  const msName = "DEMO · Microsoft 365 (fictional)";
+  const outlookName = "DEMO · Outlook contacts (fictional)";
 
   const people: DirectoryEntry[] = [];
   const add = (e: DirectoryEntry) => people.push(e);
@@ -136,9 +127,9 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
     displayName: "Élodie Dupont",
     firstName: "Élodie",
     lastName: "Dupont",
-    company: "Société Démo",
-    department: "Comptabilité",
-    title: "Directrice financière",
+    company: "Demo Company",
+    department: "Accounting",
+    title: "Chief financial officer",
     email: "elodie.dupont@demo.invalid",
     phones: [
       { kind: "work", number: "+33 1 23 45 67 89" },
@@ -151,7 +142,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
     readOnly: true,
   });
   for (const [n, dept, phone] of [
-    ["1", "Ventes", "01.11.11.11.11"],
+    ["1", "Sales", "01.11.11.11.11"],
     ["2", "Support", "01.22.22.22.22 poste 4242"],
   ] as const) {
     add({
@@ -159,7 +150,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       displayName: "Jean Martin",
       firstName: "Jean",
       lastName: "Martin",
-      company: "Société Démo",
+      company: "Demo Company",
       department: dept,
       title: null,
       email: `jean.martin${n}@demo.invalid`,
@@ -176,9 +167,9 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
     displayName: "Camille Rousseau",
     firstName: "Camille",
     lastName: "Rousseau",
-    company: "Société Démo",
-    department: "Informatique",
-    title: "Responsable des systèmes",
+    company: "Demo Company",
+    department: "IT",
+    title: "Head of systems",
     email: "camille.rousseau@demo.invalid",
     phones: [
       { kind: "work", number: "+33 1 40 00 00 01" },
@@ -210,7 +201,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       displayName: `${first} ${last}`,
       firstName: first,
       lastName: last,
-      company: "Société Démo",
+      company: "Demo Company",
       department: DEPARTMENTS[i % DEPARTMENTS.length]!,
       title: TITLES[i % TITLES.length]!,
       email: `${fold(first).replace(/ /g, "")}.${fold(last).replace(/ /g, "")}.${i}@demo.invalid`,
@@ -227,7 +218,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       displayName: `${FIRST[(i * 3) % FIRST.length]} ${LAST[(i * 11) % LAST.length]}`,
       firstName: FIRST[(i * 3) % FIRST.length]!,
       lastName: LAST[(i * 11) % LAST.length]!,
-      company: "Contoso Démo",
+      company: "Contoso Demo",
       department: DEPARTMENTS[(i + 2) % DEPARTMENTS.length]!,
       title: TITLES[(i + 3) % TITLES.length]!,
       email: `ms.${i}@contoso-demo.invalid`,
@@ -240,13 +231,13 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
   }
 
   // The device's own address book (connected on demand): invented cards, like everything here.
-  const deviceName = "DÉMO · Contacts du Mac (fictif)";
+  const deviceName = "DEMO · Mac contacts (fictional)";
   for (const [i, [first, last, number, kind]] of (
     [
-      ["Maman", "(démo)", "06 11 22 33 44", "mobile"],
-      ["Docteur", "Démo", "01 55 55 55 55", "work"],
-      ["Plombier", "Démo", "06 99 88 77 66", "mobile"],
-      ["Mamie", "Démo", "02 99 00 11 22", "home"],
+      ["Mom", "(demo)", "06 11 22 33 44", "mobile"],
+      ["Doctor", "Demo", "01 55 55 55 55", "work"],
+      ["Plumber", "Demo", "06 99 88 77 66", "mobile"],
+      ["Mamie", "Demo", "02 99 00 11 22", "home"],
     ] as const
   ).entries()) {
     add({
@@ -284,7 +275,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       config: {
         url: "ldaps://ldap.demo.invalid",
         baseDn: "ou=people,dc=demo,dc=invalid",
-        bindDn: "cn=lecteur,dc=demo,dc=invalid",
+        bindDn: "cn=reader,dc=demo,dc=invalid",
         pageSize: 500,
       },
     },
@@ -298,7 +289,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       contactCount: 29,
       lastSuccessAt: new Date(Date.now() - 26 * 3600_000).toISOString(),
       lastAttemptAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
-      lastError: "La connexion Microsoft a expiré ou a été révoquée : reconnectez la source.",
+      lastError: "The Microsoft sign-in has expired or was revoked: reconnect the source.",
       errorKind: "auth",
       syncIntervalMin: 360,
       stale: false,
@@ -323,7 +314,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
   ];
 
   const favorites = new Set<string>();
-  let groups: GroupView[] = [{ id: "g-clients", name: "Clients importants", memberCount: 0 }];
+  let groups: GroupView[] = [{ id: "g-clients", name: "Key clients", memberCount: 0 }];
   const members = new Map<string, Set<string>>([["g-clients", new Set()]]);
   let seq = 1;
   const changed = () => setTimeout(() => emit("directory:changed", null), 0);
@@ -339,7 +330,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       title: null,
       email: null,
       phones: [{ kind: c.number.startsWith("sip:") ? "sip" : "other", number: c.number }],
-      sources: [ref("local", "Contacts locaux", "local", c.id)],
+      sources: [ref("local", "Local contacts", "local", c.id)],
       favorite: false,
       groups: [],
       readOnly: false,
@@ -440,7 +431,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       {
         id: "local",
         kind: "local" as const,
-        name: "Contacts locaux",
+        name: "Local contacts",
         enabled: true,
         readOnly: false,
         state: "idle" as const,
@@ -468,7 +459,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
         return {
           ok: false,
           report: null,
-          error: { kind: "network", message: "Le serveur refuse la connexion : vérifiez l'adresse et le port." },
+          error: { kind: "network", message: "The server refuses the connection: check the address and the port." },
         };
       }
       if (/mauvais|wrong/i.test(input.password ?? "")) {
@@ -478,7 +469,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
           error: {
             kind: "auth",
             message:
-              "Le serveur a refusé les identifiants : vérifiez le compte et le mot de passe, puis reconnectez la source.",
+              "The server refused the credentials: check the account and the password, then reconnect the source.",
           },
         };
       }
@@ -505,7 +496,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
     },
     directory_system_contacts_info: () => ({
       available: true,
-      name: "Contacts du Mac",
+      name: "Mac contacts",
       access: sources.some((s) => s.id === DEMO_DEVICE) ? "authorized" : "notDetermined",
     }),
     directory_connect_system_contacts: async () => {
@@ -560,7 +551,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
         {
           id,
           kind: "ldap",
-          name: `DÉMO · ${input.name}`,
+          name: `DEMO · ${input.name}`,
           enabled: true,
           readOnly: true,
           state: "idle",
@@ -608,7 +599,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
         {
           id,
           kind: input.kind,
-          name: `DÉMO · ${input.name}`,
+          name: `DEMO · ${input.name}`,
           enabled: true,
           readOnly: true,
           state: "idle",
@@ -687,7 +678,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       if (!name || groups.some((g) => g.name.toLowerCase() === name.toLowerCase())) {
         throw {
           kind: "validation",
-          message: name ? "Un groupe porte déjà ce nom" : "Le nom du groupe doit faire de 1 à 60 caractères",
+          message: name ? "A group already has this name" : "The group name must be 1 to 60 characters long",
         };
       }
       const g = { id: `g-${seq++}`, name, memberCount: 0 };

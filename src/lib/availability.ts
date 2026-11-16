@@ -2,17 +2,17 @@ import type { AccountStatus, AccountView } from "@/types/telephony";
 
 /** What the user cares about: can this account be reached right now? */
 export function availability(account: AccountView, status: AccountStatus | undefined): string {
-  if (!account.enabled) return "Désactivé";
+  if (!account.enabled) return "Disabled";
   switch (status?.state) {
     case "registered":
-      return "Disponible";
+      return "Available";
     case "connecting":
-      return "Connexion…";
+      return "Connecting…";
     case "error":
-      return status.sipCode ? `Indisponible · SIP ${status.sipCode}` : "Indisponible";
+      return status.sipCode ? `Unavailable · SIP ${status.sipCode}` : "Unavailable";
     case "unconfigured":
-      return "Non configuré";
+      return "Not configured";
     default:
-      return "Hors ligne";
+      return "Offline";
   }
 }

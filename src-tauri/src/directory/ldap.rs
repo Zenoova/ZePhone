@@ -222,31 +222,31 @@ impl LdapConfig {
         } else if let Some(r) = url.strip_prefix("ldap://") {
             (false, r)
         } else {
-            return Err("L'adresse doit commencer par ldaps:// (recommandé) ou ldap://".into());
+            return Err("The address must start with ldaps:// (recommended) or ldap://".into());
         };
         let host = rest.split(['/', '?']).next().unwrap_or("");
         if host.is_empty() || host.contains(char::is_whitespace) || url.len() > 300 {
-            return Err("L'adresse du serveur est invalide".into());
+            return Err("The server address is invalid".into());
         }
         if self.starttls && secure {
-            return Err("StartTLS s'utilise avec ldap://, pas avec ldaps://".into());
+            return Err("StartTLS is used with ldap://, not with ldaps://".into());
         }
         if !secure && !self.starttls && (has_password || !self.bind_dn.trim().is_empty()) {
             return Err(
-                "Un mot de passe ne doit pas circuler en clair : utilisez ldaps:// ou activez StartTLS".into(),
+                "A password must not travel in clear text: use ldaps:// or enable StartTLS".into(),
             );
         }
         if self.base_dn.trim().is_empty() {
-            return Err("La base de recherche (Base DN) est obligatoire".into());
+            return Err("The search base (Base DN) is required".into());
         }
         if !balanced_filter(&self.filter) {
-            return Err("Le filtre doit être une expression LDAP entre parenthèses, par exemple (objectClass=person)".into());
+            return Err("The filter must be an LDAP expression in parentheses, for example (objectClass=person)".into());
         }
         if !(10..=5000).contains(&self.page_size) {
-            return Err("La taille des pages doit être comprise entre 10 et 5 000".into());
+            return Err("The page size must be between 10 and 5,000".into());
         }
         if !self.bind_dn.trim().is_empty() && !has_password {
-            return Err("Un mot de passe est nécessaire avec ce compte de connexion".into());
+            return Err("A password is required with this sign-in account".into());
         }
         let m = &self.mapping;
         let attrs = m
@@ -255,14 +255,14 @@ impl LdapConfig {
             .chain(std::iter::once("dn".to_owned()));
         for a in attrs {
             if !a.eq_ignore_ascii_case("dn") && !valid_attribute(&a) {
-                return Err(format!("Nom d'attribut invalide : {a}"));
+                return Err(format!("Invalid attribute name: {a}"));
             }
         }
         if m.phones.is_empty() {
-            return Err("Indiquez au moins un attribut contenant un numéro de téléphone".into());
+            return Err("Give at least one attribute containing a phone number".into());
         }
         if m.id.is_empty() {
-            return Err("Indiquez l'attribut qui identifie une entrée de façon stable".into());
+            return Err("Give the attribute that identifies an entry in a stable way".into());
         }
         Ok(())
     }
@@ -354,71 +354,68 @@ pub fn translate_error(e: &LdapError) -> SyncError {
         LdapError::LdapResult { result } => match result.rc {
             49 => err(
                 SyncErrorKind::Auth,
-                "Le serveur a refusé les identifiants : vérifiez le compte et le mot de passe, puis reconnectez la source.",
+                "The server refused the credentials: check the account and the password, then reconnect the source.",
             ),
             50 | 53 | 8 => err(
                 SyncErrorKind::Forbidden,
-                "Ce compte n'a pas le droit de lire l'annuaire. Demandez l'accès à votre administrateur.",
+                "This account is not allowed to read the directory. Ask your administrator for access.",
             ),
             // A server also answers "no such object" to an account that may not see the base at all.
             32 => err(
                 SyncErrorKind::Config,
-                "La base de recherche (Base DN) est introuvable, ou ce compte n'a pas le droit d'y accéder : \
-                 vérifiez la base et les droits du compte.",
+                "The search base (Base DN) was not found, or this account is not allowed to access it: \
+                 check the base and the account's rights.",
             ),
             87 | 12 | 18 => err(
                 SyncErrorKind::Config,
-                "Le serveur n'accepte pas le filtre ou les attributs demandés : vérifiez le filtre et la correspondance des champs.",
+                "The server does not accept the filter or the requested attributes: check the filter and the field mapping.",
             ),
             4 | 11 => err(
                 SyncErrorKind::Invalid,
-                "Le serveur limite le nombre de résultats : réduisez la base de recherche ou le filtre.",
+                "The server limits the number of results: narrow the search base or the filter.",
             ),
             51 | 52 | 80 => err(
                 SyncErrorKind::Server,
-                "Le serveur LDAP est indisponible ou occupé.",
+                "The LDAP server is unavailable or busy.",
             ),
-            _ => err(
-                SyncErrorKind::Server,
-                "Le serveur LDAP a renvoyé une erreur.",
-            ),
+            _ => err(SyncErrorKind::Server, "The LDAP server returned an error."),
         },
         LdapError::NativeTLS { .. } => err(
             SyncErrorKind::Config,
-            "La connexion sécurisée a échoué : le certificat du serveur n'est pas approuvé, ou ne correspond pas à son adresse. \
-             Ajoutez l'autorité de certification de votre entreprise dans Paramètres → Réseau.",
+            "The secure connection failed: the server's certificate is not trusted, or does not match its address. \
+             Add your company's certificate authority in Settings → Network.",
         ),
         LdapError::Io { source } => match source.kind() {
             std::io::ErrorKind::ConnectionRefused => err(
                 SyncErrorKind::Network,
-                "Le serveur refuse la connexion : vérifiez l'adresse et le port.",
+                "The server refuses the connection: check the address and the port.",
             ),
             std::io::ErrorKind::TimedOut => err(
                 SyncErrorKind::Network,
-                "Le serveur ne répond pas (délai dépassé).",
+                "The server is not answering (timed out).",
             ),
             _ => err(
                 SyncErrorKind::Network,
-                "Serveur introuvable ou injoignable : vérifiez l'adresse et votre connexion.",
+                "Server not found or unreachable: check the address and your connection.",
             ),
         },
         LdapError::Timeout { .. } => err(
             SyncErrorKind::Network,
-            "Le serveur ne répond pas (délai dépassé).",
+            "The server is not answering (timed out).",
         ),
         LdapError::EndOfStream | LdapError::ResultRecv { .. } | LdapError::OpSend { .. } => err(
             SyncErrorKind::Network,
-            "La connexion avec le serveur a été interrompue.",
+            "The connection with the server was interrupted.",
         ),
         LdapError::UrlParsing { .. } | LdapError::UnknownScheme(_) | LdapError::FilterParsing => {
             err(
                 SyncErrorKind::Config,
-                "L'adresse du serveur ou le filtre est invalide.",
+                "The server address or the filter is invalid.",
             )
         }
         _ => err(
             SyncErrorKind::Server,
-            "Erreur inattendue de la connexion LDAP.",
+            "Unexpected error on the LDAP connection.",
         ),
     }
 }
@@ -457,7 +454,7 @@ impl LdapConnector {
             let cert = native_tls::Certificate::from_pem(pem).map_err(|_| {
                 SyncError::new(
                     SyncErrorKind::Config,
-                    "Le fichier de l'autorité de certification (Paramètres → Réseau) n'est pas un certificat PEM valide.",
+                    "The certificate authority file (Settings → Network) is not a valid PEM certificate.",
                 )
             })?;
             let connector = native_tls::TlsConnector::builder()
@@ -466,7 +463,7 @@ impl LdapConnector {
                 .map_err(|_| {
                     SyncError::new(
                         SyncErrorKind::Config,
-                        "Connexion sécurisée impossible à préparer.",
+                        "Cannot prepare the secure connection.",
                     )
                 })?;
             settings = settings.set_connector(connector);
@@ -553,7 +550,7 @@ impl Connector for LdapConnector {
             .map_err(|_| {
                 SyncError::new(
                     SyncErrorKind::Network,
-                    "Le serveur met trop de temps à répondre.",
+                    "The server takes too long to answer.",
                 )
             })??;
         progress(fetched.contacts.len());
@@ -563,7 +560,7 @@ impl Connector for LdapConnector {
 
 // ---------------------------------------------------------------- test and preview
 
-/// The result of "Tester la connexion": whether it works, and what the first entries would look like.
+/// The result of “Test the connection”: whether it works, and what the first entries would look like.
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LdapTestReport {
@@ -608,31 +605,27 @@ impl LdapConnector {
         let mut warnings = Vec::new();
         if entries.is_empty() {
             warnings.push(
-                "Aucune entrée trouvée : vérifiez la base de recherche et le filtre (ou les droits du compte).".into(),
+                "No entries found: check the search base and the filter (or the account's rights)."
+                    .into(),
             );
         } else {
             let without_number = preview.iter().filter(|c| c.phones.is_empty()).count();
             if without_number == preview.len() && !preview.is_empty() {
-                warnings.push(
-                    "Aucune de ces entrées n'a de numéro : vérifiez les attributs de téléphone."
-                        .into(),
-                );
+                warnings
+                    .push("None of these entries has a number: check the phone attributes.".into());
             } else if without_number > 0 {
                 warnings.push(format!(
-                    "{without_number} entrée(s) sur {} n'ont aucun numéro : elles seront ignorées.",
+                    "{without_number} of {} entries have no number: they will be ignored.",
                     preview.len()
                 ));
             }
             if skipped > 0 {
                 warnings.push(format!(
-                    "{skipped} entrée(s) n'ont pas d'identifiant stable : vérifiez l'attribut d'identifiant."
+                    "{skipped} entries have no stable identifier: check the identifier attribute."
                 ));
             }
             if preview.iter().all(|c| c.name().is_empty()) {
-                warnings.push(
-                    "Aucune de ces entrées n'a de nom : vérifiez la correspondance des champs."
-                        .into(),
-                );
+                warnings.push("None of these entries has a name: check the field mapping.".into());
             }
         }
         Ok(LdapTestReport {
@@ -686,7 +679,7 @@ mod tests {
         let mut c = good();
         c.url = "ldap://ldap.example.com".into();
         c.bind_dn = "cn=reader,dc=example,dc=com".into();
-        assert!(c.validate(true).unwrap_err().contains("en clair"));
+        assert!(c.validate(true).unwrap_err().contains("clear text"));
         c.starttls = true;
         assert!(c.validate(true).is_ok());
         // an anonymous read over plain LDAP carries no secret
@@ -714,7 +707,7 @@ mod tests {
         assert!(c.validate(false).is_err());
         let mut c = good();
         c.bind_dn = "cn=x".into();
-        assert!(c.validate(false).unwrap_err().contains("mot de passe"));
+        assert!(c.validate(false).unwrap_err().contains("password"));
         let mut c = good();
         c.page_size = 3;
         assert!(c.validate(false).is_err());
@@ -781,9 +774,9 @@ mod tests {
                 ("sn", &["Dupont"]),
                 ("cn", &["Élodie Dupont"]),
                 ("mail", &["elodie@example.com"]),
-                ("o", &["Société"]),
-                ("title", &["  Directrice  "]),
-                ("ou", &["Comptabilité"]),
+                ("o", &["Company"]),
+                ("title", &["  Director  "]),
+                ("ou", &["Accounting"]),
                 (
                     "telephoneNumber",
                     &["+33 1 23 45 67 89", "+33 1 23 45 67 89", "  "],
@@ -795,8 +788,8 @@ mod tests {
         let c = map_entry(&e, &LdapMapping::open_ldap()).unwrap();
         assert_eq!(c.external_id, "abc-123");
         assert_eq!(c.display_name, "Élodie Dupont");
-        assert_eq!(c.title.as_deref(), Some("Directrice"));
-        assert_eq!(c.department.as_deref(), Some("Comptabilité"));
+        assert_eq!(c.title.as_deref(), Some("Director"));
+        assert_eq!(c.department.as_deref(), Some("Accounting"));
         let numbers: Vec<(PhoneKind, &str)> = c
             .phones
             .iter()
@@ -886,7 +879,7 @@ mod tests {
             })
         };
         assert_eq!(rc(49).kind, SyncErrorKind::Auth);
-        assert!(rc(49).message.contains("reconnectez"));
+        assert!(rc(49).message.contains("reconnect"));
         assert_eq!(rc(50).kind, SyncErrorKind::Forbidden);
         assert_eq!(rc(32).kind, SyncErrorKind::Config);
         assert_eq!(rc(87).kind, SyncErrorKind::Config);

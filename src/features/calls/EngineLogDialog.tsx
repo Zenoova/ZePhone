@@ -21,13 +21,13 @@ export function EngineLogDialog({ open, onOpenChange }: { open: boolean; onOpenC
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title="Journal du moteur SIP" description="Les 300 dernières lignes, sans mots de passe.">
+      <DialogContent title="SIP engine log" description="The last 300 lines, without passwords.">
         <pre
           className="bg-muted max-h-80 overflow-auto rounded-lg p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap"
           data-selectable
           data-testid="engine-log"
         >
-          {lines === null ? "Chargement…" : lines.length ? lines.join("\n") : "Journal vide."}
+          {lines === null ? "Loading…" : lines.length ? lines.join("\n") : "Empty log."}
         </pre>
       </DialogContent>
     </Dialog>

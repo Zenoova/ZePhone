@@ -78,13 +78,13 @@ impl UiSink for TauriSink {
                 .count();
             let total = states.len();
             if total == 0 {
-                "Aucun compte".to_owned()
+                "No account".to_owned()
             } else if registered > 0 {
-                format!("Enregistré ({registered}/{total})")
+                format!("Registered ({registered}/{total})")
             } else if connecting > 0 {
-                "Connexion en cours…".to_owned()
+                "Connecting…".to_owned()
             } else {
-                "Non enregistré".to_owned()
+                "Not registered".to_owned()
             }
         };
         tray::set_status_text(&self.app, &summary);
@@ -111,13 +111,13 @@ impl UiSink for TauriSink {
         // minimised), the incoming-call UI must be visible.
         call_window::open(&self.app);
         if notify {
-            self.notify("Appel entrant", &caller_label(call));
+            self.notify("Incoming call", &caller_label(call));
         }
     }
 
     fn missed_call(&self, call: &Call, notify: bool) {
         if notify {
-            self.notify("Appel manqué", &caller_label(call));
+            self.notify("Missed call", &caller_label(call));
         }
     }
 

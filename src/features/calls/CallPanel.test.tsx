@@ -28,13 +28,13 @@ beforeEach(() => {
 describe("CallPanel", () => {
   it("shows the real call state at each stage", () => {
     const cases: Array<[Call["state"], string]> = [
-      ["initializing", "Initialisation…"],
-      ["dialing", "Appel en cours de composition…"],
-      ["ringing", "Sonnerie…"],
-      ["connected", "Connecté"],
-      ["onHold", "En attente"],
-      ["failed", "Échec"],
-      ["ended", "Terminé"],
+      ["initializing", "Initializing…"],
+      ["dialing", "Call being dialled…"],
+      ["ringing", "Ringtone…"],
+      ["connected", "Connected"],
+      ["onHold", "On hold"],
+      ["failed", "Failed"],
+      ["ended", "Ended"],
     ];
     for (const [state, label] of cases) {
       const { unmount } = show(makeCall({ state, connectedAt: "2026-01-01T10:00:00Z" }));
@@ -58,68 +58,68 @@ describe("CallPanel", () => {
         durationSecs: 65,
       }),
     );
-    expect(screen.getByLabelText("Durée de l'appel")).toHaveTextContent("01:05");
+    expect(screen.getByLabelText("Call duration")).toHaveTextContent("01:05");
   });
 
   it("outgoing connected call: mute, hold, hangup go to the backend", () => {
     show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
-    fireEvent.click(screen.getByRole("button", { name: "Couper le micro" }));
+    fireEvent.click(screen.getByRole("button", { name: "Mute the microphone" }));
     expect(invoke).toHaveBeenLastCalledWith("set_call_mute", { id: "call1", muted: true });
-    fireEvent.click(screen.getByRole("button", { name: "Mettre en attente" }));
+    fireEvent.click(screen.getByRole("button", { name: "Put on hold" }));
     expect(invoke).toHaveBeenLastCalledWith("hold_call", { id: "call1" });
-    fireEvent.click(screen.getByRole("button", { name: "Raccrocher" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hang up" }));
     expect(invoke).toHaveBeenLastCalledWith("hangup_call", { id: "call1" });
   });
 
   it("DTMF keypad sends digits during the call", () => {
     show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
-    expect(screen.queryByRole("group", { name: "Clavier numérique" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Clavier (tonalités DTMF)" }));
+    expect(screen.queryByRole("group", { name: "Numeric keypad" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Keypad (DTMF tones)" }));
     fireEvent.click(screen.getByRole("button", { name: "7" }));
     expect(invoke).toHaveBeenLastCalledWith("send_dtmf", { id: "call1", digits: "7" });
   });
 
   it("controls that need an established call are disabled while ringing", () => {
     show(makeCall({ state: "ringing" }));
-    expect(screen.getByRole("button", { name: "Couper le micro" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Transférer l'appel" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Raccrocher" })).toBeEnabled(); // can cancel
+    expect(screen.getByRole("button", { name: "Mute the microphone" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Transfer the call" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Hang up" })).toBeEnabled(); // can cancel
   });
 
   it("transfer opens a dialog and sends the target", async () => {
     show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
-    fireEvent.click(screen.getByRole("button", { name: "Transférer l'appel" }));
-    const input = await screen.findByLabelText("Destinataire");
+    fireEvent.click(screen.getByRole("button", { name: "Transfer the call" }));
+    const input = await screen.findByLabelText("Recipient");
     fireEvent.change(input, { target: { value: "1005" } });
-    fireEvent.click(screen.getByRole("button", { name: /^Transférer$/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Transfer$/ }));
     await vi.waitFor(() => expect(invoke).toHaveBeenLastCalledWith("transfer_call", { id: "call1", target: "1005" }));
   });
 
   it("incoming call offers answer and reject only", () => {
     show(makeCall({ state: "incoming", direction: "incoming" }));
-    expect(screen.queryByRole("button", { name: "Raccrocher" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Répondre/ }));
+    expect(screen.queryByRole("button", { name: "Hang up" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Answer/ }));
     expect(invoke).toHaveBeenLastCalledWith("answer_call", { id: "call1" });
     fireEvent.click(screen.getByRole("button", { name: /Refuser/ }));
     expect(invoke).toHaveBeenLastCalledWith("reject_call", { id: "call1" });
   });
 
   it("failure shows the diagnostic reason", () => {
-    show(makeCall({ state: "failed", reason: "Occupé (486)", sipCode: 486 }));
-    expect(screen.getByText("Occupé (486)")).toBeInTheDocument();
+    show(makeCall({ state: "failed", reason: "Busy (486)", sipCode: 486 }));
+    expect(screen.getByText("Busy (486)")).toBeInTheDocument();
   });
 
   describe("layout", () => {
     it("puts every control in one aligned row, hang-up included", () => {
       show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
-      const group = screen.getByRole("group", { name: "Commandes de l'appel" });
+      const group = screen.getByRole("group", { name: "Call controls" });
       const labels = Array.from(group.querySelectorAll("button")).map((b) => b.getAttribute("aria-label"));
       expect(labels).toEqual([
-        "Couper le micro",
-        "Mettre en attente",
-        "Clavier (tonalités DTMF)",
-        "Transférer l'appel",
-        "Raccrocher",
+        "Mute the microphone",
+        "Put on hold",
+        "Keypad (DTMF tones)",
+        "Transfer the call",
+        "Hang up",
       ]);
     });
 
@@ -127,7 +127,7 @@ describe("CallPanel", () => {
       show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
       expect(screen.getByTestId("orb-remote")).toBeInTheDocument();
       expect(screen.queryByTestId("orb-local")).toBeNull();
-      expect(screen.queryByText("Vous")).toBeNull();
+      expect(screen.queryByText("You")).toBeNull();
     });
 
     it("the keypad is a glass sheet over the voices, right above the controls, hidden until asked for", () => {
@@ -137,11 +137,11 @@ describe("CallPanel", () => {
       expect(sheet).toHaveAttribute("inert");
       expect(sheet.className).toContain("glass");
 
-      fireEvent.click(screen.getByRole("button", { name: "Clavier (tonalités DTMF)" }));
+      fireEvent.click(screen.getByRole("button", { name: "Keypad (DTMF tones)" }));
       expect(sheet).toHaveAttribute("aria-hidden", "false");
       expect(sheet).not.toHaveAttribute("inert");
       // It overlays: positioned above the controls, inside the same container.
-      const controls = screen.getByRole("group", { name: "Commandes de l'appel" });
+      const controls = screen.getByRole("group", { name: "Call controls" });
       expect(sheet.parentElement).toBe(controls.parentElement);
       expect(sheet.compareDocumentPosition(controls) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       // The orb keeps its size: nothing is pushed aside.
@@ -152,20 +152,20 @@ describe("CallPanel", () => {
       show(makeCall({ state: "connected", connectedAt: new Date().toISOString() }));
       fireEvent.keyDown(window, { key: "4" });
       expect(invoke).not.toHaveBeenCalled();
-      fireEvent.click(screen.getByRole("button", { name: "Clavier (tonalités DTMF)" }));
+      fireEvent.click(screen.getByRole("button", { name: "Keypad (DTMF tones)" }));
       fireEvent.keyDown(window, { key: "4" });
       expect(invoke).toHaveBeenLastCalledWith("send_dtmf", { id: "call1", digits: "4" });
     });
 
     it("shows a muted microphone on its button only, with no text about it", () => {
       show(makeCall({ state: "connected", muted: true, connectedAt: new Date().toISOString() }));
-      expect(screen.queryByText("Micro coupé")).toBeNull();
-      expect(screen.getByRole("button", { name: "Réactiver le micro" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.queryByText("Muted")).toBeNull();
+      expect(screen.getByRole("button", { name: "Unmute" })).toHaveAttribute("aria-pressed", "true");
     });
 
     it("an unanswered call has no controls to show once it is over", () => {
       show(makeCall({ state: "ended", durationSecs: 0 }));
-      expect(screen.queryByRole("group", { name: "Commandes de l'appel" })).toBeNull();
+      expect(screen.queryByRole("group", { name: "Call controls" })).toBeNull();
     });
   });
 });

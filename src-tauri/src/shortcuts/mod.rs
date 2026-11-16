@@ -54,14 +54,14 @@ impl ShortcutAction {
 
     pub fn label(self) -> &'static str {
         match self {
-            ShortcutAction::Answer => "Décrocher",
-            ShortcutAction::Reject => "Refuser l'appel entrant",
-            ShortcutAction::Hangup => "Raccrocher",
-            ShortcutAction::ToggleMute => "Couper / réactiver le micro",
-            ShortcutAction::ToggleHold => "Mettre en attente / reprendre",
-            ShortcutAction::ShowDialer => "Afficher le clavier",
-            ShortcutAction::ShowSearch => "Rechercher un contact",
-            ShortcutAction::ToggleDnd => "Ne pas déranger",
+            ShortcutAction::Answer => "Answer",
+            ShortcutAction::Reject => "Decline the incoming call",
+            ShortcutAction::Hangup => "Hang up",
+            ShortcutAction::ToggleMute => "Mute / unmute the microphone",
+            ShortcutAction::ToggleHold => "Put on hold / resume",
+            ShortcutAction::ShowDialer => "Show the keypad",
+            ShortcutAction::ShowSearch => "Search for a contact",
+            ShortcutAction::ToggleDnd => "Do not disturb",
         }
     }
 
@@ -242,9 +242,9 @@ pub trait HotkeyBackend: Send + Sync + 'static {
 fn explain_refusal(raw: &str) -> String {
     let low = raw.to_lowercase();
     if low.contains("already") || low.contains("registered") || low.contains("in use") {
-        "Déjà utilisée par une autre application ou par le système : choisissez une autre combinaison".into()
+        "Already used by another application or by the system: choose another combination".into()
     } else {
-        format!("Le système a refusé cette combinaison ({raw})")
+        format!("The system refused this combination ({raw})")
     }
 }
 
@@ -385,7 +385,7 @@ impl ShortcutService {
                     },
                     Ok(acc) => match taken.iter().find(|(t, _)| t.same_keys_as(&acc, self.mac)) {
                         Some((_, other)) => BindingStatus::Failed {
-                            message: format!("Déjà utilisée pour « {} »", other.label()),
+                            message: format!("Already used for “{}”", other.label()),
                         },
                         None => match self.backend.register(&acc.canonical()) {
                             Ok(id) => {
@@ -477,7 +477,7 @@ impl ShortcutService {
                 .is_some_and(|o| o.same_keys_as(&acc, self.mac));
             if same {
                 return Err(AppError::validation(format!(
-                    "Déjà utilisée pour « {} »",
+                    "Already used for “{}”",
                     other.action.label()
                 )));
             }

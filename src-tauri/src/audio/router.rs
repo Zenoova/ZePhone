@@ -570,9 +570,9 @@ impl AudioRouter {
             .find(uid)
             .filter(|d| d.alive)
             .cloned()
-            .ok_or_else(|| "Ce périphérique n'est plus disponible".to_string())?;
+            .ok_or_else(|| "This device is no longer available".to_string())?;
         if !device.selectable {
-            return Err("Le moteur audio ne peut pas utiliser un périphérique à ce nom".into());
+            return Err("The audio engine cannot use a device with this name".into());
         }
         let mid_call = self.target.call_active() && role != Role::Ringer;
         self.target.apply(role, &device, mid_call).await?;

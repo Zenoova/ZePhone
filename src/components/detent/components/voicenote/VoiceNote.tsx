@@ -165,7 +165,7 @@ export function VoiceNote({
           ref={wave}
           role="slider"
           tabIndex={0}
-          aria-label="Position de lecture"
+          aria-label="Playback position"
           aria-valuemin={0}
           aria-valuemax={Math.round(duration)}
           aria-valuenow={Math.round(t)}

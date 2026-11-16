@@ -452,7 +452,7 @@ impl DirectoryStore {
         let n = name.trim();
         if n.is_empty() || n.chars().count() > 60 || n.chars().any(char::is_control) {
             return Err(AppError::validation(
-                "Le nom du groupe doit faire de 1 à 60 caractères",
+                "The group name must be 1 to 60 characters long",
             ));
         }
         Ok(n.to_owned())
@@ -470,7 +470,7 @@ impl DirectoryStore {
             })
             .map_err(|e| match e {
                 AppError::Database(m) if m.contains("UNIQUE") => {
-                    AppError::validation("Un groupe porte déjà ce nom")
+                    AppError::validation("A group already has this name")
                 }
                 other => other,
             })?;
@@ -493,7 +493,7 @@ impl DirectoryStore {
             Ok(0) => Err(AppError::NotFound("groupe".into())),
             Ok(_) => Ok(()),
             Err(AppError::Database(m)) if m.contains("UNIQUE") => {
-                Err(AppError::validation("Un groupe porte déjà ce nom"))
+                Err(AppError::validation("A group already has this name"))
             }
             Err(e) => Err(e),
         }
@@ -616,7 +616,7 @@ mod tests {
     fn source(s: &DirectoryStore) -> String {
         s.insert_source(
             SourceKind::Ldap,
-            "Annuaire",
+            "Directory",
             &serde_json::json!({}),
             60,
             true,
@@ -749,11 +749,11 @@ mod tests {
         let src = source(&s);
         s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
             .unwrap();
-        s.record_failure(&src, SyncErrorKind::Network, "Serveur injoignable")
+        s.record_failure(&src, SyncErrorKind::Network, "Server unreachable")
             .unwrap();
         let row = s.get_source(&src).unwrap().unwrap();
         assert_eq!(row.error_kind, Some(SyncErrorKind::Network));
-        assert_eq!(row.last_error.as_deref(), Some("Serveur injoignable"));
+        assert_eq!(row.last_error.as_deref(), Some("Server unreachable"));
         assert!(
             row.last_success_at.is_some(),
             "the last success is remembered"
@@ -814,7 +814,7 @@ mod tests {
         let src = source(&s);
         s.apply_snapshot(&src, &[person("a", "Ada", "1")], None)
             .unwrap();
-        s.update_source(&src, "Annuaire", false, 60, None).unwrap();
+        s.update_source(&src, "Directory", false, 60, None).unwrap();
         assert!(s.all_contacts().unwrap().is_empty());
         assert_eq!(s.contact_count(&src).unwrap(), 1, "but its cache is kept");
     }
@@ -827,7 +827,7 @@ mod tests {
             .unwrap();
         s.update_source(
             &src,
-            "Annuaire",
+            "Directory",
             true,
             60,
             Some(&serde_json::json!({"url": "ldaps://x"})),
@@ -856,8 +856,8 @@ mod tests {
         s.add_to_group(&g.id, std::slice::from_ref(&a)).unwrap(); // twice: still once
         assert_eq!(s.groups().unwrap()[0].member_count, 2);
 
-        s.rename_group(&g.id, "Grands comptes").unwrap();
-        assert_eq!(s.groups().unwrap()[0].name, "Grands comptes");
+        s.rename_group(&g.id, "Key accounts").unwrap();
+        assert_eq!(s.groups().unwrap()[0].name, "Key accounts");
 
         s.remove_from_group(&g.id, std::slice::from_ref(&b))
             .unwrap();

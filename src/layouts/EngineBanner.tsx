@@ -14,7 +14,7 @@ export function EngineBanner() {
     return (
       <div role="status" className="bg-warning/20 flex items-center gap-2 px-4 py-2 text-sm">
         <LoaderCircle className="size-4 animate-spin" aria-hidden />
-        Le moteur SIP redémarre (tentative {info.attempt})… {info.reason}
+        The SIP engine is restarting (attempt {info.attempt})… {info.reason}
       </div>
     );
   }
@@ -26,10 +26,10 @@ export function EngineBanner() {
       >
         <TriangleAlert className="size-4 shrink-0" aria-hidden />
         <span className="min-w-0 flex-1">
-          {info.state === "failed" ? `Moteur SIP indisponible : ${info.reason}` : "Le moteur SIP est arrêté."}
+          {info.state === "failed" ? `SIP engine unavailable: ${info.reason}` : "The SIP engine is stopped."}
         </span>
         <Button size="sm" variant="secondary" disabled={restarting} onClick={() => void restart()}>
-          Redémarrer
+          Restart
         </Button>
       </div>
     );

@@ -127,7 +127,7 @@ fn check_call_id(id: &str) -> EngineResult<()> {
     if is_call_id(id) {
         Ok(())
     } else {
-        Err(EngineError::Invalid("identifiant d'appel invalide".into()))
+        Err(EngineError::Invalid("invalid call identifier".into()))
     }
 }
 
@@ -136,19 +136,17 @@ fn parse_call_stats(data: &str) -> EngineResult<Option<RawCallStats>> {
     let json = match (data.find('{'), data.rfind('}')) {
         (Some(start), Some(end)) if start < end => &data[start..=end],
         _ => {
-            return Err(EngineError::Protocol(
-                "statistiques d'appel illisibles".into(),
-            ));
+            return Err(EngineError::Protocol("unreadable call statistics".into()));
         }
     };
     let stats: RawCallStats = serde_json::from_str(json)
-        .map_err(|e| EngineError::Protocol(format!("statistiques d'appel illisibles : {e}")))?;
+        .map_err(|e| EngineError::Protocol(format!("unreadable call statistics: {e}")))?;
     Ok(stats.found.then_some(stats))
 }
 
 fn check_no_space(label: &str, v: &str) -> EngineResult<()> {
     if v.is_empty() || v.chars().any(|c| c.is_whitespace() || c.is_control()) {
-        return Err(EngineError::Invalid(format!("{label} invalide")));
+        return Err(EngineError::Invalid(format!("{label} invalid")));
     }
     Ok(())
 }
@@ -204,9 +202,7 @@ impl SipEngine for BaresipEngine {
 
         match tokio::time::timeout(Duration::from_secs(20), ready_rx).await {
             Ok(Ok(result)) => result,
-            Ok(Err(_)) => Err(EngineError::Io(
-                "le superviseur du moteur s'est arrêté".into(),
-            )),
+            Ok(Err(_)) => Err(EngineError::Io("the engine supervisor stopped".into())),
             Err(_) => Err(EngineError::Timeout),
         }
     }
@@ -237,17 +233,17 @@ impl SipEngine for BaresipEngine {
     }
 
     async fn remove_account(&self, aor: &str) -> EngineResult<()> {
-        check_no_space("adresse du compte", aor)?;
+        check_no_space("account address", aor)?;
         self.run("uadel", aor).await.map(|_| ())
     }
 
     async fn dial(&self, aor: &str, target_uri: &str) -> EngineResult<String> {
-        check_no_space("adresse du compte", aor)?;
+        check_no_space("account address", aor)?;
         check_no_space("destinataire", target_uri)?;
         let _seq = self.inner.seq_lock.lock().await;
         self.run("uafind", aor).await.map_err(|e| match e {
             EngineError::CommandFailed(_) => {
-                EngineError::CommandFailed("ce compte n'est pas connecté au moteur SIP".into())
+                EngineError::CommandFailed("this account is not connected to the SIP engine".into())
             }
             other => other,
         })?;
@@ -257,7 +253,7 @@ impl SipEngine for BaresipEngine {
             .find_map(|l| l.trim().strip_prefix("call id: "))
             .map(|id| id.trim().to_owned())
             .filter(|id| is_call_id(id))
-            .ok_or_else(|| EngineError::Protocol("identifiant d'appel absent de la réponse".into()))
+            .ok_or_else(|| EngineError::Protocol("call identifier missing from the answer".into()))
     }
 
     async fn accept(&self, call_id: &str) -> EngineResult<()> {
@@ -276,7 +272,7 @@ impl SipEngine for BaresipEngine {
                 };
                 format!("{call_id} scode={code} reason={reason}")
             }
-            Some(_) => return Err(EngineError::Invalid("code SIP de refus invalide".into())),
+            Some(_) => return Err(EngineError::Invalid("invalid SIP decline code".into())),
             None => call_id.to_owned(),
         };
         self.run("hangup", &params).await.map(|_| ())
@@ -310,7 +306,7 @@ impl SipEngine for BaresipEngine {
                 .all(|c| matches!(c, '0'..='9' | '*' | '#' | 'A'..='D' | 'a'..='d'))
         {
             return Err(EngineError::Invalid(
-                "tonalités DTMF invalides (0-9, *, #, A-D)".into(),
+                "invalid DTMF tones (0-9, *, #, A-D)".into(),
             ));
         }
         let _seq = self.inner.seq_lock.lock().await;
@@ -320,7 +316,7 @@ impl SipEngine for BaresipEngine {
 
     async fn transfer(&self, call_id: &str, target_uri: &str) -> EngineResult<()> {
         check_call_id(call_id)?;
-        check_no_space("destinataire du transfert", target_uri)?;
+        check_no_space("transfer recipient", target_uri)?;
         let _seq = self.inner.seq_lock.lock().await;
         self.run("callfind", call_id).await?;
         self.run("transfer", target_uri).await.map(|_| ())
@@ -333,7 +329,7 @@ impl SipEngine for BaresipEngine {
     async fn set_gains(&self, input: f32, output: f32) -> EngineResult<()> {
         for (direction, factor) in [("tx", input), ("rx", output)] {
             if !factor.is_finite() {
-                return Err(EngineError::Invalid("volume invalide".into()));
+                return Err(EngineError::Invalid("invalid volume".into()));
             }
             let factor = factor.clamp(0.0, 4.0);
             self.run("zegain", &format!("{direction} {factor:.2}"))
@@ -345,9 +341,7 @@ impl SipEngine for BaresipEngine {
     async fn start_recording(&self, base: &std::path::Path) -> EngineResult<()> {
         let base = base.to_string_lossy();
         if base.is_empty() || base.len() > 900 || base.chars().any(char::is_control) {
-            return Err(EngineError::Invalid(
-                "chemin d'enregistrement invalide".into(),
-            ));
+            return Err(EngineError::Invalid("invalid recording path".into()));
         }
         self.run("zerec_start", &base).await.map(|_| ())
     }
@@ -408,7 +402,7 @@ impl SipEngine for BaresipEngine {
                     .data
                     .lines()
                     .next()
-                    .unwrap_or("périphérique audio inconnu")
+                    .unwrap_or("unknown audio device")
                     .to_owned();
                 return Err(EngineError::CommandFailed(msg));
             }
@@ -428,7 +422,7 @@ impl BaresipEngine {
         let resp = self.run("zealert", &format!("{driver},{dev}")).await?;
         if resp.data.contains("Format should be") || resp.data.contains("no config") {
             return Err(EngineError::CommandFailed(
-                "le périphérique de la sonnerie n'a pas été accepté".into(),
+                "the ringtone device was not accepted".into(),
             ));
         }
         Ok(())
@@ -509,12 +503,12 @@ async fn run_once(
 
     if !paths.exe.is_file() {
         return Outcome::StartFailed(format!(
-            "exécutable Baresip introuvable : {}",
+            "Baresip executable not found: {}",
             paths.exe.display()
         ));
     }
     if let Err(e) = process::ensure_private_dir(&paths.work_dir) {
-        return Outcome::StartFailed(format!("impossible de préparer le dossier du moteur : {e}"));
+        return Outcome::StartFailed(format!("cannot prepare the engine folder: {e}"));
     }
     if process::kill_stale_instance(paths) {
         tokio::time::sleep(Duration::from_millis(200)).await;
@@ -522,7 +516,7 @@ async fn run_once(
 
     let port = match process::pick_free_port() {
         Ok(p) => p,
-        Err(e) => return Outcome::StartFailed(format!("aucun port local disponible : {e}")),
+        Err(e) => return Outcome::StartFailed(format!("no local port available: {e}")),
     };
     let modules_dir = paths.modules_dir.clone();
     let exists = move |m: &str| modules_dir.join(m).is_file();
@@ -534,7 +528,7 @@ async fn run_once(
         module_exists: &exists,
     });
     if let Err(e) = process::write_private_file(&paths.work_dir.join("config"), &cfg) {
-        return Outcome::StartFailed(format!("écriture de la configuration impossible : {e}"));
+        return Outcome::StartFailed(format!("cannot write the configuration: {e}"));
     }
     // Make sure no stale accounts file can ever be picked up.
     let _ = std::fs::remove_file(paths.work_dir.join("accounts"));
@@ -542,7 +536,7 @@ async fn run_once(
     inner.sink.clear_startup_info();
     let mut spawned = match process::spawn(paths, inner.sink.clone(), settings.sip_trace) {
         Ok(s) => s,
-        Err(e) => return Outcome::StartFailed(format!("démarrage de Baresip impossible : {e}")),
+        Err(e) => return Outcome::StartFailed(format!("cannot start Baresip: {e}")),
     };
     log::info!(
         "baresip started (pid {:?}, control on 127.0.0.1:{port})",
@@ -557,7 +551,7 @@ async fn run_once(
         tokio::select! {
             status = spawned.child.wait() => {
                 let tail = inner.sink.tail(6).join(" | ");
-                return Outcome::Died(format!("Baresip s'est arrêté au démarrage ({:?}) {tail}", status.ok()));
+                return Outcome::Died(format!("Baresip stopped at startup ({:?}) {tail}", status.ok()));
             }
             _ = &mut *stop_rx => {
                 shutdown_child(&mut spawned.child, None).await;
@@ -576,7 +570,7 @@ async fn run_once(
     }
     let Some((client, mut close_rx)) = connected else {
         shutdown_child(&mut spawned.child, None).await;
-        return Outcome::StartFailed("le canal de contrôle de Baresip ne répond pas".into());
+        return Outcome::StartFailed("Baresip's control channel is not answering".into());
     };
 
     // Handshake: a harmless command proves the module is up and talking JSON.
@@ -587,9 +581,7 @@ async fn run_once(
         Ok(r) if r.ok => {}
         Ok(_) | Err(_) => {
             shutdown_child(&mut spawned.child, Some(&client)).await;
-            return Outcome::StartFailed(
-                "handshake avec Baresip impossible (réponse invalide)".into(),
-            );
+            return Outcome::StartFailed("handshake with Baresip failed (invalid response)".into());
         }
     }
 
@@ -606,10 +598,10 @@ async fn run_once(
                 return Outcome::Stopped;
             }
             status = spawned.child.wait() => {
-                return Outcome::Died(format!("Baresip s'est arrêté ({:?})", status.ok()));
+                return Outcome::Died(format!("Baresip stopped ({:?})", status.ok()));
             }
             reason = &mut close_rx => {
-                let reason = reason.unwrap_or_else(|_| "canal de contrôle fermé".into());
+                let reason = reason.unwrap_or_else(|_| "control channel closed".into());
                 shutdown_child(&mut spawned.child, None).await;
                 return Outcome::Died(reason);
             }
@@ -703,7 +695,7 @@ mod tests {
             work_dir: dir.path().join("w"),
         });
         let err = engine.start().await.unwrap_err();
-        assert!(err.to_string().contains("introuvable"), "{err}");
+        assert!(err.to_string().contains("not found"), "{err}");
         assert!(matches!(engine.state(), EngineState::Failed { .. }));
         // stop() after a failed start is harmless.
         engine.stop().await;

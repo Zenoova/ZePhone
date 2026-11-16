@@ -25,20 +25,20 @@ import { Alert } from "./alert";
 import { SettingRow, SettingsSection } from "./parts";
 
 const POLICIES: Record<LostPolicy, { label: string; help: string }> = {
-  ask: { label: "Me demander", help: "L'appel reste ouvert et ZePhone vous propose de choisir un autre périphérique." },
+  ask: { label: "Ask me", help: "The call stays open and ZePhone offers to choose another device." },
   useFallback: {
-    label: "Utiliser le périphérique de secours",
-    help: "Si vous en avez configuré un pour la fonction ; sinon, ZePhone vous demande.",
+    label: "Use the backup device",
+    help: "If you configured one for the function; otherwise ZePhone asks you.",
   },
   useSystemDefault: {
-    label: "Suivre le périphérique par défaut du système",
-    help: "Le son passe sur ce que le système utilise alors.",
+    label: "Follow the system's default device",
+    help: "The sound goes to whatever the system uses at that moment.",
   },
 };
 
 function deviceLabel(d: DeviceInfo, snap: { defaultInput: string | null; defaultOutput: string | null }): string {
   const isDefault = d.uid === snap.defaultInput || d.uid === snap.defaultOutput;
-  return `${d.name} · ${TRANSPORT_LABEL[d.transport]}${isDefault ? " · défaut du système" : ""}`;
+  return `${d.name} · ${TRANSPORT_LABEL[d.transport]}${isDefault ? " · system default" : ""}`;
 }
 
 function RoleControls({ rs, routing, devices }: { rs: RoleState; routing: Routing; devices: DeviceInfo[] }) {
@@ -65,19 +65,17 @@ function RoleControls({ rs, routing, devices }: { rs: RoleState; routing: Routin
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={FOLLOW_DEFAULT}>Suivre le choix du système</SelectItem>
-          {rs.role === "ringer" && (
-            <SelectItem value={FOLLOW_ALERTS}>Suivre la sortie des alertes du système</SelectItem>
-          )}
+          <SelectItem value={FOLLOW_DEFAULT}>Follow the system's choice</SelectItem>
+          {rs.role === "ringer" && <SelectItem value={FOLLOW_ALERTS}>Follow the system's alert output</SelectItem>}
           {saved && !savedPresent && (
             <SelectItem value={selectionValue(choice.selection)} disabled>
-              {saved.name} (non branché)
+              {saved.name} (not plugged in)
             </SelectItem>
           )}
           {rs.choices.map((d) => (
             <SelectItem key={d.uid} value={`dev:${d.uid}`} disabled={!d.selectable}>
               {deviceLabel(d, snap)}
-              {!d.selectable && " (nom non pris en charge)"}
+              {!d.selectable && " (name not supported)"}
             </SelectItem>
           ))}
         </SelectContent>
@@ -85,16 +83,16 @@ function RoleControls({ rs, routing, devices }: { rs: RoleState; routing: Routin
 
       {saved && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Périphérique de secours</span>
+          <span className="text-muted-foreground">Backup device</span>
           <Select
             value={choice.fallback?.uid ?? NO_FALLBACK}
             onValueChange={(v) => save(rs.role, fallbackWith(choice, v, devices))}
           >
-            <SelectTrigger aria-label={`Périphérique de secours : ${ROLE_LABEL[rs.role]}`} className="w-72 max-w-full">
+            <SelectTrigger aria-label={`Backup device: ${ROLE_LABEL[rs.role]}`} className="w-72 max-w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={NO_FALLBACK}>Aucun</SelectItem>
+              <SelectItem value={NO_FALLBACK}>None</SelectItem>
               {rs.choices
                 .filter((d) => d.uid !== saved.uid)
                 .map((d) => (
@@ -114,20 +112,20 @@ function RoleControls({ rs, routing, devices }: { rs: RoleState; routing: Routin
           <TriangleAlert className="text-warning size-4" aria-hidden />
         )}
         <span>
-          <span className="text-muted-foreground">Utilisé : </span>
-          <span className="font-medium">{used ? used.name : "aucun périphérique"}</span>
+          <span className="text-muted-foreground">In use: </span>
+          <span className="font-medium">{used ? used.name : "no device"}</span>
         </span>
         <Badge tone={rs.resolution.source === "chosen" || rs.resolution.source === "following" ? "neutral" : "warning"}>
           {SOURCE_LABEL[rs.resolution.source]}
         </Badge>
         {used && <Badge tone="neutral">{TRANSPORT_LABEL[used.transport]}</Badge>}
-        {used?.inUseElsewhere && <Badge tone="info">Utilisé aussi par une application</Badge>}
+        {used?.inUseElsewhere && <Badge tone="info">Also used by an application</Badge>}
       </p>
 
       {pending && (
         <Alert tone="warning">
-          Ce choix devrait utiliser « {rs.resolution.used?.name} », mais le moteur audio utilise encore «{" "}
-          {rs.inUse?.name} »{rs.refused ? ` : ${rs.refused}` : " (changement en attente)"}.
+          This choice should use “{rs.resolution.used?.name}”, but the audio engine is still using “{rs.inUse?.name}”
+          {rs.refused ? `: ${rs.refused}` : " (change pending)"}.
         </Alert>
       )}
       {rs.resolution.problems
@@ -158,8 +156,8 @@ export function AudioDevices() {
   return (
     <>
       <SettingsSection
-        title="Périphériques audio"
-        description="Trois choix séparés. « Suivre le système » reprend ce que macOS utilise, et change avec lui. Un choix explicite revient tout seul quand le même périphérique est rebranché."
+        title="Audio devices"
+        description="Three separate choices. “Follow the system” takes whatever macOS uses, and changes with it. An explicit choice comes back by itself when the same device is plugged in again."
       >
         {state.roles.map((rs) => (
           <SettingRow key={rs.role} label={ROLE_LABEL[rs.role]} stacked>
@@ -169,23 +167,23 @@ export function AudioDevices() {
         {!state.supportsCommunicationDefault && (
           <div className="text-muted-foreground flex items-start gap-2 px-4 py-3 text-xs">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            macOS n'a pas de périphérique « communication » séparé du périphérique par défaut : ZePhone suit donc le
-            périphérique par défaut (et, pour la sonnerie, la sortie des alertes).
+            macOS has no “communication” device separate from the default device: ZePhone therefore follows the default
+            device (and, for the ringtone, the alert output).
           </div>
         )}
       </SettingsSection>
 
       <SettingsSection
-        title="Si un périphérique disparaît pendant un appel"
-        description="La session SIP reste ouverte et l'appel n'est jamais coupé. Les débranchements très brefs (quelques secondes) sont ignorés."
+        title="If a device disappears during a call"
+        description="The SIP session stays open and the call is never cut. Very brief unplugs (a few seconds) are ignored."
       >
-        <SettingRow label="Que faire" htmlFor="lost-policy" stacked>
+        <SettingRow label="What to do" htmlFor="lost-policy" stacked>
           <div className="space-y-1.5">
             <Select
               value={routing.lostPolicy}
               onValueChange={(v) => void update({ audio: { routing: { ...routing, lostPolicy: v as LostPolicy } } })}
             >
-              <SelectTrigger id="lost-policy" aria-label="Si un périphérique disparaît" className="w-80 max-w-full">
+              <SelectTrigger id="lost-policy" aria-label="If a device disappears" className="w-80 max-w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -200,13 +198,13 @@ export function AudioDevices() {
           </div>
         </SettingRow>
         <SettingRow
-          label="Autoriser le passage automatique sur des haut-parleurs"
-          description="Haut-parleurs de l'ordinateur ou d'un écran : toute la pièce entend l'appel. Désactivé, la conversation ne passe jamais toute seule sur des haut-parleurs publics."
+          label="Allow automatic switching to loudspeakers"
+          description="Speakers of the computer or of a screen: the whole room hears the call. Off, the conversation never moves to public speakers by itself."
         >
           <Switch
             checked={routing.allowPublicSpeaker}
             onCheckedChange={(v) => void update({ audio: { routing: { ...routing, allowPublicSpeaker: v } } })}
-            aria-label="Autoriser le passage automatique sur des haut-parleurs"
+            aria-label="Allow automatic switching to loudspeakers"
           />
         </SettingRow>
       </SettingsSection>

@@ -305,9 +305,9 @@ async fn populate(port: u16) {
             one("sn", sn),
             one("displayName", &cn),
             one("mail", mail),
-            one("o", "Société Exemple"),
+            one("o", "Example Company"),
             one("departmentNumber", dept),
-            one("title", "Chargé de mission"),
+            one("title", "Project officer"),
         ];
         if let Some(p) = phone {
             attrs.push(one("telephoneNumber", p));
@@ -326,7 +326,7 @@ async fn populate(port: u16) {
         "elodie.dupont@example.org",
         Some("+33 1 23 45 67 89"),
         Some("06 12-34-56-78"),
-        "Comptabilité",
+        "Accounting",
     )
     .await;
     person(
@@ -337,7 +337,7 @@ async fn populate(port: u16) {
         "jean.martin@example.org",
         Some("01.11.11.11.11"),
         None,
-        "Ventes",
+        "Sales",
     )
     .await;
     person(
@@ -355,11 +355,11 @@ async fn populate(port: u16) {
         &mut ldap,
         "sansnumero",
         "Sans",
-        "Numéro",
-        "sans.numero@example.org",
+        "Number",
+        "no.number@example.org",
         None,
         None,
-        "Ventes",
+        "Sales",
     )
     .await;
     for i in 0..22 {
@@ -371,14 +371,14 @@ async fn populate(port: u16) {
             &format!("user{i:02}@example.org"),
             Some(&format!("+33 1 40 00 00 {i:02}")),
             None,
-            if i % 2 == 0 { "Ventes" } else { "Support" },
+            if i % 2 == 0 { "Sales" } else { "Support" },
         )
         .await;
     }
     let _ = ldap.unbind().await;
 }
 
-/// Everyone with a way to be reached: all but "Sans Numéro".
+/// Everyone with a way to be reached: all but "No Number".
 const REACHABLE: usize = 25;
 
 #[tokio::test]
@@ -406,8 +406,8 @@ async fn every_page_is_read_over_verified_tls_with_fields_mapped_and_numbers_kep
         .find(|c| c.display_name == "Élodie Dupont")
         .expect("Élodie");
     assert_eq!(elodie.email.as_deref(), Some("elodie.dupont@example.org"));
-    assert_eq!(elodie.company.as_deref(), Some("Société Exemple"));
-    assert_eq!(elodie.department.as_deref(), Some("Comptabilité"));
+    assert_eq!(elodie.company.as_deref(), Some("Example Company"));
+    assert_eq!(elodie.department.as_deref(), Some("Accounting"));
     let numbers: Vec<(PhoneKind, &str)> = elodie
         .phones
         .iter()
@@ -478,7 +478,7 @@ async fn the_certificate_is_verified_and_there_is_no_way_around_it() {
     assert_eq!(err.kind, SyncErrorKind::Config, "{err}");
     assert!(err.message.contains("certificat"), "{err}");
     assert!(
-        err.message.contains("Paramètres → Réseau"),
+        err.message.contains("Settings → Network"),
         "it says what to do: {err}"
     );
 
@@ -504,7 +504,7 @@ async fn the_certificate_is_verified_and_there_is_no_way_around_it() {
             .await
             .unwrap_err()
             .message
-            .contains("autorité")
+            .contains("authority")
     );
 }
 
@@ -521,7 +521,7 @@ async fn failures_come_back_as_actions_the_user_can_take() {
         .await
         .unwrap_err();
     assert_eq!(err.kind, SyncErrorKind::Auth, "{err}");
-    assert!(err.message.contains("reconnectez"), "{err}");
+    assert!(err.message.contains("reconnect"), "{err}");
     assert!(!err.message.contains(READER_PW) && !err.message.contains("wrong"));
 
     // a base that does not exist: fix the configuration
@@ -553,7 +553,7 @@ async fn failures_come_back_as_actions_the_user_can_take() {
         .await
         .unwrap_err();
     assert_eq!(err.kind, SyncErrorKind::Config, "{err}");
-    assert!(err.message.contains("droit"), "{err}");
+    assert!(err.message.contains("rights"), "{err}");
 }
 
 #[tokio::test]
@@ -585,7 +585,7 @@ async fn the_test_shows_the_first_contacts_before_the_source_is_turned_on() {
         .unwrap();
     assert!(report.preview.is_empty());
     assert!(
-        report.warnings[0].contains("Aucune entrée"),
+        report.warnings[0].contains("No entries"),
         "{:?}",
         report.warnings
     );
@@ -602,7 +602,7 @@ async fn the_test_shows_the_first_contacts_before_the_source_is_turned_on() {
         .await
         .unwrap();
     assert!(
-        report.warnings.iter().any(|w| w.contains("numéro")),
+        report.warnings.iter().any(|w| w.contains("number")),
         "{:?}",
         report.warnings
     );
@@ -653,7 +653,7 @@ async fn an_outage_never_empties_the_directory_and_what_changed_at_the_server_fo
     let id = svc
         .add_source(
             SourceKind::Ldap,
-            "Annuaire de l'entreprise",
+            "Company directory",
             &serde_json::to_value(s.config()).unwrap(),
             60,
             Some(("password", &SecretString::from(READER_PW.to_owned()))),

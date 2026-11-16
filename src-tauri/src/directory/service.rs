@@ -132,7 +132,7 @@ impl DirectoryService {
         metas.insert(
             LOCAL_SOURCE_ID.to_owned(),
             SourceMeta {
-                name: "Contacts locaux".into(),
+                name: "Local contacts".into(),
                 kind: SourceKind::Local,
             },
         );
@@ -219,7 +219,7 @@ impl DirectoryService {
         let local = SourceView {
             id: LOCAL_SOURCE_ID.into(),
             kind: SourceKind::Local,
-            name: "Contacts locaux".into(),
+            name: "Local contacts".into(),
             enabled: true,
             read_only: false,
             state: SourceState::Idle,
@@ -258,12 +258,12 @@ impl DirectoryService {
         secret: Option<(&str, &SecretString)>,
     ) -> AppResult<String> {
         if kind == SourceKind::Local {
-            return Err(AppError::validation("La source locale existe déjà"));
+            return Err(AppError::validation("The local source already exists"));
         }
         let name = name.trim();
         if name.is_empty() || name.chars().count() > 80 {
             return Err(AppError::validation(
-                "Le nom de la source doit faire de 1 à 80 caractères",
+                "The source name must be 1 to 80 characters long",
             ));
         }
         let id = self
@@ -377,11 +377,11 @@ impl DirectoryService {
             .get_source(id)?
             .ok_or_else(|| AppError::NotFound("source".into()))?;
         if !row.enabled && !manual {
-            return Err(AppError::validation("La source est désactivée"));
+            return Err(AppError::validation("The source is disabled"));
         }
         if !self.running.lock().unwrap().insert(id.to_owned()) {
             return Err(AppError::validation(
-                "Une synchronisation de cette source est déjà en cours",
+                "A sync of this source is already in progress",
             ));
         }
         let _ = self.store.record_attempt(id);
@@ -450,8 +450,8 @@ impl DirectoryService {
                 return Err(SyncError::new(
                     SyncErrorKind::Invalid,
                     format!(
-                        "La source n'a renvoyé aucun contact alors que {cached} sont en mémoire : rien n'a été supprimé. \
-                         Vérifiez la configuration, ou effacez la mémoire locale de cette source."
+                        "The source returned no contact while {cached} are cached: nothing was deleted. \
+                         Check the configuration, or clear this source's local cache."
                     ),
                 ));
             }
@@ -490,7 +490,7 @@ impl DirectoryService {
                 let _ = self.store.record_failure(
                     &s.id,
                     SyncErrorKind::Network,
-                    "La mémoire locale a été effacée : la source n'a pas pu être synchronisée depuis plus de 30 jours.",
+                    "The local cache was cleared: the source could not be synced for more than 30 days.",
                 );
                 erased.push(s.id);
             }
@@ -583,7 +583,7 @@ impl DirectoryService {
         let mut slot = self.connecting.lock().unwrap();
         if slot.is_some() {
             return Err(AppError::validation(
-                "Une connexion est déjà en attente dans votre navigateur",
+                "A sign-in is already waiting in your browser",
             ));
         }
         let (tx, rx) = tokio::sync::oneshot::channel();
@@ -787,7 +787,7 @@ mod tests {
         r.svc
             .add_source(
                 SourceKind::Ldap,
-                "Annuaire",
+                "Directory",
                 &serde_json::json!({"url": "ldaps://ldap.example.com"}),
                 60,
                 Some(("password", &SecretString::from("s3cret".to_string()))),
@@ -839,7 +839,7 @@ mod tests {
 
         r.script.push(Err(SyncError::new(
             SyncErrorKind::Network,
-            "Serveur injoignable",
+            "Server unreachable",
         )));
         assert!(r.svc.sync_now(&id, true).await.is_err());
 
@@ -851,7 +851,7 @@ mod tests {
         let v = r.svc.source(&id).unwrap();
         assert_eq!(v.state, SourceState::Error);
         assert_eq!(v.error_kind, Some(SyncErrorKind::Network));
-        assert_eq!(v.last_error.as_deref(), Some("Serveur injoignable"));
+        assert_eq!(v.last_error.as_deref(), Some("Server unreachable"));
         assert!(
             v.last_success_at.is_some(),
             "the last good synchronisation is remembered"
@@ -868,7 +868,7 @@ mod tests {
         r.svc.sync_now(&id, true).await.unwrap();
         r.script.push(Err(SyncError::new(
             SyncErrorKind::Auth,
-            "Connexion refusée : reconnectez la source.",
+            "Connection refused: reconnect the source.",
         )));
         assert!(r.svc.sync_now(&id, true).await.is_err());
         assert_eq!(state_of(&r, &id), SourceState::NeedsReauth);
@@ -894,10 +894,8 @@ mod tests {
         ]));
         r.svc.sync_now(&id, true).await.unwrap();
 
-        r.script.push(Err(SyncError::new(
-            SyncErrorKind::Server,
-            "Erreur du serveur",
-        )));
+        r.script
+            .push(Err(SyncError::new(SyncErrorKind::Server, "Server error")));
         let _ = r.svc.sync_now(&id, true).await;
         assert_eq!(names(&r, "").len(), 2, "a failure deletes nothing");
 
@@ -917,7 +915,7 @@ mod tests {
         r.svc.sync_now(&id, true).await.unwrap();
         r.script.push(snapshot(vec![]));
         let err = r.svc.sync_now(&id, true).await.unwrap_err();
-        assert!(err.to_string().contains("rien n'a été supprimé"), "{err}");
+        assert!(err.to_string().contains("nothing was deleted"), "{err}");
         assert_eq!(names(&r, "").len(), 1);
         assert_eq!(
             r.svc.source(&id).unwrap().error_kind,
@@ -935,7 +933,7 @@ mod tests {
         let id = add_ldap(&r);
         let mut nameless = person("2", "", "123");
         nameless.display_name.clear();
-        let mut no_number = person("3", "Sans Numéro", "1");
+        let mut no_number = person("3", "No Number", "1");
         no_number.phones.clear();
         r.script.push(snapshot(vec![
             person("1", "Élodie Dupont", "1"),
@@ -1057,7 +1055,12 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(40)).await;
         assert_eq!(state_of(&r, &id), SourceState::Syncing);
         let second = r.svc.sync_now(&id, true).await;
-        assert!(second.unwrap_err().to_string().contains("déjà en cours"));
+        assert!(
+            second
+                .unwrap_err()
+                .to_string()
+                .contains("already in progress")
+        );
         assert!(first.await.unwrap().is_ok());
         assert_eq!(state_of(&r, &id), SourceState::Idle);
     }
@@ -1092,11 +1095,13 @@ mod tests {
         let r = rig();
         let id = add_ldap(&r);
         // an interval of one minute so that the interval itself is not what holds the source back
-        r.svc.update_source(&id, "Annuaire", true, 1, None).unwrap();
+        r.svc
+            .update_source(&id, "Directory", true, 1, None)
+            .unwrap();
         let t0 = Utc::now() + chrono::Duration::minutes(5);
 
         r.script
-            .push(Err(SyncError::new(SyncErrorKind::Network, "Injoignable")));
+            .push(Err(SyncError::new(SyncErrorKind::Network, "Unreachable")));
         assert_eq!(r.svc.tick(t0), vec![id.clone()]);
         wait_idle(&r, &id).await;
         assert_eq!(r.script.cursors.lock().unwrap().len(), 1);
@@ -1115,7 +1120,7 @@ mod tests {
 
         // a second failure doubles the wait
         r.script
-            .push(Err(SyncError::new(SyncErrorKind::Network, "Injoignable")));
+            .push(Err(SyncError::new(SyncErrorKind::Network, "Unreachable")));
         assert_eq!(
             r.svc.tick(Utc::now() + chrono::Duration::minutes(2)),
             vec![id.clone()]
@@ -1157,8 +1162,10 @@ mod tests {
     async fn a_throttled_source_is_left_alone_for_as_long_as_it_asked() {
         let r = rig();
         let id = add_ldap(&r);
-        r.svc.update_source(&id, "Annuaire", true, 1, None).unwrap();
-        let mut e = SyncError::new(SyncErrorKind::Throttled, "Trop de requêtes");
+        r.svc
+            .update_source(&id, "Directory", true, 1, None)
+            .unwrap();
+        let mut e = SyncError::new(SyncErrorKind::Throttled, "Too many requests");
         e.retry_after = Some(Duration::from_secs(1800));
         r.script.push(Err(e));
         assert_eq!(
@@ -1183,7 +1190,7 @@ mod tests {
         let id = add_ldap(&r);
         *r.factory.refuse.lock().unwrap() = Some(SyncError::new(
             SyncErrorKind::Config,
-            "Adresse du serveur invalide",
+            "Invalid server address",
         ));
         assert!(r.svc.sync_now(&id, true).await.is_err());
         let v = r.svc.source(&id).unwrap();
@@ -1214,7 +1221,7 @@ mod tests {
         assert_eq!(erased, vec![id.clone()]);
         assert!(names(&r, "").is_empty());
         let v = r.svc.source(&id).unwrap();
-        assert!(v.last_error.unwrap().contains("effacée"));
+        assert!(v.last_error.unwrap().contains("cleared"));
         assert_eq!(v.contact_count, 0);
         assert!(!v.stale);
     }
@@ -1375,11 +1382,11 @@ mod tests {
 
         // a source that is switched off names nobody, and neither does one that was disconnected
         r.svc
-            .update_source(&id, "Annuaire", false, 60, None)
+            .update_source(&id, "Directory", false, 60, None)
             .unwrap();
         assert_eq!(r.svc.name_for("4567"), None);
         r.svc
-            .update_source(&id, "Annuaire", true, 60, None)
+            .update_source(&id, "Directory", true, 60, None)
             .unwrap();
         assert_eq!(r.svc.name_for("4567").as_deref(), Some("Bob Martin"));
         r.svc.disconnect(&id).unwrap();
@@ -1401,7 +1408,7 @@ mod tests {
         )]));
         r.svc.sync_now(&id, true).await.unwrap();
         r.script
-            .push(Err(SyncError::new(SyncErrorKind::Network, "Injoignable")));
+            .push(Err(SyncError::new(SyncErrorKind::Network, "Unreachable")));
         assert!(r.svc.sync_now(&id, true).await.is_err());
         assert_eq!(
             r.svc.name_for("0123456789").as_deref(),
@@ -1509,8 +1516,7 @@ mod tests {
             .await
             .unwrap_err();
         assert!(
-            err.to_string()
-                .contains("Confidentialité et sécurité → Contacts"),
+            err.to_string().contains("Privacy & Security → Contacts"),
             "{err}"
         );
         assert_eq!(
@@ -1549,7 +1555,7 @@ mod tests {
         // the user takes the permission back in System Settings
         *book.access.lock().unwrap() = Access::Denied;
         let err = r.svc.sync_now(&id, true).await.unwrap_err();
-        assert!(err.to_string().contains("refusé"), "{err}");
+        assert!(err.to_string().contains("denied"), "{err}");
         let v = r.svc.source(&id).unwrap();
         assert_eq!(
             (v.state, v.error_kind),
@@ -1567,7 +1573,7 @@ mod tests {
                 .is_empty()
         );
 
-        // the user gives it back and presses "Autoriser l'accès"
+        // the user gives it back and presses "Allow access"
         *book.access.lock().unwrap() = Access::Authorized;
         let again = r.svc.connect_system_contacts(book.as_ref()).await.unwrap();
         assert_eq!(again, id);
@@ -1633,7 +1639,7 @@ mod tests {
         let r = rig();
         let id = add_ldap(&r);
         r.svc
-            .update_source(&id, "Annuaire", false, 60, None)
+            .update_source(&id, "Directory", false, 60, None)
             .unwrap();
         assert!(r.svc.sync_now(&id, false).await.is_err());
         assert_eq!(r.script.cursors.lock().unwrap().len(), 0);

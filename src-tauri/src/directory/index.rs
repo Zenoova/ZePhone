@@ -478,8 +478,8 @@ mod tests {
             "+33 1 23 45 67 89",
         );
         elodie.company = Some("Société Générale".into());
-        elodie.department = Some("Comptabilité".into());
-        elodie.title = Some("Directrice financière".into());
+        elodie.department = Some("Accounting".into());
+        elodie.title = Some("Chief financial officer".into());
         elodie.email = Some("elodie.dupont@example.com".into());
         elodie
             .phones
@@ -492,7 +492,7 @@ mod tests {
             PhoneKind::Work,
             "01.98.76.54.32 poste 12",
         );
-        bob.department = Some("Comptabilité".into());
+        bob.department = Some("Accounting".into());
         let mut sip = with_phone(
             rc("3", "Chloé Bernard"),
             PhoneKind::Sip,
@@ -525,8 +525,8 @@ mod tests {
         let f = company_directory();
         for q in [
             "societe generale",
-            "comptabilite",
-            "directrice financiere",
+            "accounting",
+            "financial officer",
             "example.com",
         ] {
             assert!(names(&f.search(q)).contains(&"Élodie Dupont"), "{q}");
@@ -606,7 +606,7 @@ mod tests {
     fn records_sharing_an_email_address_are_one_person_with_every_provenance() {
         let mut ldap = with_phone(rc("u1", "Élodie Dupont"), PhoneKind::Work, "01 23 45 67 89");
         ldap.email = Some("Elodie.Dupont@example.com".into());
-        ldap.department = Some("Comptabilité".into());
+        ldap.department = Some("Accounting".into());
         let mut ms = with_phone(
             rc("g1", "Elodie DUPONT"),
             PhoneKind::Mobile,
@@ -615,7 +615,7 @@ mod tests {
         ms.email = Some("elodie.dupont@example.com".into());
         ms.phones
             .push(PhoneEntry::new(PhoneKind::Work, "+33 1 23 45 67 89")); // the same number, written otherwise
-        ms.title = Some("Directrice".into());
+        ms.title = Some("Director".into());
         let f = Fixture::new(
             &[("ldap", SourceKind::Ldap), ("ms", SourceKind::MicrosoftOrg)],
             vec![("ms", ms), ("ldap", ldap)],
@@ -637,10 +637,10 @@ mod tests {
         );
         assert_eq!(
             e.title.as_deref(),
-            Some("Directrice"),
+            Some("Director"),
             "missing fields come from the other record"
         );
-        assert_eq!(e.department.as_deref(), Some("Comptabilité"));
+        assert_eq!(e.department.as_deref(), Some("Accounting"));
     }
 
     #[test]
@@ -695,7 +695,7 @@ mod tests {
     fn a_department_filter_and_the_list_of_departments() {
         let f = company_directory();
         let q = f.query(DirectoryQuery {
-            department: Some("comptabilite".into()),
+            department: Some("accounting".into()),
             ..Default::default()
         });
         assert_eq!(names(&q), vec!["Bob Martin", "Élodie Dupont"]);
@@ -705,10 +705,7 @@ mod tests {
             .into_iter()
             .map(|d| (d.name, d.count))
             .collect();
-        assert_eq!(
-            depts,
-            vec![("Comptabilité".into(), 2), ("Support".into(), 1)]
-        );
+        assert_eq!(depts, vec![("Accounting".into(), 2), ("Support".into(), 1)]);
     }
 
     #[test]
@@ -920,13 +917,13 @@ mod tests {
                     ),
                 );
                 c.email = Some(format!("user{i}@example.com"));
-                c.department = Some(format!("Service {}", i % 40));
+                c.department = Some(format!("Department {}", i % 40));
                 ("s", c)
             })
             .collect();
         let f = Fixture::new(&[("s", SourceKind::Ldap)], contacts);
         let started = std::time::Instant::now();
-        for q in ["prenom1999", "nom42", "45 23 01", "service 7"] {
+        for q in ["prenom1999", "nom42", "45 23 01", "department 7"] {
             let p = f.search(q);
             assert!(p.total > 0, "{q}");
         }

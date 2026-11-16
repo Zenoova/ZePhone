@@ -29,7 +29,7 @@ function RecordingItem({ rec, onDelete }: { rec: Recording; onDelete: () => void
           <p className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-sm">
             <Direction
               className="size-3.5 shrink-0"
-              aria-label={rec.direction === "incoming" ? "Entrant" : "Sortant"}
+              aria-label={rec.direction === "incoming" ? "Incoming" : "Outgoing"}
             />
             <span className="truncate">
               {formatDateTime(rec.startedAt)} · {formatDurationHuman(rec.durationSecs)} · {formatBytes(rec.sizeBytes)}
@@ -37,7 +37,7 @@ function RecordingItem({ rec, onDelete }: { rec: Recording; onDelete: () => void
             </span>
           </p>
         </div>
-        <Button variant="ghost" size="icon-sm" aria-label={`Supprimer l'enregistrement de ${name}`} onClick={onDelete}>
+        <Button variant="ghost" size="icon-sm" aria-label={`Delete the recording of ${name}`} onClick={onDelete}>
           <Trash2 className="text-destructive size-4" />
         </Button>
       </div>
@@ -63,19 +63,19 @@ export function RecordingsPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Enregistrements"
+        title="Recordings"
         description={
           recordings.length > 0
-            ? `${recordings.length} appel${recordings.length > 1 ? "s" : ""} · ${formatBytes(total)} sur ce Mac`
-            : "Les appels que vous enregistrez, gardés sur ce Mac"
+            ? `${recordings.length} call${recordings.length > 1 ? "s" : ""} · ${formatBytes(total)} on this Mac`
+            : "The calls you record, kept on this Mac"
         }
       />
       <div className="min-h-0 flex-1 overflow-auto px-6 pb-28">
         {loaded && recordings.length === 0 ? (
           <EmptyState
             icon={AudioLines}
-            title="Aucun enregistrement"
-            description="Pendant un appel, le bouton d'enregistrement de la fenêtre d'appel garde la conversation ici. Vous pouvez aussi tout enregistrer dans Paramètres → Audio."
+            title="No recordings"
+            description="During a call, the record button of the call window keeps the conversation here. You can also record everything in Settings → Audio."
           />
         ) : (
           <ul className="space-y-3">
@@ -88,9 +88,9 @@ export function RecordingsPage() {
       <ConfirmDialog
         open={toDelete !== null}
         onOpenChange={(o) => !o && setToDelete(null)}
-        title="Supprimer cet enregistrement ?"
-        description={`L'enregistrement de ${toDelete?.remoteName ?? toDelete?.remoteNumber ?? ""} sera effacé de ce Mac. Cette action est irréversible.`}
-        confirmLabel="Supprimer"
+        title="Delete this recording?"
+        description={`The recording of ${toDelete?.remoteName ?? toDelete?.remoteNumber ?? ""} will be erased from this Mac. This cannot be undone.`}
+        confirmLabel="Delete"
         onConfirm={() => {
           if (toDelete) void remove(toDelete.id);
           setToDelete(null);

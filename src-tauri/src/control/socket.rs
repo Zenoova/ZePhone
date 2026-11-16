@@ -33,7 +33,7 @@ pub fn socket_path() -> Result<PathBuf, String> {
     };
     if path.as_os_str().len() > MAX_PATH_BYTES {
         return Err(format!(
-            "chemin du socket trop long ({} octets, maximum {MAX_PATH_BYTES}) : définissez {ENV_SOCKET}",
+            "socket path too long ({} bytes, maximum {MAX_PATH_BYTES}): set {ENV_SOCKET}",
             path.as_os_str().len()
         ));
     }
@@ -44,7 +44,7 @@ fn default_path() -> Result<PathBuf, String> {
     let home = || {
         std::env::var_os("HOME")
             .map(PathBuf::from)
-            .ok_or_else(|| "dossier personnel introuvable".to_string())
+            .ok_or_else(|| "home folder not found".to_string())
     };
     if cfg!(target_os = "macos") {
         Ok(home()?
@@ -60,10 +60,7 @@ fn default_path() -> Result<PathBuf, String> {
                 .join("control.sock"),
         })
     } else {
-        Err(
-            "l'interface de commande locale n'est pas encore disponible sur cette plateforme"
-                .into(),
-        )
+        Err("the local command interface is not available on this platform yet".into())
     }
 }
 
@@ -71,7 +68,7 @@ fn parse_request(line: &str) -> Result<Command, Outcome> {
     serde_json::from_str::<Command>(line.trim()).map_err(|e| {
         Outcome::of(
             Status::Invalid,
-            format!("commande non reconnue ou paramètres invalides : {e}"),
+            format!("unrecognized command or invalid parameters: {e}"),
         )
     })
 }
@@ -169,13 +166,13 @@ mod unix {
         if !meta.file_type().is_socket() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::AlreadyExists,
-                format!("{} existe et n'est pas un socket", path.display()),
+                format!("{} exists and is not a socket", path.display()),
             ));
         }
         if StdStream::connect(path).is_ok() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::AddrInUse,
-                "une autre instance de ZePhone écoute déjà",
+                "another instance of ZePhone is already listening",
             ));
         }
         std::fs::remove_file(path)
@@ -194,18 +191,18 @@ mod unix {
         let mut reader = tokio::io::BufReader::new(read.take(MAX_REQUEST_BYTES as u64));
         let mut line = String::new();
         let outcome = match tokio::time::timeout(READ_TIMEOUT, reader.read_line(&mut line)).await {
-            Err(_) => Outcome::of(Status::Invalid, "requête non reçue à temps"),
-            Ok(Err(_)) => Outcome::of(Status::Invalid, "requête illisible (UTF-8 attendu)"),
+            Err(_) => Outcome::of(Status::Invalid, "request not received in time"),
+            Ok(Err(_)) => Outcome::of(Status::Invalid, "unreadable request (UTF-8 expected)"),
             Ok(Ok(0)) => return,
             Ok(Ok(_)) if !line.ends_with('\n') => {
-                Outcome::of(Status::Invalid, "requête trop longue ou incomplète")
+                Outcome::of(Status::Invalid, "request too long or incomplete")
             }
             Ok(Ok(_)) => match parse_request(&line) {
                 Err(o) => o,
                 Ok(cmd) => {
                     match tokio::time::timeout(EXECUTE_TIMEOUT, controller.execute(cmd)).await {
                         Ok(o) => o,
-                        Err(_) => Outcome::of(Status::Failed, "le moteur n'a pas répondu à temps"),
+                        Err(_) => Outcome::of(Status::Failed, "the engine did not answer in time"),
                     }
                 }
             },
@@ -227,13 +224,10 @@ mod unix {
                     std::io::ErrorKind::NotFound | std::io::ErrorKind::ConnectionRefused
                 ) =>
             {
-                return Outcome::of(Status::Disconnected, "ZePhone n'est pas lancé");
+                return Outcome::of(Status::Disconnected, "ZePhone is not running");
             }
             Err(e) => {
-                return Outcome::of(
-                    Status::Disconnected,
-                    format!("ZePhone est injoignable : {e}"),
-                );
+                return Outcome::of(Status::Disconnected, format!("ZePhone is unreachable: {e}"));
             }
         };
         let _ = stream.set_read_timeout(Some(CLIENT_TIMEOUT));
@@ -245,14 +239,14 @@ mod unix {
         line.push(b'\n');
         let mut stream = stream;
         if let Err(e) = stream.write_all(&line) {
-            return Outcome::of(Status::Failed, format!("envoi impossible : {e}"));
+            return Outcome::of(Status::Failed, format!("cannot send: {e}"));
         }
         let mut answer = String::new();
         if let Err(e) = BufReader::new(&stream).read_line(&mut answer) {
-            return Outcome::of(Status::Failed, format!("pas de réponse de ZePhone : {e}"));
+            return Outcome::of(Status::Failed, format!("no response from ZePhone: {e}"));
         }
         serde_json::from_str(answer.trim())
-            .unwrap_or_else(|_| Outcome::of(Status::Failed, "réponse illisible de ZePhone"))
+            .unwrap_or_else(|_| Outcome::of(Status::Failed, "unreadable answer from ZePhone"))
     }
 }
 
@@ -269,7 +263,7 @@ mod other {
         pub async fn start(_: PathBuf, _: Arc<Controller>) -> std::io::Result<Server> {
             Err(std::io::Error::new(
                 std::io::ErrorKind::Unsupported,
-                "l'interface de commande locale n'est pas encore disponible sur cette plateforme",
+                "the local command interface is not available on this platform yet",
             ))
         }
         pub fn stop(&self) {}
@@ -278,7 +272,7 @@ mod other {
     pub fn send(_: &Path, _: &Command) -> Outcome {
         Outcome::of(
             Status::Disconnected,
-            "l'interface de commande locale n'est pas encore disponible sur cette plateforme",
+            "the local command interface is not available on this platform yet",
         )
     }
 }
@@ -442,6 +436,6 @@ mod tests {
             Some(v) => unsafe { std::env::set_var(ENV_SOCKET, v) },
             None => unsafe { std::env::remove_var(ENV_SOCKET) },
         }
-        assert!(r.unwrap_err().contains("trop long"));
+        assert!(r.unwrap_err().contains("too long"));
     }
 }

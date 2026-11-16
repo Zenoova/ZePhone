@@ -100,7 +100,7 @@ fn a_combination_the_system_refuses_is_saved_but_shown_as_not_active() {
         panic!("must be failed: {:?}", mute.status)
     };
     assert!(
-        message.contains("Déjà utilisée par une autre application"),
+        message.contains("Already used by another application"),
         "{message}"
     );
     // The others are not affected.
@@ -168,7 +168,7 @@ fn two_actions_cannot_share_a_combination_whatever_the_spelling() {
         .set(ShortcutAction::Hangup, Some("cmd+option+shift+a"), true)
         .unwrap_err()
         .to_string();
-    assert!(e.contains("Décrocher"), "names the action that has it: {e}");
+    assert!(e.contains("Answer"), "names the action that has it: {e}");
     // Nothing changed.
     assert_eq!(
         item(&svc.view(), ShortcutAction::Hangup)

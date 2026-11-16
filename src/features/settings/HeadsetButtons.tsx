@@ -10,19 +10,19 @@ import { SettingRow, SettingsSection } from "./parts";
 
 const MODES: Record<HeadsetMode, { label: string; help: string; disabled?: boolean }> = {
   auto: {
-    label: "Automatique",
-    help: "Le meilleur mécanisme que ce système offre : les commandes standard (HID téléphonie).",
+    label: "Automatic",
+    help: "The best mechanism this system offers: the standard commands (HID telephony).",
   },
   system: {
-    label: "Commandes standard du système",
-    help: "Les rapports HID de la page téléphonie, sans autre intégration.",
+    label: "Standard system commands",
+    help: "The HID reports of the telephony page, without any other integration.",
   },
   vendor: {
-    label: "Intégration du constructeur (non disponible)",
-    help: "Aucune intégration constructeur n'est incluse : ce choix ne traite aucun bouton.",
+    label: "Manufacturer integration (not available)",
+    help: "No manufacturer integration is included: this choice handles no button.",
     disabled: true,
   },
-  off: { label: "Désactivées", help: "Les boutons du casque ne font rien dans ZePhone. L'audio n'est pas touché." },
+  off: { label: "Disabled", help: "The headset buttons do nothing in ZePhone. The audio is not affected." },
 };
 
 export function HeadsetButtons() {
@@ -33,13 +33,13 @@ export function HeadsetButtons() {
 
   return (
     <SettingsSection
-      title="Boutons du casque"
-      description="Décrocher, raccrocher et couper le micro depuis le casque. Un casque peut très bien servir pour l'audio sans que ses boutons soient pris en charge : le diagnostic le dit casque par casque."
+      title="Headset buttons"
+      description="Answer, hang up and mute from the headset. A headset can work perfectly for audio without its buttons being supported: the diagnostic says so headset by headset."
     >
-      <SettingRow label="Gestion des boutons" htmlFor="headset-mode" stacked>
+      <SettingRow label="Button handling" htmlFor="headset-mode" stacked>
         <div className="space-y-1.5">
           <Select value={headset.mode} onValueChange={(v) => set({ mode: v as HeadsetMode })}>
-            <SelectTrigger id="headset-mode" aria-label="Gestion des boutons du casque" className="w-80 max-w-full">
+            <SelectTrigger id="headset-mode" aria-label="Headset button handling" className="w-80 max-w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -54,65 +54,65 @@ export function HeadsetButtons() {
         </div>
       </SettingRow>
       <SettingRow
-        label="Le bouton d'appel décroche"
-        description="Un appel qui sonne seulement. Il ne refuse jamais un appel et ne compose jamais."
+        label="The call button answers"
+        description="Only a call that is ringing. It never declines a call and never dials."
       >
         <Switch
           checked={headset.answer}
           disabled={off}
           onCheckedChange={(v) => set({ answer: v })}
-          aria-label="Décrocher avec le casque"
+          aria-label="Answer with the headset"
         />
       </SettingRow>
       <SettingRow
-        label="Raccrocher avec le casque"
-        description="Le bouton d'appel (ou de fin) termine l'appel en cours. Poser le casque sur son socle ne fait rien si le casque ne l'annonce pas comme un raccrochage standard."
+        label="Hang up with the headset"
+        description="The call (or end) button ends the call in progress. Putting the headset on its stand does nothing if the headset does not announce it as a standard hang-up."
       >
         <Switch
           checked={headset.hangUp}
           disabled={off}
           onCheckedChange={(v) => set({ hangUp: v })}
-          aria-label="Raccrocher avec le casque"
+          aria-label="Hang up with the headset"
         />
       </SettingRow>
-      <SettingRow label="Couper le micro avec le casque" description="Appui court. Un appui long est ignoré.">
+      <SettingRow label="Mute the microphone with the headset" description="Short press. A long press is ignored.">
         <Switch
           checked={headset.mute}
           disabled={off}
           onCheckedChange={(v) => set({ mute: v })}
-          aria-label="Couper le micro avec le casque"
+          aria-label="Mute the microphone with the headset"
         />
       </SettingRow>
-      <SettingRow label="Mettre en attente avec le casque" description="Seulement si le casque a un bouton d'attente.">
+      <SettingRow label="Put on hold with the headset" description="Only if the headset has a hold button.">
         <Switch
           checked={headset.hold}
           disabled={off}
           onCheckedChange={(v) => set({ hold: v })}
-          aria-label="Attente avec le casque"
+          aria-label="Hold with the headset"
         />
       </SettingRow>
       <SettingRow
-        label="Seulement le casque utilisé par ZePhone"
-        description="Ignore les boutons d'un autre casque, ou d'un casque qu'une autre application (Teams…) utilise pour ses appels."
+        label="Only the headset used by ZePhone"
+        description="Ignores the buttons of another headset, or of a headset that another application (Teams…) uses for its calls."
       >
         <Switch
           checked={headset.onlySelectedDevice}
           disabled={off}
           onCheckedChange={(v) => set({ onlySelectedDevice: v })}
-          aria-label="Seulement le casque utilisé"
+          aria-label="Only the headset in use"
         />
       </SettingRow>
       <div className="space-y-2 px-4 py-3">
         <Alert>
-          ZePhone n'agit sur les boutons que s'il a lui-même un appel (qui sonne ou en cours) : ouvert sans appel, il ne
-          réagit à rien. Il n'accapare pas les boutons : si Teams écoute le même casque, elle réagira aussi. macOS
-          n'attribue pas les boutons d'un casque à une application précise ; pour éviter qu'ils servent deux
-          applications, fermez l'autre application ou choisissez « Désactivées » dans l'une des deux.
+          ZePhone only acts on the buttons if it has a call itself (ringing or in progress): open with no call, it does
+          not react to anything. It does not take over the buttons: if Teams listens to the same headset, it will react
+          too. macOS does not assign a headset's buttons to one particular application; to keep them from serving two
+          applications, close the other application or choose “Disabled” in one of the two.
         </Alert>
         <p className="text-muted-foreground flex items-start gap-2 text-xs">
           <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          Si le casque a une coupure du micro matérielle, ZePhone ne peut ni la commander ni l'observer : l'indicateur «
-          Micro coupé » de ZePhone ne la reflète pas.
+          If the headset has a hardware microphone mute, ZePhone can neither control nor observe it: ZePhone's “Muted”
+          indicator does not reflect it.
         </p>
       </div>
     </SettingsSection>

@@ -32,8 +32,8 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          title="Mes groupes"
-          description="Des listes personnelles pour retrouver vite les mêmes personnes. Un contact peut être dans plusieurs groupes ; supprimer un groupe ne supprime aucun contact."
+          title="My groups"
+          description="Personal lists to find the same people quickly. A contact can be in several groups; deleting a group deletes no contact."
         >
           <div className="space-y-4" data-testid="groups-dialog">
             <form
@@ -46,17 +46,17 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Nom du nouveau groupe"
-                aria-label="Nom du nouveau groupe"
+                placeholder="Name of the new group"
+                aria-label="Name of the new group"
                 maxLength={60}
               />
               <Button type="submit" disabled={!name.trim()}>
-                <Plus className="size-4" aria-hidden /> Créer
+                <Plus className="size-4" aria-hidden /> Create
               </Button>
             </form>
 
             {groups.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Vous n'avez pas encore de groupe.</p>
+              <p className="text-muted-foreground text-sm">You don't have any group yet.</p>
             ) : (
               <ul className="divide-y rounded-xl border">
                 {groups.map((g) => (
@@ -74,15 +74,15 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                           autoFocus
                           value={editing.name}
                           onChange={(e) => setEditing({ id: g.id, name: e.target.value })}
-                          aria-label={`Nouveau nom du groupe ${g.name}`}
+                          aria-label={`New name for the group ${g.name}`}
                           maxLength={60}
                           className="h-8"
                         />
                         <Button type="submit" size="sm">
-                          Enregistrer
+                          Save
                         </Button>
                         <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(null)}>
-                          Annuler
+                          Cancel
                         </Button>
                       </form>
                     ) : (
@@ -94,7 +94,7 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                         <IconButton
                           variant="ghost"
                           size="icon"
-                          aria-label={`Renommer ${g.name}`}
+                          aria-label={`Rename ${g.name}`}
                           onClick={() => setEditing({ id: g.id, name: g.name })}
                         >
                           <Pencil className="size-4" />
@@ -102,7 +102,7 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                         <IconButton
                           variant="ghost"
                           size="icon"
-                          aria-label={`Supprimer ${g.name}`}
+                          aria-label={`Delete ${g.name}`}
                           onClick={() => setDeleting(g)}
                         >
                           <Trash2 className="text-destructive size-4" />
@@ -117,11 +117,11 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
             {departments.length > 0 && (
               <div className="bg-muted/50 rounded-xl p-3 text-xs">
                 <p className="flex items-center gap-1.5 font-medium">
-                  <Building2 className="size-3.5" aria-hidden /> Services de l'entreprise
+                  <Building2 className="size-3.5" aria-hidden /> Company departments
                 </p>
                 <p className="text-muted-foreground mt-1">
-                  {departments.map((d) => d.name).join(" · ")}. Ils viennent de l'annuaire et servent de filtre : ils ne
-                  se modifient pas ici.
+                  {departments.map((d) => d.name).join(" · ")}. They come from the directory and serve as a filter: they
+                  can't be edited here.
                 </p>
               </div>
             )}
@@ -132,13 +132,13 @@ export function GroupsDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(o) => !o && setDeleting(null)}
-        title="Supprimer ce groupe ?"
+        title="Delete this group?"
         description={
           deleting
-            ? `Le groupe « ${deleting.name} » sera supprimé. Ses ${deleting.memberCount} contact${deleting.memberCount > 1 ? "s" : ""} ne sont pas supprimés : ils restent dans l'annuaire.`
+            ? `The group “${deleting.name}” will be deleted. Its ${deleting.memberCount} contact${deleting.memberCount > 1 ? "s" : ""} are not deleted: they stay in the directory.`
             : ""
         }
-        confirmLabel="Supprimer le groupe"
+        confirmLabel="Delete the group"
         onConfirm={() => {
           if (deleting) void deleteGroup(deleting.id);
           setDeleting(null);

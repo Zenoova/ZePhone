@@ -5,7 +5,7 @@ export function makeCall(over: Partial<Call> = {}): Call {
   return {
     id: "call1",
     accountId: "acc1",
-    accountLabel: "Bureau",
+    accountLabel: "Office",
     direction: "outgoing",
     state: "dialing",
     remoteUri: "sip:1002@example.com",
@@ -28,7 +28,7 @@ export function makeCall(over: Partial<Call> = {}): Call {
 export function makeAccount(over: Partial<AccountView> = {}): AccountView {
   const base: Account = {
     id: "acc1",
-    label: "Bureau",
+    label: "Office",
     displayName: null,
     server: "sip.example.com",
     port: 5060,
@@ -61,7 +61,7 @@ export function makeHistory(over: Partial<HistoryEntry> = {}): HistoryEntry {
   return {
     id: "h1",
     accountId: "acc1",
-    accountLabel: "Bureau",
+    accountLabel: "Office",
     remoteUri: "sip:1002@example.com",
     remoteNumber: "1002",
     contactName: null,
@@ -143,7 +143,7 @@ export function makeSource(over: Partial<SourceView> = {}): SourceView {
   return {
     id: "src1",
     kind: "ldap",
-    name: "Annuaire de l'entreprise",
+    name: "Company directory",
     enabled: true,
     readOnly: true,
     state: "idle",
@@ -166,18 +166,16 @@ export function makeEntry(over: Partial<DirectoryEntry> = {}): DirectoryEntry {
     displayName: "Élodie Dupont",
     firstName: "Élodie",
     lastName: "Dupont",
-    company: "Société Exemple",
-    department: "Comptabilité",
-    title: "Directrice financière",
+    company: "Example Company",
+    department: "Accounting",
+    title: "Chief financial officer",
     email: "elodie.dupont@example.org",
     phones: [
       { kind: "work", number: "+33 1 23 45 67 89" },
       { kind: "mobile", number: "06 12-34-56-78" },
       { kind: "extension", number: "4567" },
     ],
-    sources: [
-      { recordId: id, sourceId: "src1", sourceName: "Annuaire de l'entreprise", kind: "ldap", externalId: "uid-1" },
-    ],
+    sources: [{ recordId: id, sourceId: "src1", sourceName: "Company directory", kind: "ldap", externalId: "uid-1" }],
     favorite: false,
     groups: [],
     readOnly: true,

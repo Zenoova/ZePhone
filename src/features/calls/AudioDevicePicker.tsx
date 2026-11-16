@@ -41,20 +41,20 @@ export function DeviceChoices({ role, remember, compact }: { role: Role; remembe
               </span>
               <span className="min-w-0 flex-1 truncate">{d.name}</span>
               {!compact && <span className="text-muted-foreground text-xs">{TRANSPORT_LABEL[d.transport]}</span>}
-              {isDefault(d) && <span className="text-muted-foreground text-xs">défaut</span>}
-              {d.publicSpeaker && <Badge tone="warning">haut-parleur</Badge>}
+              {isDefault(d) && <span className="text-muted-foreground text-xs">default</span>}
+              {d.publicSpeaker && <Badge tone="warning">speaker</Badge>}
             </button>
           </li>
         );
       })}
-      {rs.choices.length === 0 && <li className="text-muted-foreground px-2 py-1 text-sm">Aucun périphérique.</li>}
+      {rs.choices.length === 0 && <li className="text-muted-foreground px-2 py-1 text-sm">No device.</li>}
     </ul>
   );
 }
 
 /**
  * Quick access to the devices during a call: readable names, the one in use, and a microphone indicator (muted or
- * live). A choice made here is for this call; "garder" makes it the saved choice.
+ * live). A choice made here is for this call; "keep" makes it the saved choice.
  */
 export function AudioDevicePicker({ call }: { call: Call }) {
   const state = useAudioStore((s) => s.state);
@@ -70,8 +70,8 @@ export function AudioDevicePicker({ call }: { call: Call }) {
         <Button
           variant="ghost"
           size="sm"
-          aria-label="Périphériques audio"
-          title={`Périphériques audio — micro ${call.muted ? "coupé" : "actif"}`}
+          aria-label="Audio devices"
+          title={`Audio devices — microphone ${call.muted ? "muted" : "active"}`}
           className="relative"
         >
           <MicIcon className={cn("size-4", call.muted && "text-destructive")} />
@@ -88,7 +88,7 @@ export function AudioDevicePicker({ call }: { call: Call }) {
           )}
         >
           <MicIcon className="size-4" aria-hidden />
-          {call.muted ? "Micro coupé" : "Micro actif"}
+          {call.muted ? "Muted" : "Microphone on"}
         </p>
         <div className="space-y-1">
           <h3 className="text-muted-foreground px-2 text-xs font-medium uppercase">Microphone</h3>
@@ -99,8 +99,8 @@ export function AudioDevicePicker({ call }: { call: Call }) {
           <DeviceChoices role="speaker" remember={remember} compact />
         </div>
         <label className="flex items-center justify-between gap-3 border-t pt-3 text-xs">
-          <span>Garder ce choix pour les prochains appels</span>
-          <Switch checked={remember} onCheckedChange={setRemember} aria-label="Garder ce choix" />
+          <span>Keep this choice for future calls</span>
+          <Switch checked={remember} onCheckedChange={setRemember} aria-label="Keep this choice" />
         </label>
         {bt && <p className="text-muted-foreground text-xs">{bt}</p>}
       </PopoverContent>

@@ -137,7 +137,7 @@ async fn two_ringing_calls_are_not_guessed_by_a_headset() {
     assert!(phone.log.lock().unwrap().is_empty(), "nothing answered");
     let entry = svc.state().log.pop().unwrap();
     assert!(
-        !entry.acted && entry.result.contains("plusieurs appels"),
+        !entry.acted && entry.result.contains("several calls"),
         "{entry:?}"
     );
 }
@@ -192,7 +192,11 @@ async fn a_headset_zephone_does_not_use_is_ignored_and_says_so() {
     svc.on_input(press(Usage::HookSwitch, 1, Instant::now()))
         .await;
     assert!(phone.log.lock().unwrap().is_empty());
-    assert!(svc.state().log[0].result.contains("pas le casque utilisé"));
+    assert!(
+        svc.state().log[0]
+            .result
+            .contains("not the headset used by ZePhone")
+    );
 }
 
 #[tokio::test]

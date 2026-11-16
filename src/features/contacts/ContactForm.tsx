@@ -37,8 +37,8 @@ export function ContactFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title={contact ? "Modifier le contact" : "Nouveau contact"}
-        description="Le numéro peut être un numéro de téléphone, un poste ou une adresse SIP."
+        title={contact ? "Edit contact" : "New contact"}
+        description="The number can be a phone number, an extension or a SIP address."
       >
         <ContactFormBody
           key={contact?.id ?? "new"}
@@ -90,20 +90,20 @@ function ContactFormBody({
     >
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="c-first">Prénom</Label>
+          <Label htmlFor="c-first">First name</Label>
           <Input id="c-first" autoFocus value={form.firstName} onChange={set("firstName")} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="c-last">Nom</Label>
+          <Label htmlFor="c-last">Name</Label>
           <Input id="c-last" value={form.lastName} onChange={set("lastName")} />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="c-company">Société (facultatif)</Label>
+        <Label htmlFor="c-company">Company (optional)</Label>
         <Input id="c-company" value={form.company} onChange={set("company")} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="c-number">Numéro ou adresse SIP</Label>
+        <Label htmlFor="c-number">Number or SIP address</Label>
         <Input
           id="c-number"
           value={form.number}
@@ -113,10 +113,10 @@ function ContactFormBody({
       </div>
       <div className="flex justify-end gap-2 pt-3">
         <Button type="button" variant="secondary" onClick={onDone}>
-          Annuler
+          Cancel
         </Button>
         <Button type="submit" disabled={busy || !hasName || !form.number.trim()}>
-          Enregistrer
+          Save
         </Button>
       </div>
     </form>

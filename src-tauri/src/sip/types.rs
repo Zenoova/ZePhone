@@ -153,44 +153,43 @@ impl AccountInput {
     pub fn into_account(&self, id: String, is_default: bool) -> AppResult<Account> {
         let server = self.server.trim().to_string();
         crate::sip::uri::validate_host(&server)
-            .map_err(|e| AppError::validation(format!("Serveur SIP : {e}")))?;
+            .map_err(|e| AppError::validation(format!("SIP server: {e}")))?;
 
         let domain = clean_opt(&self.domain).unwrap_or_else(|| server.clone());
         crate::sip::uri::validate_host(&domain)
-            .map_err(|e| AppError::validation(format!("Domaine SIP : {e}")))?;
+            .map_err(|e| AppError::validation(format!("SIP domain: {e}")))?;
 
         let username = self.username.trim().to_string();
         crate::sip::uri::validate_user(&username)
-            .map_err(|e| AppError::validation(format!("Identifiant : {e}")))?;
+            .map_err(|e| AppError::validation(format!("Username: {e}")))?;
 
         let auth_username = clean_opt(&self.auth_username);
         if let Some(a) = &auth_username {
-            crate::sip::uri::validate_quoted_value(a).map_err(|e| {
-                AppError::validation(format!("Identifiant d'authentification : {e}"))
-            })?;
+            crate::sip::uri::validate_quoted_value(a)
+                .map_err(|e| AppError::validation(format!("Authentication username: {e}")))?;
         }
 
         let display_name = clean_opt(&self.display_name);
         if let Some(d) = &display_name {
             crate::sip::uri::validate_quoted_value(d)
-                .map_err(|e| AppError::validation(format!("Nom affiché : {e}")))?;
+                .map_err(|e| AppError::validation(format!("Display name: {e}")))?;
         }
 
         let outbound_proxy = clean_opt(&self.outbound_proxy);
         if let Some(p) = &outbound_proxy {
             crate::sip::uri::validate_host_port(p)
-                .map_err(|e| AppError::validation(format!("Proxy sortant : {e}")))?;
+                .map_err(|e| AppError::validation(format!("Outbound proxy: {e}")))?;
         }
 
         let port = self.port.unwrap_or_else(|| self.transport.default_port());
         if port == 0 {
-            return Err(AppError::validation("Port invalide (1-65535)"));
+            return Err(AppError::validation("Invalid port (1-65535)"));
         }
 
         let register_interval = self.register_interval.unwrap_or(DEFAULT_REGISTER_INTERVAL);
         if register_interval != 0 && !(30..=86_400).contains(&register_interval) {
             return Err(AppError::validation(
-                "Intervalle d'enregistrement invalide (0 ou 30 à 86400 secondes)",
+                "Invalid registration interval (0 or 30 to 86400 seconds)",
             ));
         }
 
@@ -201,9 +200,7 @@ impl AccountInput {
             label.to_string()
         };
         if label.chars().count() > 80 || label.chars().any(char::is_control) {
-            return Err(AppError::validation(
-                "Libellé invalide (80 caractères max.)",
-            ));
+            return Err(AppError::validation("Invalid label (80 characters max.)"));
         }
 
         if let Some(pw) = &self.password {
@@ -431,21 +428,19 @@ impl ContactInput {
             && clean_opt(&self.company).is_none()
         {
             return Err(AppError::validation(
-                "Renseignez au moins un nom, un prénom ou une société",
+                "Enter at least a name, a first name or a company",
             ));
         }
         let number = self.number.trim();
         if number.is_empty() {
-            return Err(AppError::validation(
-                "Le numéro ou l'URI SIP est obligatoire",
-            ));
+            return Err(AppError::validation("The number or SIP URI is required"));
         }
         // Must be dialable.
         crate::sip::uri::normalize_target(number, "example.invalid")
-            .map_err(|e| AppError::validation(format!("Numéro ou URI SIP invalide : {e}")))?;
-        for (label, v) in [("Prénom", &self.first_name), ("Nom", &self.last_name)] {
+            .map_err(|e| AppError::validation(format!("Invalid number or SIP URI: {e}")))?;
+        for (label, v) in [("First name", &self.first_name), ("Name", &self.last_name)] {
             if v.chars().count() > 80 || v.chars().any(char::is_control) {
-                return Err(AppError::validation(format!("{label} invalide")));
+                return Err(AppError::validation(format!("{label} invalid")));
             }
         }
         Ok(())

@@ -77,11 +77,11 @@ describe("AudioDevices", () => {
   it("shows the three roles apart, each with the device really in use", () => {
     show(state([role("microphone"), role("speaker"), role("ringer")]));
     expect(screen.getByRole("combobox", { name: "Microphone" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Sortie des conversations" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Sonnerie" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Conversation output" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Ringtone" })).toBeInTheDocument();
     expect(within(screen.getByTestId("in-use-microphone")).getByText("MacBook Pro Microphone")).toBeInTheDocument();
     expect(within(screen.getByTestId("in-use-speaker")).getByText("MacBook Pro Speakers")).toBeInTheDocument();
-    expect(within(screen.getByTestId("in-use-ringer")).getByText("Suit le système")).toBeInTheDocument();
+    expect(within(screen.getByTestId("in-use-ringer")).getByText("Follows the system")).toBeInTheDocument();
   });
 
   it("tells following the system from an explicit headset and from a fallback in use", () => {
@@ -97,25 +97,25 @@ describe("AudioDevices", () => {
         }),
         role("speaker", {
           choice: {
-            selection: { kind: "explicit", device: { uid: "gone", name: "Casque de bureau" } },
+            selection: { kind: "explicit", device: { uid: "gone", name: "Desk headset" } },
             fallback: { uid: "spk", name: "MacBook Pro Speakers" },
           },
           resolution: {
             role: "speaker",
             used: SPK,
             source: "fallback",
-            problems: [{ kind: "chosenUnavailable", name: "Casque de bureau" }],
+            problems: [{ kind: "chosenUnavailable", name: "Desk headset" }],
             learnedUid: null,
           },
         }),
         role("ringer"),
       ]),
     );
-    expect(within(screen.getByTestId("in-use-microphone")).getByText("Choix explicite")).toBeInTheDocument();
-    expect(within(screen.getByTestId("in-use-speaker")).getByText("Périphérique de secours")).toBeInTheDocument();
-    expect(within(screen.getByTestId("in-use-ringer")).getByText("Suit le système")).toBeInTheDocument();
+    expect(within(screen.getByTestId("in-use-microphone")).getByText("Explicit choice")).toBeInTheDocument();
+    expect(within(screen.getByTestId("in-use-speaker")).getByText("Backup device")).toBeInTheDocument();
+    expect(within(screen.getByTestId("in-use-ringer")).getByText("Follows the system")).toBeInTheDocument();
     // The fallback choice is only offered for an explicit one.
-    expect(screen.getAllByRole("combobox", { name: /Périphérique de secours/ })).toHaveLength(2);
+    expect(screen.getAllByRole("combobox", { name: /Backup device/ })).toHaveLength(2);
   });
 
   it("says a saved choice is unplugged, and that it will be used again when it returns", () => {
@@ -126,35 +126,35 @@ describe("AudioDevices", () => {
           "speaker",
           {
             choice: {
-              selection: { kind: "explicit", device: { uid: "gone", name: "Casque de bureau" } },
+              selection: { kind: "explicit", device: { uid: "gone", name: "Desk headset" } },
               fallback: null,
             },
           },
           {
             source: "systemInstead",
-            problems: [{ kind: "chosenUnavailable", name: "Casque de bureau" }],
+            problems: [{ kind: "chosenUnavailable", name: "Desk headset" }],
           },
         ),
         role("ringer"),
       ]),
     );
     expect(
-      screen.getByText(/« Casque de bureau » n'est pas branché : il sera utilisé de nouveau dès son retour/),
+      screen.getByText(/“Desk headset” is not plugged in: it will be used again as soon as it returns/),
     ).toBeInTheDocument();
-    expect(within(screen.getByTestId("in-use-speaker")).getByText(/Défaut du système/)).toBeInTheDocument();
+    expect(within(screen.getByTestId("in-use-speaker")).getByText(/System default/)).toBeInTheDocument();
   });
 
   it("shows the device the engine really uses when it differs from the one asked, with the refusal", () => {
     show(
       state([
         role("microphone"),
-        role("speaker", { inUse: SPK, refused: "périphérique inconnu" }, { used: USB, source: "following" }),
+        role("speaker", { inUse: SPK, refused: "unknown device" }, { used: USB, source: "following" }),
         role("ringer"),
       ]),
     );
     expect(
       screen.getByText(
-        /devrait utiliser « Jabra Evolve2 65 », mais le moteur audio utilise encore « MacBook Pro Speakers » : périphérique inconnu/,
+        /This choice should use “Jabra Evolve2 65”, but the audio engine is still using “MacBook Pro Speakers”: unknown device/,
       ),
     ).toBeInTheDocument();
     expect(within(screen.getByTestId("in-use-speaker")).getByText("MacBook Pro Speakers")).toBeInTheDocument();
@@ -163,18 +163,18 @@ describe("AudioDevices", () => {
   it("explains the Bluetooth microphone constraint as the system's, not the app's", () => {
     const bt = dev("bt", "AirPods", "bluetooth", 1, 2);
     show(state([role("microphone", { inUse: bt }), role("speaker"), role("ringer")]));
-    expect(screen.getByText(/contrainte du Bluetooth, pas un réglage de ZePhone/)).toBeInTheDocument();
+    expect(screen.getByText(/Bluetooth constraint, not a ZePhone setting/)).toBeInTheDocument();
   });
 
   it("is honest that macOS has no separate communication device", () => {
     show(state([role("microphone"), role("speaker"), role("ringer")]));
-    expect(screen.getByText(/macOS n'a pas de périphérique « communication »/)).toBeInTheDocument();
+    expect(screen.getByText(/macOS has no “communication” device/)).toBeInTheDocument();
   });
 
   it("saves the policy and the loudspeaker permission as part of the routing", async () => {
     show(state([role("microphone"), role("speaker"), role("ringer")]));
-    expect(screen.getByRole("switch", { name: /passage automatique sur des haut-parleurs/ })).not.toBeChecked();
-    fireEvent.click(screen.getByRole("switch", { name: /passage automatique sur des haut-parleurs/ }));
+    expect(screen.getByRole("switch", { name: /automatic switching to loudspeakers/ })).not.toBeChecked();
+    fireEvent.click(screen.getByRole("switch", { name: /automatic switching to loudspeakers/ }));
     await waitFor(() => expect(invoke.mock.calls.some((c) => c[0] === "update_settings")).toBe(true));
     const sent = invoke.mock.calls.find((c) => c[0] === "update_settings")?.[1] as {
       settings: { audio: { routing: { allowPublicSpeaker: boolean; lostPolicy: string } } };

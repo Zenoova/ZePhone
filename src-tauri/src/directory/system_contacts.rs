@@ -80,7 +80,7 @@ pub fn platform_provider() -> Arc<dyn ContactsProvider> {
 pub const AVAILABLE: bool = cfg!(target_os = "macos");
 
 /// The name the source gets: what the user calls that address book on this platform.
-pub const SOURCE_NAME: &str = "Contacts du Mac";
+pub const SOURCE_NAME: &str = "Mac contacts";
 
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 struct Unsupported;
@@ -94,7 +94,7 @@ impl ContactsProvider for Unsupported {
         Access::Unsupported
     }
     fn read_all(&self) -> Result<Vec<RawContact>, ProviderError> {
-        Err(ProviderError("pas de carnet d'adresses lisible".into()))
+        Err(ProviderError("no readable address book".into()))
     }
 }
 
@@ -205,26 +205,26 @@ impl SystemContactsConnector {
 }
 
 /// Words for a permission problem, with the way out. The synchronisation reports them as a failure the user can
-/// act on (the same "Autoriser l'accès" button as at connection).
+/// act on (the same "Allow access" button as at connection).
 pub fn access_error(access: Access) -> Option<SyncError> {
     let e = |kind, msg: &str| Some(SyncError::new(kind, msg));
     match access {
         Access::Authorized => None,
         Access::NotDetermined => e(
             SyncErrorKind::Forbidden,
-            "ZePhone n'a pas encore l'autorisation de lire vos contacts : autorisez l'accès.",
+            "ZePhone does not have permission to read your contacts yet: allow access.",
         ),
         Access::Denied => e(
             SyncErrorKind::Forbidden,
-            "L'accès à vos contacts est refusé. Autorisez ZePhone dans Réglages Système → Confidentialité et sécurité → Contacts, puis reconnectez la source.",
+            "Access to your contacts is denied. Allow ZePhone in System Settings → Privacy & Security → Contacts, then reconnect the source.",
         ),
         Access::Restricted => e(
             SyncErrorKind::Forbidden,
-            "L'accès aux contacts est restreint par une règle de cet appareil : ZePhone ne peut pas les lire.",
+            "Access to contacts is restricted by a policy of this device: ZePhone cannot read them.",
         ),
         Access::Unsupported => e(
             SyncErrorKind::Config,
-            "Cet appareil n'a pas de contacts que ZePhone puisse lire.",
+            "This device has no contacts that ZePhone can read.",
         ),
     }
 }
@@ -245,11 +245,11 @@ impl Connector for SystemContactsConnector {
             .map_err(|_| {
                 SyncError::new(
                     SyncErrorKind::Server,
-                    "La lecture des contacts a été interrompue.",
+                    "Reading the contacts was interrupted.",
                 )
             })?
             .map_err(|_| {
-                SyncError::new(SyncErrorKind::Server, "Les contacts n'ont pas pu être lus.")
+                SyncError::new(SyncErrorKind::Server, "The contacts could not be read.")
             })?;
 
         // The system has no "what changed" that is both simple and reliable across platforms: every
@@ -307,7 +307,7 @@ mod tests {
         let kind = |l: &str| phone_kind(Some(l)).map(|k| k.0);
         assert_eq!(kind("Portable"), Some(PhoneKind::Mobile));
         assert_eq!(kind("Bureau"), Some(PhoneKind::Work));
-        assert_eq!(kind("Poste"), Some(PhoneKind::Extension));
+        assert_eq!(kind("Extension"), Some(PhoneKind::Extension));
         assert_eq!(kind("Domicile"), Some(PhoneKind::Home));
         assert_eq!(kind("Maison"), Some(PhoneKind::Home));
         assert_eq!(kind("Cell"), Some(PhoneKind::Mobile));
@@ -327,7 +327,7 @@ mod tests {
     fn numbers_that_are_not_for_calling_are_left_out() {
         assert_eq!(phone_kind(Some("_$!<HomeFAX>!$_")), None);
         assert_eq!(phone_kind(Some("_$!<WorkFAX>!$_")), None);
-        assert_eq!(phone_kind(Some("Télécopie")), None);
+        assert_eq!(phone_kind(Some("Fax")), None);
         assert_eq!(phone_kind(Some("_$!<Pager>!$_")), None);
         let mut c = raw("1");
         c.phones
@@ -338,9 +338,9 @@ mod tests {
     #[test]
     fn a_card_becomes_a_directory_contact_with_its_numbers_as_written() {
         let mut c = raw("ABC:ABPerson");
-        c.organization = "Société".into();
-        c.department = "Comptabilité".into();
-        c.job_title = "Directrice".into();
+        c.organization = "Company".into();
+        c.department = "Accounting".into();
+        c.job_title = "Director".into();
         c.emails = vec![
             "".into(),
             "elodie@example.org".into(),
@@ -356,9 +356,9 @@ mod tests {
             (r.first_name.as_str(), r.last_name.as_str()),
             ("Élodie", "Dupont")
         );
-        assert_eq!(r.company.as_deref(), Some("Société"));
-        assert_eq!(r.department.as_deref(), Some("Comptabilité"));
-        assert_eq!(r.title.as_deref(), Some("Directrice"));
+        assert_eq!(r.company.as_deref(), Some("Company"));
+        assert_eq!(r.department.as_deref(), Some("Accounting"));
+        assert_eq!(r.title.as_deref(), Some("Director"));
         assert_eq!(r.email.as_deref(), Some("elodie@example.org"));
         let phones: Vec<(PhoneKind, &str)> = r
             .phones
@@ -473,23 +473,19 @@ mod tests {
             (
                 Access::Denied,
                 SyncErrorKind::Forbidden,
-                "Confidentialité et sécurité → Contacts",
+                "Privacy & Security → Contacts",
             ),
             (
                 Access::NotDetermined,
                 SyncErrorKind::Forbidden,
-                "autorisez l'accès",
+                "allow access",
             ),
             (
                 Access::Restricted,
                 SyncErrorKind::Forbidden,
-                "règle de cet appareil",
+                "policy of this device",
             ),
-            (
-                Access::Unsupported,
-                SyncErrorKind::Config,
-                "pas de contacts",
-            ),
+            (Access::Unsupported, SyncErrorKind::Config, "no contacts"),
         ] {
             let p = Fake::with(access, vec![raw("a")]);
             let err = read(p.clone()).await.unwrap_err();

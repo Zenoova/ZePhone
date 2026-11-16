@@ -60,17 +60,17 @@ pub fn is_held(call: &Call) -> bool {
 
 fn none_reason(need: Need) -> &'static str {
     match need {
-        Need::Incoming => "Aucun appel entrant",
-        Need::Hangup => "Aucun appel à raccrocher",
-        Need::Established | Need::EstablishedHeld => "Aucun appel en cours",
+        Need::Incoming => "No incoming call",
+        Need::Hangup => "No call to hang up",
+        Need::Established | Need::EstablishedHeld => "No call in progress",
     }
 }
 
 fn wrong_state_reason(need: Need) -> &'static str {
     match need {
-        Need::Incoming => "Cet appel n'est pas un appel entrant en attente",
-        Need::Hangup => "Cet appel n'est pas en cours : pour un appel entrant, il faut le refuser",
-        Need::Established | Need::EstablishedHeld => "Cet appel n'est pas établi",
+        Need::Incoming => "This call is not an incoming call waiting to be answered",
+        Need::Hangup => "This call is not in progress: an incoming call must be declined",
+        Need::Established | Need::EstablishedHeld => "This call is not established",
     }
 }
 

@@ -1,36 +1,36 @@
 import type { CallResult, CallState, RegistrationState } from "@/types/telephony";
 
 export const CALL_STATE_LABEL: Record<CallState, string> = {
-  initializing: "Initialisation…",
-  dialing: "Appel en cours de composition…",
-  ringing: "Sonnerie…",
-  incoming: "Appel entrant",
-  connected: "Connecté",
-  onHold: "En attente",
-  ended: "Terminé",
-  failed: "Échec",
+  initializing: "Initializing…",
+  dialing: "Call being dialled…",
+  ringing: "Ringtone…",
+  incoming: "Incoming call",
+  connected: "Connected",
+  onHold: "On hold",
+  ended: "Ended",
+  failed: "Failed",
 };
 
 export const REGISTRATION_LABEL: Record<RegistrationState, string> = {
-  unconfigured: "Non configuré",
-  connecting: "Connexion en cours",
-  registered: "Enregistré",
-  disconnected: "Déconnecté",
-  error: "Erreur",
+  unconfigured: "Not configured",
+  connecting: "Connecting",
+  registered: "Saved",
+  disconnected: "Disconnected",
+  error: "Error",
 };
 
 export const RESULT_LABEL: Record<CallResult, string> = {
-  answered: "Répondu",
-  missed: "Manqué",
-  rejected: "Refusé",
-  failed: "Échoué",
-  cancelled: "Annulé",
+  answered: "Answered",
+  missed: "Missed",
+  rejected: "Declined",
+  failed: "Failed",
+  cancelled: "Cancelled",
 };
 
-export const TRANSPORT_LABEL = { udp: "UDP", tcp: "TCP", tls: "TLS (chiffré)" } as const;
+export const TRANSPORT_LABEL = { udp: "UDP", tcp: "TCP", tls: "TLS (encrypted)" } as const;
 
 export const MEDIA_ENCRYPTION_LABEL = {
-  none: "Aucun",
-  srtp: "SRTP (si disponible)",
-  "srtp-mandatory": "SRTP obligatoire",
+  none: "None",
+  srtp: "SRTP (if available)",
+  "srtp-mandatory": "SRTP required",
 } as const;

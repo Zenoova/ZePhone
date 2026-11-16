@@ -321,10 +321,10 @@ async fn an_explicit_mute_repeated_changes_nothing_more() {
 #[tokio::test]
 async fn a_refused_mute_reports_the_state_that_is_really_in_effect() {
     let (c, phone, _) = rig(vec![call("a", CallState::Connected)]);
-    *phone.refuse.lock().unwrap() = Some("pas de réponse".into());
+    *phone.refuse.lock().unwrap() = Some("no response".into());
     let o = c.execute(mute(Some(true))).await;
     assert_eq!(o.status, Status::Failed);
-    assert!(o.message.contains("pas de réponse"));
+    assert!(o.message.contains("no response"));
     assert!(
         !o.call.expect("the call as it is").muted,
         "still not muted: the engine said no"

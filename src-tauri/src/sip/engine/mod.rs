@@ -156,15 +156,15 @@ pub struct AudioOverride {
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum EngineError {
-    #[error("le moteur SIP n'est pas démarré")]
+    #[error("the SIP engine is not started")]
     NotRunning,
-    #[error("délai dépassé en attendant le moteur SIP")]
+    #[error("timed out waiting for the SIP engine")]
     Timeout,
-    #[error("commande refusée par le moteur : {0}")]
+    #[error("command refused by the engine: {0}")]
     CommandFailed(String),
     #[error("{0}")]
     Io(String),
-    #[error("protocole : {0}")]
+    #[error("protocol: {0}")]
     Protocol(String),
     #[error("{0}")]
     Invalid(String),

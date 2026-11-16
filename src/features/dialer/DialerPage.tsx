@@ -37,27 +37,27 @@ export function DialerPage() {
   const dialing = useCallsStore((s) => s.dialing);
   const dial = useCallsStore((s) => s.dial);
   const usable = useMemo(() => accounts.filter((a) => a.enabled), [accounts]);
-  // "Appeler" always calls with the default account; another one is picked from the menu next to it.
+  // “Call” always calls with the default account; another one is picked from the menu next to it.
   const selected = selectDefaultAccount(usable);
   const canPlace = !dialing && !!selected && isEngineRunning(engine);
-  /** What the menu calls each account: its label, with the address when two accounts share a label, and "par défaut". */
+  /** What the menu calls each account: its label, with the address when two accounts share a label, and "default". */
   const accountLabels = useMemo(() => {
     const count = new Map<string, number>();
     for (const a of usable) count.set(a.label, (count.get(a.label) ?? 0) + 1);
     return new Map(
       usable.map((a) => {
         const name = (count.get(a.label) ?? 0) > 1 ? `${a.label} (${a.username}@${a.domain})` : a.label;
-        return [a.id, a.id === selected?.id ? `${name} · par défaut` : name] as const;
+        return [a.id, a.id === selected?.id ? `${name} · default` : name] as const;
       }),
     );
   }, [usable, selected?.id]);
 
-  /** Empty display + "Appeler": bring back the number of the last outgoing call (the user then confirms). */
+  /** Empty display + "Call": bring back the number of the last outgoing call (the user then confirms). */
   const fillWithLastNumber = async () => {
     try {
       const [last] = await telephony.listHistory({ kind: "outgoing", limit: 1 });
       if (!last) {
-        toast.info("Aucun appel sortant à rappeler");
+        toast.info("No outgoing call to redial");
         return;
       }
       setDialValue(sanitizeDialInput(redialValue(last, accounts)));
@@ -132,12 +132,12 @@ export function DialerPage() {
           <UserPlus className="size-7" aria-hidden />
         </div>
         <div>
-          <h1 className="text-xl font-semibold">Bienvenue dans ZePhone</h1>
+          <h1 className="text-xl font-semibold">Welcome to ZePhone</h1>
           <p className="text-muted-foreground mx-auto mt-1 max-w-xs text-sm">
-            Ajoutez votre compte SIP (serveur, identifiant, mot de passe) pour passer et recevoir des appels.
+            Add your SIP account (server, username, password) to make and receive calls.
           </p>
         </div>
-        <ArcButton onClick={() => openSettings("accounts")}>Ajouter un compte SIP</ArcButton>
+        <ArcButton onClick={() => openSettings("accounts")}>Add a SIP account</ArcButton>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export function DialerPage() {
         <div
           role="textbox"
           aria-readonly="true"
-          aria-label="Numéro à appeler"
+          aria-label="Number to call"
           data-testid="dial-display"
           data-selectable
           className="flex h-20 w-full items-center justify-center px-14 text-center"
@@ -168,7 +168,7 @@ export function DialerPage() {
             variant="ghost"
             size="icon"
             className="absolute top-1/2 right-0 -translate-y-1/2 rounded-full"
-            aria-label="Effacer le dernier caractère"
+            aria-label="Delete the last character"
             onClick={() => setDialValue(dialValue.slice(0, -1))}
             onDoubleClick={() => setDialValue("")}
           >
@@ -183,7 +183,7 @@ export function DialerPage() {
         <Button
           size="lg"
           disabled={!canPlace}
-          title={looksDialable(dialValue) ? undefined : "Rappeler le dernier numéro composé"}
+          title={looksDialable(dialValue) ? undefined : "Redial the last number dialled"}
           onClick={() => void place()}
           className={cn(
             "bg-success text-success-foreground hover:bg-success/90 h-14 flex-1 text-base font-semibold",
@@ -191,11 +191,11 @@ export function DialerPage() {
           )}
         >
           <Phone className="size-5" aria-hidden />
-          {dialing ? "Appel…" : "Appeler"}
+          {dialing ? "Calling…" : "Call"}
         </Button>
         {usable.length > 1 && (
           <DropdownMenu
-            label="Appeler avec"
+            label="Call with"
             items={usable.map((a) => ({
               label: accountLabels.get(a.id) ?? a.label,
               icon: <StatusDot state={statuses[a.id]?.state ?? "disconnected"} />,
@@ -205,12 +205,8 @@ export function DialerPage() {
               <Button
                 size="lg"
                 disabled={!canPlace || !looksDialable(dialValue)}
-                aria-label="Choisir le compte pour appeler"
-                title={
-                  looksDialable(dialValue)
-                    ? "Appeler avec un autre compte"
-                    : "Saisissez un numéro pour choisir le compte"
-                }
+                aria-label="Choose the account to call with"
+                title={looksDialable(dialValue) ? "Call with another account" : "Enter a number to choose the account"}
                 className="bg-success text-success-foreground hover:bg-success/90 h-14 w-12 shrink-0 rounded-l-md rounded-r-2xl px-0"
               >
                 <ChevronDown className="size-5" aria-hidden />
@@ -220,7 +216,7 @@ export function DialerPage() {
         )}
       </div>
       {!isEngineRunning(engine) && engine && (
-        <p className="text-destructive text-center text-xs">Le moteur SIP n'est pas démarré.</p>
+        <p className="text-destructive text-center text-xs">The SIP engine is not started.</p>
       )}
     </div>
   );

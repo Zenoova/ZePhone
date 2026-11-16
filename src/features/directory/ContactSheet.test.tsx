@@ -45,20 +45,20 @@ describe("ContactSheet", () => {
   it("gives the person's details and every number with what it is, exactly as the source wrote it", () => {
     show(makeEntry());
     const dialog = screen.getByRole("dialog", { name: "Élodie Dupont" });
-    expect(dialog).toHaveTextContent("Directrice financière · Société Exemple · Comptabilité");
+    expect(dialog).toHaveTextContent("Chief financial officer · Example Company · Accounting");
     expect(dialog).toHaveTextContent("elodie.dupont@example.org");
-    expect(dialog).toHaveTextContent("Lecture seule");
+    expect(dialog).toHaveTextContent("Read-only");
     const phones = screen.getAllByTestId("phone-row").map((r) => r.textContent);
-    expect(phones[0]).toContain("Professionnel");
+    expect(phones[0]).toContain("Work");
     expect(phones[0]).toContain("+33 1 23 45 67 89");
-    expect(phones.join(" ")).toContain("Poste interne");
+    expect(phones.join(" ")).toContain("Internal extension");
     expect(phones.join(" ")).toContain("06 12-34-56-78");
   });
 
   it("keeps the provenance, with the identifier the source gave", () => {
     show(makeEntry());
     const provenance = screen.getByTestId("provenance");
-    expect(provenance).toHaveTextContent("Annuaire LDAP · Annuaire de l'entreprise");
+    expect(provenance).toHaveTextContent("LDAP directory · Company directory");
     expect(provenance).toHaveTextContent("uid-1");
   });
 
@@ -71,14 +71,14 @@ describe("ContactSheet", () => {
     });
     show(linked);
     const provenance = screen.getByTestId("provenance");
-    expect(provenance).toHaveTextContent("Annuaire LDAP");
+    expect(provenance).toHaveTextContent("LDAP directory");
     expect(provenance).toHaveTextContent("Microsoft 365");
-    expect(provenance).toHaveTextContent("même adresse e-mail — jamais seulement le même nom");
+    expect(provenance).toHaveTextContent("same e-mail address — never just the same name");
   });
 
   it("calls the number it is asked to, through the application's own dialling", async () => {
     const props = show(makeEntry());
-    fireEvent.click(screen.getByRole("button", { name: "Appeler Mobile 06 12-34-56-78" }));
+    fireEvent.click(screen.getByRole("button", { name: "Call Mobile 06 12-34-56-78" }));
     await waitFor(() => expect(backend.calls("dial")).toHaveLength(1));
     expect(backend.calls("directory_dialable")).toEqual([{ number: "06 12-34-56-78" }]);
     expect(backend.calls("dial")[0]).toMatchObject({ target: "0612345678" });
@@ -96,49 +96,49 @@ describe("ContactSheet", () => {
         ],
       }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Appeler Poste interne 4567" }));
+    fireEvent.click(screen.getByRole("button", { name: "Call Internal extension 4567" }));
     await waitFor(() => expect(backend.calls("dial")).toHaveLength(1));
     expect(backend.calls("dial")[0]).toMatchObject({ target: "4567" });
-    fireEvent.click(screen.getByRole("button", { name: "Appeler Adresse SIP sip:elodie@pbx.example.org" }));
+    fireEvent.click(screen.getByRole("button", { name: "Call SIP address sip:elodie@pbx.example.org" }));
     await waitFor(() => expect(backend.calls("dial")).toHaveLength(2));
     expect(backend.calls("dial")[1]).toMatchObject({ target: "sip:elodie@pbx.example.org" });
   });
 
   it("copies the number as written", async () => {
     show(makeEntry());
-    fireEvent.click(screen.getByRole("button", { name: "Copier 06 12-34-56-78" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy 06 12-34-56-78" }));
     await waitFor(() => expect(write).toHaveBeenCalledWith("06 12-34-56-78"));
-    expect(toast.success).toHaveBeenCalledWith("Numéro copié");
+    expect(toast.success).toHaveBeenCalledWith("Number copied");
   });
 
   it("cannot transfer when there is no call, and says why", () => {
     show(makeEntry());
-    const button = screen.getAllByRole("button", { name: /Transférer l'appel vers/ })[0]!;
+    const button = screen.getAllByRole("button", { name: /Transfer the call to/ })[0]!;
     expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", "Aucun appel en cours à transférer");
+    expect(button).toHaveAttribute("title", "No call in progress to transfer");
   });
 
   it("transfers the call in progress to the number picked, through the application's own transfer", async () => {
     useCallsStore.setState({ calls: { call1: makeCall({ id: "call1", state: "connected" }) } });
     const props = show(makeEntry());
-    fireEvent.click(screen.getByRole("button", { name: "Transférer l'appel vers +33 1 23 45 67 89" }));
+    fireEvent.click(screen.getByRole("button", { name: "Transfer the call to +33 1 23 45 67 89" }));
     await waitFor(() => expect(backend.calls("transfer_call")).toHaveLength(1));
     expect(backend.calls("transfer_call")[0]).toEqual({ id: "call1", target: "+33123456789" });
-    expect(toast.success).toHaveBeenCalledWith("Transfert demandé");
+    expect(toast.success).toHaveBeenCalledWith("Transfer requested");
     await waitFor(() => expect(props.onClose).toHaveBeenCalled());
   });
 
   it("does not offer to transfer a call that is on hold, only the one in progress", () => {
     useCallsStore.setState({ calls: { held: makeCall({ id: "held", state: "onHold" }) } });
     show(makeEntry());
-    expect(screen.getAllByRole("button", { name: /Transférer l'appel vers/ })[0]).toBeDisabled();
+    expect(screen.getAllByRole("button", { name: /Transfer the call to/ })[0]).toBeDisabled();
   });
 
   it("toggles the favourite", async () => {
     useDirectoryStore.setState({ items: [makeEntry()] });
     backend.handle("directory_set_favorite", () => undefined);
     show(makeEntry());
-    fireEvent.click(screen.getByRole("button", { name: "Ajouter aux favoris" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add to favorites" }));
     await waitFor(() =>
       expect(backend.calls("directory_set_favorite")).toEqual([{ ids: ["src1/uid-1"], favorite: true }]),
     );
@@ -146,7 +146,7 @@ describe("ContactSheet", () => {
 
   it("only lets the local address book be edited", () => {
     const readOnly = show(makeEntry());
-    expect(screen.queryByRole("button", { name: /Modifier/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Edit/ })).toBeNull();
     expect(readOnly.onEdit).not.toHaveBeenCalled();
   });
 
@@ -155,21 +155,21 @@ describe("ContactSheet", () => {
       id: "local/c1",
       readOnly: false,
       sources: [
-        { recordId: "local/c1", sourceId: "local", sourceName: "Contacts locaux", kind: "local", externalId: "c1" },
+        { recordId: "local/c1", sourceId: "local", sourceName: "Local contacts", kind: "local", externalId: "c1" },
       ],
     });
     const props = show(local);
-    expect(screen.queryByText("Lecture seule")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Modifier/ }));
+    expect(screen.queryByText("Read-only")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Edit/ }));
     expect(props.onEdit).toHaveBeenCalledWith(local);
-    fireEvent.click(screen.getByRole("button", { name: /Supprimer/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Delete/ }));
     expect(props.onDelete).toHaveBeenCalledWith(local);
   });
 
   it("shows the groups the person is in", () => {
     show(makeEntry({ groups: ["g1"] }));
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByRole("button", { name: "Groupes (1)" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Groups (1)" })).toBeInTheDocument();
     expect(within(dialog).getByText("Direction")).toBeInTheDocument();
   });
 });

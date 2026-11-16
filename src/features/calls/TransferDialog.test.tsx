@@ -44,7 +44,7 @@ const open = () => render(<TransferDialog callId="call1" open onOpenChange={vi.f
 
 /** Types in the directory search and waits for the answer to that text (the favourites show until then). */
 async function searchFor(text: string, who: string) {
-  fireEvent.change(screen.getByRole("textbox", { name: "Chercher dans l'annuaire" }), { target: { value: text } });
+  fireEvent.change(screen.getByRole("textbox", { name: "Search the directory" }), { target: { value: text } });
   await waitFor(() => expect(screen.getAllByTestId("directory-picker-result")[0]).toHaveTextContent(who));
   return screen.getAllByTestId("directory-picker-result")[0]!;
 }
@@ -69,11 +69,11 @@ describe("TransferDialog and the directory", () => {
     const result = await searchFor("elodie", "Élodie Dupont");
     const choices = within(result).getAllByRole("button");
     expect(choices.map((b) => b.textContent)).toEqual([
-      "Professionnel +33 1 23 45 67 89",
-      "Poste interne 4567",
+      "Work +33 1 23 45 67 89",
+      "Internal extension 4567",
       "Mobile 06 12-34-56-78",
     ]);
-    expect(screen.getByRole("textbox", { name: "Destinataire" })).toHaveValue(""); // nothing picked for the user
+    expect(screen.getByRole("textbox", { name: "Recipient" })).toHaveValue(""); // nothing picked for the user
   });
 
   it("transfers the call to the number picked, in its dialling form", async () => {
@@ -81,9 +81,9 @@ describe("TransferDialog and the directory", () => {
     render(<TransferDialog callId="call1" open onOpenChange={onOpenChange} />);
     const result = await searchFor("elodie", "Élodie Dupont");
     fireEvent.click(within(result).getByText("06 12-34-56-78"));
-    expect(screen.getByRole("textbox", { name: "Destinataire" })).toHaveValue("06 12-34-56-78");
+    expect(screen.getByRole("textbox", { name: "Recipient" })).toHaveValue("06 12-34-56-78");
     expect(screen.getByTestId("transfer-picked")).toHaveTextContent("Élodie Dupont · Mobile");
-    fireEvent.click(screen.getByRole("button", { name: /^Transférer$/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Transfer$/ }));
     await waitFor(() => expect(backend.calls("transfer_call")).toHaveLength(1));
     expect(backend.calls("transfer_call")[0]).toEqual({ id: "call1", target: "0612345678" });
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
@@ -92,13 +92,13 @@ describe("TransferDialog and the directory", () => {
   it("still takes a number typed by hand, an internal extension, or a SIP address", async () => {
     backend.handle("directory_dialable", (a) => String(a?.number)); // both are kept as they are
     open();
-    const field = screen.getByRole("textbox", { name: "Destinataire" });
+    const field = screen.getByRole("textbox", { name: "Recipient" });
     fireEvent.change(field, { target: { value: "1002" } });
-    fireEvent.click(screen.getByRole("button", { name: /^Transférer$/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Transfer$/ }));
     await waitFor(() => expect(backend.calls("transfer_call")).toHaveLength(1));
     expect(backend.calls("transfer_call")[0]).toEqual({ id: "call1", target: "1002" });
     fireEvent.change(field, { target: { value: "sip:bob@example.com" } });
-    fireEvent.click(screen.getByRole("button", { name: /^Transférer$/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Transfer$/ }));
     await waitFor(() => expect(backend.calls("transfer_call")).toHaveLength(2));
     expect(backend.calls("transfer_call")[1]).toEqual({ id: "call1", target: "sip:bob@example.com" });
   });
@@ -108,18 +108,18 @@ describe("TransferDialog and the directory", () => {
     const result = await searchFor("elodie", "Élodie Dupont");
     fireEvent.click(within(result).getByText("4567"));
     expect(screen.getByTestId("transfer-picked")).toBeInTheDocument();
-    fireEvent.change(screen.getByRole("textbox", { name: "Destinataire" }), { target: { value: "4568" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Recipient" }), { target: { value: "4568" } });
     expect(screen.queryByTestId("transfer-picked")).toBeNull();
   });
 
   it("says plainly when nobody matches, and when the search fails", async () => {
     open();
-    fireEvent.change(screen.getByRole("textbox", { name: "Chercher dans l'annuaire" }), { target: { value: "zzz" } });
-    expect(await screen.findByTestId("directory-picker-empty")).toHaveTextContent("Personne ne correspond.");
+    fireEvent.change(screen.getByRole("textbox", { name: "Search the directory" }), { target: { value: "zzz" } });
+    expect(await screen.findByTestId("directory-picker-empty")).toHaveTextContent("Nobody matches.");
     backend.handle("directory_search", () => {
-      throw { kind: "database", message: "Base illisible" };
+      throw { kind: "database", message: "Unreadable database" };
     });
-    fireEvent.change(screen.getByRole("textbox", { name: "Chercher dans l'annuaire" }), { target: { value: "bob" } });
-    expect(await screen.findByText(/Base illisible/)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole("textbox", { name: "Search the directory" }), { target: { value: "bob" } });
+    expect(await screen.findByText(/Unreadable database/)).toBeInTheDocument();
   });
 });

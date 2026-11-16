@@ -38,7 +38,7 @@ export function CallRow({ call }: { call: Call }) {
             size="icon"
             variant="destructive"
             className="rounded-full"
-            aria-label={`Refuser ${name}`}
+            aria-label={`Decline ${name}`}
             onClick={() => void reject(call.id)}
           >
             <PhoneOff className="size-4" />
@@ -46,7 +46,7 @@ export function CallRow({ call }: { call: Call }) {
           <Button
             size="icon"
             className="bg-success text-success-foreground hover:bg-success/90 rounded-full"
-            aria-label={`Répondre à ${name}`}
+            aria-label={`Answer ${name}`}
             onClick={() => void answer(call.id)}
           >
             <Phone className="size-4" />
@@ -58,7 +58,7 @@ export function CallRow({ call }: { call: Call }) {
           size="icon"
           variant="outline"
           className="rounded-full"
-          aria-label={call.heldLocally ? `Reprendre ${name}` : `Mettre ${name} en attente`}
+          aria-label={call.heldLocally ? `Resume ${name}` : `Put ${name} on hold`}
           onClick={() => void toggleHold(call.id)}
         >
           {call.heldLocally ? <Play className="size-4" /> : <Pause className="size-4" />}
@@ -69,7 +69,7 @@ export function CallRow({ call }: { call: Call }) {
           size="icon"
           variant="destructive"
           className="rounded-full"
-          aria-label={`Raccrocher ${name}`}
+          aria-label={`Hang up ${name}`}
           onClick={() => void hangup(call.id)}
         >
           <PhoneOff className="size-4" />

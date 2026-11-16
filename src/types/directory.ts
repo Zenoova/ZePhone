@@ -187,7 +187,7 @@ export type ContactsAccess = "notDetermined" | "denied" | "restricted" | "author
 export interface SystemContactsInfo {
   /** This platform has an address book ZePhone can read. */
   available: boolean;
-  /** What it is called here ("Contacts du Mac"). */
+  /** What it is called here ("Mac contacts"). */
   name: string;
   access: ContactsAccess;
 }

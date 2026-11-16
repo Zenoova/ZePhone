@@ -24,14 +24,14 @@ describe("SettingsPage", () => {
     render(<SettingsPage />);
     const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
     expect(tabs).toEqual([
-      "Comptes SIP",
-      "Annuaire",
+      "SIP accounts",
+      "Directory",
       "Audio",
-      "Réseau",
+      "Network",
       "Notifications",
-      "Raccourcis",
-      "Général",
-      "À propos",
+      "Shortcuts",
+      "General",
+      "About",
     ]);
     expect(screen.getByRole("tab", { name: "Audio" })).toHaveAttribute("data-state", "active");
   });
@@ -41,14 +41,14 @@ describe("SettingsPage", () => {
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Notifications" }), { button: 0 });
     expect(useUiStore.getState().settingsTab).toBe("notifications");
     fireEvent.click(screen.getByRole("tab", { name: "Notifications" }));
-    expect(screen.getByRole("switch", { name: "Sonnerie" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Ringtone" })).toBeInTheDocument();
   });
 
   it("offers do-not-disturb with the notifications, and saves it as a setting", () => {
     useUiStore.setState({ settingsTab: "notifications" });
     invoke.mockClear();
     render(<SettingsPage />);
-    const sw = screen.getByRole("switch", { name: "Ne pas déranger" });
+    const sw = screen.getByRole("switch", { name: "Do not disturb" });
     expect(sw).not.toBeChecked();
     fireEvent.click(sw);
     const sent = invoke.mock.calls.find((c) => c[0] === "update_settings")?.[1] as {

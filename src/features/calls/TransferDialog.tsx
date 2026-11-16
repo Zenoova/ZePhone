@@ -44,8 +44,8 @@ export function TransferDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title="Transférer l'appel"
-        description="Choisissez un contact de l'annuaire, ou saisissez le poste ou le numéro vers lequel transférer cet appel."
+        title="Transfer the call"
+        description="Choose a contact from the directory, or enter the extension or number to transfer this call to."
       >
         <div className="mb-4">
           <DirectoryPicker
@@ -62,7 +62,7 @@ export function TransferDialog({
           }}
           className="space-y-2"
         >
-          <Label htmlFor="transfer-target">Destinataire</Label>
+          <Label htmlFor="transfer-target">Recipient</Label>
           <Input
             id="transfer-target"
             autoFocus
@@ -71,7 +71,7 @@ export function TransferDialog({
               setTarget(sanitizeDialInput(e.target.value));
               setPicked(null);
             }}
-            placeholder="Poste, numéro ou adresse SIP"
+            placeholder="Extension, number or SIP address"
             autoComplete="off"
           />
           {picked && (
@@ -81,10 +81,10 @@ export function TransferDialog({
           )}
           <div className="flex justify-end gap-2 pt-3">
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-              Annuler
+              Cancel
             </Button>
             <Button type="submit" disabled={busy || !target.trim()}>
-              <PhoneForwarded className="size-4" aria-hidden /> Transférer
+              <PhoneForwarded className="size-4" aria-hidden /> Transfer
             </Button>
           </div>
         </form>

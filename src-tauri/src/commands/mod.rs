@@ -256,20 +256,18 @@ pub async fn update_settings(
     if settings.general.launch_at_login && !enabled {
         autostart
             .enable()
-            .map_err(|e| AppError::Other(format!("Démarrage automatique impossible : {e}")))?;
+            .map_err(|e| AppError::Other(format!("Cannot enable automatic start: {e}")))?;
     } else if !settings.general.launch_at_login && enabled {
-        autostart.disable().map_err(|e| {
-            AppError::Other(format!(
-                "Désactivation du démarrage automatique impossible : {e}"
-            ))
-        })?;
+        autostart
+            .disable()
+            .map_err(|e| AppError::Other(format!("Cannot disable automatic start: {e}")))?;
     }
     Ok(applied)
 }
 
 fn validate_settings(s: &Settings) -> AppResult<()> {
     if s.audio.input_gain > MAX_GAIN_PERCENT || s.audio.output_gain > MAX_GAIN_PERCENT {
-        return Err(AppError::validation("Volume hors limites (0 à 200 %)"));
+        return Err(AppError::validation("Volume out of range (0 to 200 %)"));
     }
     let orb = &s.general.voice_orb;
     if orb.is_empty()
@@ -278,20 +276,20 @@ fn validate_settings(s: &Settings) -> AppResult<()> {
             .bytes()
             .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
     {
-        return Err(AppError::validation("Orbe vocal invalide"));
+        return Err(AppError::validation("Invalid voice orb"));
     }
     if let Some(p) = s.network.local_sip_port
         && p < 1024
     {
         return Err(AppError::validation(
-            "Le port SIP local doit être compris entre 1024 et 65535",
+            "The local SIP port must be between 1024 and 65535",
         ));
     }
     if let Some(i) = &s.network.net_interface
         && !i.trim().is_empty()
         && crate::sip::engine::baresip::config::sanitize_interface(i).is_none()
     {
-        return Err(AppError::validation("Interface réseau invalide"));
+        return Err(AppError::validation("Invalid network interface"));
     }
     if let Some(ca) = s
         .network
@@ -301,7 +299,7 @@ fn validate_settings(s: &Settings) -> AppResult<()> {
         && !std::path::Path::new(ca).is_file()
     {
         return Err(AppError::validation(
-            "Le fichier de certificats (CA) est introuvable",
+            "The certificate file (CA) was not found",
         ));
     }
     for dev in [&s.audio.input_device, &s.audio.output_device]
@@ -310,7 +308,7 @@ fn validate_settings(s: &Settings) -> AppResult<()> {
     {
         if !audio::is_selectable(dev) {
             return Err(AppError::validation(format!(
-                "Ce périphérique audio ne peut pas être utilisé : {dev}"
+                "This audio device cannot be used: {dev}"
             )));
         }
     }
@@ -374,7 +372,7 @@ pub enum AudioTest {
 fn refuse_during_call(state: &AppState) -> AppResult<()> {
     if crate::audio::router::Target::call_active(state.manager.as_ref()) {
         return Err(AppError::validation(
-            "Un appel est en cours : le test pourrait le perturber. Refaites-le après l'appel.",
+            "A call is in progress: the test could disturb it. Run it again after the call.",
         ));
     }
     Ok(())
@@ -398,7 +396,7 @@ pub async fn audio_test(app: AppHandle, state: S<'_>, kind: AudioTest) -> AppRes
         .into_iter()
         .find(|r| r.role == role)
         .and_then(|r| r.resolution.used)
-        .ok_or_else(|| AppError::validation("Aucun périphérique de sortie n'est disponible"))?;
+        .ok_or_else(|| AppError::validation("No output device is available"))?;
     let samples = match kind {
         AudioTest::Speaker => diagnostics::tone(48_000, 0.8),
         AudioTest::Ringtone => {
@@ -408,7 +406,7 @@ pub async fn audio_test(app: AppHandle, state: S<'_>, kind: AudioTest) -> AppRes
                 .map_err(|e| AppError::Other(e.to_string()))?
                 .join("engine/sounds/ring.wav");
             let bytes = std::fs::read(&path)
-                .map_err(|e| AppError::Other(format!("Sonnerie introuvable : {e}")))?;
+                .map_err(|e| AppError::Other(format!("Ringtone not found: {e}")))?;
             diagnostics::decode_wav(&bytes).map_err(AppError::Other)?
         }
     };
@@ -436,7 +434,7 @@ pub async fn audio_meter(app: AppHandle, state: S<'_>, on: bool) -> AppResult<()
     refuse_during_call(&state)?;
     if audio::permissions::status() != MicPermission::Authorized {
         return Err(AppError::validation(
-            "L'accès au microphone n'est pas autorisé : autorisez ZePhone dans Réglages Système › Confidentialité › Microphone.",
+            "Microphone access is not allowed: allow ZePhone in System Settings › Privacy › Microphone.",
         ));
     }
     let device = state
@@ -446,7 +444,7 @@ pub async fn audio_meter(app: AppHandle, state: S<'_>, on: bool) -> AppResult<()
         .into_iter()
         .find(|r| r.role == Role::Microphone)
         .and_then(|r| r.resolution.used)
-        .ok_or_else(|| AppError::validation("Aucun microphone n'est disponible"))?;
+        .ok_or_else(|| AppError::validation("No microphone is available"))?;
     // Replace any running meter first (its thread ends when dropped).
     *state.meter.lock().unwrap() = None;
     let events = app.clone();

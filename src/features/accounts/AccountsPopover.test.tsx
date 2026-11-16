@@ -12,9 +12,9 @@ import { makeAccount, makeStatus } from "@/test/fixtures";
 import { AccountsDockItem } from "./AccountsPopover";
 
 const accounts = () => [
-  makeAccount({ id: "a1", label: "Bureau", username: "1001", domain: "example.com", isDefault: true }),
+  makeAccount({ id: "a1", label: "Office", username: "1001", domain: "example.com", isDefault: true }),
   makeAccount({ id: "a2", label: "Mobile", username: "0987", domain: "voip.fr", isDefault: false }),
-  makeAccount({ id: "a3", label: "Ancien", username: "5555", domain: "old.net", isDefault: false, enabled: false }),
+  makeAccount({ id: "a3", label: "Old", username: "5555", domain: "old.net", isDefault: false, enabled: false }),
 ];
 
 const open = async () => {
@@ -39,7 +39,7 @@ describe("AccountsDockItem", () => {
     render(<AccountsDockItem />, { wrapper: DockProviderForTests });
     const face = () =>
       within(screen.getByTestId("dock-accounts")).getByTestId("account-avatar").querySelector("svg")?.innerHTML;
-    // The connected account is Bureau, not the failing one: its face is in the dock icon.
+    // The connected account is Office, not the failing one: its face is in the dock icon.
     const bureau = face();
     expect(bureau).toBeTruthy();
     // When the other account becomes the connected one, its face takes the place.
@@ -65,10 +65,10 @@ describe("AccountsDockItem", () => {
     render(<AccountsDockItem />, { wrapper: DockProviderForTests });
     const popover = await open();
     const rows = within(popover).getAllByTestId("account-row");
-    expect(rows.map((r) => r.querySelector("p")?.textContent)).toEqual(["Bureau", "Mobile", "Ancien"]);
-    expect(within(rows[0]!).getByTestId("account-availability")).toHaveTextContent("Disponible");
-    expect(within(rows[1]!).getByTestId("account-availability")).toHaveTextContent("Indisponible · SIP 403");
-    expect(within(rows[2]!).getByTestId("account-availability")).toHaveTextContent("Désactivé");
+    expect(rows.map((r) => r.querySelector("p")?.textContent)).toEqual(["Office", "Mobile", "Old"]);
+    expect(within(rows[0]!).getByTestId("account-availability")).toHaveTextContent("Available");
+    expect(within(rows[1]!).getByTestId("account-availability")).toHaveTextContent("Unavailable · SIP 403");
+    expect(within(rows[2]!).getByTestId("account-availability")).toHaveTextContent("Disabled");
     expect(rows[2]).toHaveAttribute("data-enabled", "false");
     expect(rows[2]!.firstElementChild).toHaveClass("opacity-45");
     expect(rows[0]!.firstElementChild).not.toHaveClass("opacity-45");
@@ -78,9 +78,9 @@ describe("AccountsDockItem", () => {
   it("turns an account on or off from the list", async () => {
     render(<AccountsDockItem />, { wrapper: DockProviderForTests });
     const popover = await open();
-    fireEvent.click(within(popover).getByRole("switch", { name: "Désactiver Mobile" }));
+    fireEvent.click(within(popover).getByRole("switch", { name: "Disable Mobile" }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("set_account_enabled", { id: "a2", enabled: false }));
-    fireEvent.click(within(popover).getByRole("switch", { name: "Activer Ancien" }));
+    fireEvent.click(within(popover).getByRole("switch", { name: "Enable Old" }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("set_account_enabled", { id: "a3", enabled: true }));
   });
 
@@ -88,10 +88,10 @@ describe("AccountsDockItem", () => {
     render(<AccountsDockItem />, { wrapper: DockProviderForTests });
     const popover = await open();
     const items = within(popover).getAllByRole("listitem");
-    const add = within(popover).getByRole("button", { name: /Ajouter un compte SIP/ });
+    const add = within(popover).getByRole("button", { name: /Add a SIP account/ });
     expect(items).toHaveLength(3);
     expect(add.compareDocumentPosition(items[2]!) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy(); // after the list
     fireEvent.click(add);
-    expect(await screen.findByRole("dialog", { name: /Ajouter un compte SIP/ })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: /Add a SIP account/ })).toBeInTheDocument();
   });
 });

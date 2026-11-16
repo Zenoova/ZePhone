@@ -45,7 +45,7 @@ export function installMockBackend(): void {
   let accounts: AccountView[] = [
     {
       id: "acc1",
-      label: "Bureau",
+      label: "Office",
       displayName: "Ada Lovelace",
       server: "sip.example.com",
       port: 5061,
@@ -85,7 +85,7 @@ export function installMockBackend(): void {
       state: "error",
       sipCode: 403,
       reason: "Forbidden",
-      message: "Accès refusé (403) : le serveur rejette ce compte ou ce mot de passe",
+      message: "Access denied (403): the server rejects this account or this password",
       updatedAt: now(),
     },
   };
@@ -122,7 +122,7 @@ export function installMockBackend(): void {
     h("h1", "incoming", "missed", "2000", null, 12, 0),
     h("h2", "outgoing", "answered", "1002", "Bob Martin", 95, 342),
     h("h3", "incoming", "answered", "+33612345678", "Alice Durand", 300, 62),
-    h("h4", "outgoing", "failed", "1099", null, 1500, 0, 404, "Compte ou domaine introuvable sur le serveur (404)"),
+    h("h4", "outgoing", "failed", "1099", null, 1500, 0, 404, "Account or domain not found on the server (404)"),
     h("h5", "incoming", "rejected", "3000", null, 3000, 0),
   ];
   let settings: Settings = {
@@ -167,7 +167,7 @@ export function installMockBackend(): void {
     return {
       id,
       accountId: "acc1",
-      accountLabel: "Bureau",
+      accountLabel: "Office",
       remoteUri: `sip:${number}@example.com`,
       remoteNumber: number,
       contactName: name,
@@ -309,7 +309,7 @@ export function installMockBackend(): void {
     sizeBytes: secs * 32_000,
     remoteNumber: number,
     remoteName: name,
-    accountLabel: "Bureau",
+    accountLabel: "Office",
     direction: dir,
     peaks: wave(secs),
   });
@@ -344,7 +344,7 @@ export function installMockBackend(): void {
     get_snapshot: () => ({ engine: engine(), accounts, statuses: Object.values(statuses), calls: [...calls.values()] }),
     get_app_info: () => ({
       name: "zephone",
-      version: "0.1.0 (aperçu)",
+      version: "0.1.0 (preview)",
       tauriVersion: "2.x",
       os: "macos",
       arch: "aarch64",
@@ -425,7 +425,7 @@ export function installMockBackend(): void {
       const base: Call = {
         id,
         accountId: "acc1",
-        accountLabel: "Bureau",
+        accountLabel: "Office",
         direction: "outgoing",
         state: "initializing",
         remoteUri: `sip:${target}@example.com`,
@@ -446,7 +446,7 @@ export function installMockBackend(): void {
       setTimeout(() => patch(id, { state: "dialing" }), 250);
       setTimeout(() => patch(id, { state: "ringing" }), 900);
       setTimeout(() => {
-        if (target === "486") finish(id, "failed", { sipCode: 486, reason: "Occupé (486)" });
+        if (target === "486") finish(id, "failed", { sipCode: 486, reason: "Busy (486)" });
         else patch(id, { state: "connected", connectedAt: now() });
       }, 2200);
       return base;
@@ -521,7 +521,7 @@ export function installMockBackend(): void {
     open_microphone_settings: () => undefined,
     restart_engine: () => undefined,
     get_engine_log: () => [
-      "baresip v4.13.0 (aperçu : journal factice)",
+      "baresip v4.13.0 (preview: fake log)",
       "aucodec: PCMU/8000/1",
       "aucodec: PCMA/8000/1",
       "baresip is ready.",
@@ -556,7 +556,7 @@ export function installMockBackend(): void {
         return undefined;
       }
       const fn = commands[cmd];
-      if (!fn) throw { kind: "other", message: `Commande inconnue dans l'aperçu : ${cmd}` };
+      if (!fn) throw { kind: "other", message: `Unknown command in the preview: ${cmd}` };
       return fn(args);
     },
   };
@@ -571,7 +571,7 @@ export function installMockBackend(): void {
         setCall({
           id,
           accountId: "acc1",
-          accountLabel: "Bureau",
+          accountLabel: "Office",
           direction: "incoming",
           state: "incoming",
           remoteUri: `sip:${number}@example.com`,
@@ -596,7 +596,7 @@ export function installMockBackend(): void {
           state,
           sipCode: code,
           reason: "Unauthorized",
-          message: `Authentification refusée (${code})`,
+          message: `Authentication refused (${code})`,
           updatedAt: now(),
         };
         statuses["acc1"] = s;
@@ -608,7 +608,7 @@ export function installMockBackend(): void {
           state === "running"
             ? engine()
             : state === "failed"
-              ? { ...engine(), state, reason: "binaire manquant" }
+              ? { ...engine(), state, reason: "binary missing" }
               : { ...engine(), state, attempt: 1, reason: "crash" },
         );
       },
@@ -616,5 +616,5 @@ export function installMockBackend(): void {
     },
   });
   document.documentElement.dataset.preview = "1";
-  console.warn("[ZePhone] APERÇU HORS-LIGNE : backend simulé en mémoire, aucune communication SIP réelle.");
+  console.warn("[ZePhone] OFFLINE PREVIEW: in-memory simulated backend, no real SIP communication.");
 }

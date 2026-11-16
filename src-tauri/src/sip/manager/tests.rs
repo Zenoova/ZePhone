@@ -606,7 +606,7 @@ async fn disabled_accounts_are_not_connected() {
     assert!(r.engine.added.lock().unwrap().is_empty());
     let s = r.sink.statuses().last().cloned().unwrap();
     assert_eq!(s.state, RegistrationState::Disconnected);
-    assert_eq!(s.message.as_deref(), Some("Compte désactivé"));
+    assert_eq!(s.message.as_deref(), Some("Account disabled"));
     assert!(r.mgr.connect_account(&view.account.id).await.is_err());
     r.mgr
         .set_account_enabled(&view.account.id, true)
@@ -990,7 +990,7 @@ async fn engine_crash_ends_calls_and_restart_reconnects_accounts() {
         .find(|s| s.account_id == acc_id)
         .unwrap();
     assert_eq!(s.state, RegistrationState::Connecting);
-    assert!(s.message.unwrap().contains("redémarrage"));
+    assert!(s.message.unwrap().contains("restart"));
     assert_eq!(
         r.db.list_history(&Default::default()).unwrap()[0].result,
         CallResult::Answered
@@ -1006,7 +1006,7 @@ async fn engine_crash_ends_calls_and_restart_reconnects_accounts() {
 
     // A permanent failure shows up on the account instead of hiding behind a spinner.
     r.engine.set_state(EngineState::Failed {
-        reason: "binaire manquant".into(),
+        reason: "binary missing".into(),
     });
     let sink = r.sink.clone();
     until("failed", move || {
@@ -1014,7 +1014,7 @@ async fn engine_crash_ends_calls_and_restart_reconnects_accounts() {
             s.state == RegistrationState::Error
                 && s.message
                     .as_deref()
-                    .is_some_and(|m| m.contains("binaire manquant"))
+                    .is_some_and(|m| m.contains("binary missing"))
         })
     })
     .await;
@@ -1625,7 +1625,7 @@ async fn the_users_own_contact_wins_and_the_directory_is_not_even_asked() {
     r.db.save_contact(&crate::sip::types::ContactInput {
         id: None,
         first_name: "Lélo".into(),
-        last_name: "Maman".into(),
+        last_name: "Mom".into(),
         company: None,
         number: "2000".into(),
     })
@@ -1637,7 +1637,7 @@ async fn the_users_own_contact_wins_and_the_directory_is_not_even_asked() {
     });
     let m = r.mgr.clone();
     until("the call is shown", move || !m.calls().is_empty()).await;
-    assert_eq!(r.mgr.calls()[0].remote_name.as_deref(), Some("Lélo Maman"));
+    assert_eq!(r.mgr.calls()[0].remote_name.as_deref(), Some("Lélo Mom"));
     assert!(dir.asked.lock().unwrap().is_empty());
 }
 
