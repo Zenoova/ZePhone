@@ -8,6 +8,7 @@ ZePhone réunit en un seul endroit — l'onglet **Annuaire** — trois sources d
 | **Annuaire LDAP / Active Directory**  | Les personnes d'un serveur LDAP de l'entreprise               | non (lecture seule) |
 | **Microsoft 365 · organisation**      | Les personnes de l'annuaire Microsoft Entra ID de l'entreprise | non              |
 | **Outlook · contacts personnels**     | Les contacts Outlook **de l'utilisateur** (pas ceux de l'entreprise) | non         |
+| **Contacts du Mac**                   | L'application Contacts de l'ordinateur (macOS)                | non (lecture seule) |
 
 Les deux sources Microsoft sont **deux choses différentes** (un annuaire partagé par toute l'entreprise, et un carnet
 privé) : elles se connectent séparément et ne se confondent jamais.
@@ -124,6 +125,29 @@ Microsoft Entra → Inscriptions d'applications → Nouvelle inscription).
 L'annuaire de l'organisation se synchronise **par différences** (`/users/delta`) au niveau complet ; si le lien de
 synchronisation expire, ZePhone relit tout. Les contacts personnels sont relus en entier (identifiants Outlook stables).
 
+## Contacts du Mac
+
+Réglages → Annuaire → Ajouter une source → **Contacts du Mac (lecture seule)**. Les contacts de l'application Contacts s'ajoutent à
+l'annuaire : recherche, fiche, appel, transfert, groupes, favoris, et nom affiché sur les appels, comme pour les autres sources.
+
+- **Une autorisation, la vôtre.** macOS pose sa propre question la première fois (« ZePhone souhaite accéder à vos
+  contacts »). Si vous refusez, **rien n'est créé** et ZePhone vous dit où changer d'avis (*Réglages Système → Confidentialité et
+  sécurité → Contacts*, avec un bouton qui y mène). Si vous retirez l'autorisation plus tard, la source passe en erreur avec un
+  bouton **Autoriser l'accès** ; elle n'est jamais retentée toute seule.
+- **Lecture seule, locale.** ZePhone ne modifie, n'ajoute et ne supprime **aucun** contact. Rien ne passe par le réseau, aucun mot de
+  passe n'est en jeu. Ne sont lus que : nom, surnom, société, service, fonction, e-mail, numéros et adresses SIP. **Pas** les
+  photos, notes, anniversaires ni adresses postales.
+- **Une fiche par personne** : si la même personne est dans plusieurs comptes (iCloud, Google…), macOS la présente déjà
+  unifiée. Les numéros de fax et de récepteur d'appel sont écartés ; les libellés (`mobile`, `iPhone`, `travail`, `domicile`,
+  « Portable », « Bureau », « Poste »…) donnent le type du numéro, et un libellé libre est gardé tel que vous l'avez écrit.
+- **Priorité** : vos contacts (ZePhone puis ceux du Mac) passent avant l'annuaire de l'entreprise pour nommer une fiche ou un
+  appel. Deux fiches ne sont réunies que si elles ont la même adresse e-mail.
+- **Relecture** : tout le carnet est relu toutes les 15 minutes (c'est local, donc rapide), ou à la demande (« Synchroniser »). La
+  mémoire de ZePhone est effacée à la déconnexion de la source, comme pour les autres.
+- **Technique** : framework Contacts d'Apple (`CNContactStore`) ; l'application déclare l'usage dans `Info.plist`
+  (`NSContactsUsageDescription`) et le droit d'accès au carnet d'adresses dans ses entitlements. Le même code Rust servira
+  d'autres plateformes : seule la lecture native est propre à chacune (iOS, Android : à écrire).
+
 ## Synchronisation, mémoire locale, pannes
 
 - **Première synchronisation** à la connexion ; **rafraîchissement manuel** (« Synchroniser ») ; **fréquence automatique**
@@ -156,12 +180,13 @@ synchronisation expire, ZePhone relit tout. Les contacts personnels sont relus e
 | Supprimer un groupe garde les contacts                          | tests Rust (`store`, `service`) |
 | Erreur d'authentification → action claire                       | tests Rust + d'interface (« Reconnecter ») |
 | Appel et transfert par les vraies fonctions SIP                 | tests d'interface (`dial`, `transfer_call`) + normalisation SIP réelle |
+| Contacts du Mac : permission, refus, retrait, libellés, lecture seule | tests Rust (`system_contacts`, `service`) avec un carnet factice ; **état d'autorisation et garde « pas de question hors application »** testés sur macOS sans lire aucun contact ; interface testée |
 | Appels nommés par l'annuaire, seulement si c'est sûr            | tests Rust (`index`, `service`, gestionnaire) et **vrais appels entre deux moteurs Baresip** (`manager_e2e`) : nom de l'annuaire, deux personnes possibles = aucun nom, contact local prioritaire, historique sans le nom |
 
 Lancer les tests : `cd src-tauri && cargo test --lib directory`, `cargo test --test directory_ldap -- --test-threads=1`
 (lance un vrai `slapd` — `brew install openldap openssl@3` — sur loopback, en TLS avec un certificat jetable),
 `cargo test --test directory_microsoft`, et `npm test`.
 
-**Ce qui n'est pas vérifié sans connexion réelle** : le connecteur Microsoft est testé contre un **service de substitution**
+**Ce qui n'est pas vérifié sans connexion réelle** : la lecture de **vrais** contacts du Mac (elle exige votre autorisation dans l'application installée ; un test à lancer à la main, `cargo test --lib reads_the_real_address_book -- --ignored --nocapture`, n'affiche que des nombres) ; le connecteur Microsoft est testé contre un **service de substitution**
 (vrai code HTTP, vrai PKCE vérifié côté serveur, pagination, delta, 429, expiration du jeton…), pas contre un vrai locataire
 Microsoft 365 ; la connexion à un vrai Active Directory n'a pas non plus été essayée (OpenLDAP l'a été).
