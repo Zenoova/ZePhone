@@ -241,6 +241,11 @@ pub async fn update_settings(
     validate_settings(&settings)?;
     let applied = state.manager.update_settings(settings.clone()).await?;
     let _ = app.emit(events::SETTINGS_CHANGED, &applied.settings);
+    // New audio preferences are applied at once (to the engine, and to a call in progress when it makes sense).
+    state
+        .audio
+        .set_routing(applied.settings.audio.routing.clone())
+        .await;
 
     // Desktop-shell settings take effect immediately.
     tray::set_visible(&app, settings.general.show_tray_icon);
@@ -319,6 +324,41 @@ pub async fn list_audio_devices() -> AppResult<AudioDevices> {
     tauri::async_runtime::spawn_blocking(audio::list_devices)
         .await
         .map_err(|e| AppError::Other(e.to_string()))
+}
+
+// -------------------------------------------------------------------- audio
+
+/// The devices, what each role uses (as the engine confirmed it), and what stands in the way.
+#[tauri::command]
+pub fn audio_state(state: S) -> crate::audio::router::AudioState {
+    state.audio.state()
+}
+
+/// Picks a device for a role: for the call in progress only, or (`remember`) for good, as an explicit choice.
+#[tauri::command]
+pub async fn audio_choose(
+    app: AppHandle,
+    state: S<'_>,
+    role: crate::audio::routing::Role,
+    uid: String,
+    remember: bool,
+) -> AppResult<()> {
+    state
+        .audio
+        .choose(role, &uid)
+        .await
+        .map_err(AppError::Other)?;
+    if remember && let Some(routing) = state.audio.remember(role, &uid).await {
+        let mut settings = state.manager.settings()?;
+        settings.audio.routing = routing;
+        let applied = state.manager.update_settings(settings).await?;
+        let _ = app.emit(events::SETTINGS_CHANGED, &applied.settings);
+        state
+            .audio
+            .set_routing(applied.settings.audio.routing)
+            .await;
+    }
+    Ok(())
 }
 
 // -------------------------------------------------------------- shortcuts

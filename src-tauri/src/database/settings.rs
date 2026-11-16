@@ -11,9 +11,11 @@ impl Database {
             let mut rows = stmt.query_map([KEY], |r| r.get::<_, String>(0))?;
             rows.next().transpose()
         })?;
-        Ok(raw
+        let mut settings: Settings = raw
             .and_then(|s| serde_json::from_str(&s).ok())
-            .unwrap_or_default())
+            .unwrap_or_default();
+        settings.audio.migrate();
+        Ok(settings)
     }
 
     /// One text value of the settings table, for a part of the settings that has its own key.
@@ -61,10 +63,47 @@ mod tests {
         let mut s = db.get_settings().unwrap();
         assert_eq!(s, Settings::default());
         s.general.theme = Theme::Dark;
-        s.audio.input_device = Some("USB Mic".into());
+        s.audio.routing.microphone.selection = crate::audio::routing::Selection::Explicit {
+            device: crate::audio::routing::DeviceRef {
+                uid: Some("usb-1".into()),
+                name: "USB Mic".into(),
+            },
+        };
         s.network.local_sip_port = Some(5070);
         db.save_settings(&s).unwrap();
         assert_eq!(db.get_settings().unwrap(), s);
+    }
+
+    #[test]
+    fn devices_chosen_by_name_before_identifiers_existed_are_kept_as_explicit_choices() {
+        use crate::audio::routing::Selection;
+        let db = Database::open_in_memory().unwrap();
+        db.with(|c| {
+            c.execute(
+                "INSERT INTO settings (key, value) VALUES ('app', ?1)",
+                [r#"{"audio":{"inputDevice":"USB Mic","outputDevice":"AirPods","inputGain":120}}"#],
+            )
+            .map(|_| ())
+        })
+        .unwrap();
+        let s = db.get_settings().unwrap();
+        assert_eq!(s.audio.input_gain, 120, "the rest is untouched");
+        assert!(s.audio.input_device.is_none() && s.audio.output_device.is_none());
+        match (
+            &s.audio.routing.microphone.selection,
+            &s.audio.routing.speaker.selection,
+        ) {
+            (Selection::Explicit { device: m }, Selection::Explicit { device: o }) => {
+                assert_eq!((m.name.as_str(), m.uid.as_deref()), ("USB Mic", None));
+                assert_eq!(o.name, "AirPods");
+            }
+            other => panic!("{other:?}"),
+        }
+        // The ringer was never chosen: it still follows the system.
+        assert!(matches!(
+            s.audio.routing.ringer.selection,
+            Selection::Follow { .. }
+        ));
     }
 
     #[test]

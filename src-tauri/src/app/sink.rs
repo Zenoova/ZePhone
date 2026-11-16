@@ -140,6 +140,10 @@ impl UiSink for TauriSink {
         self.emit(events::AUDIO_ERROR, message.to_owned());
     }
 
+    fn audio_state(&self, state: &crate::audio::router::AudioState) {
+        self.emit(events::AUDIO_STATE, state.clone());
+    }
+
     fn settings_changed(&self, settings: &Settings) {
         self.emit(events::SETTINGS_CHANGED, settings.clone());
         tray::set_do_not_disturb(&self.app, settings.general.do_not_disturb);

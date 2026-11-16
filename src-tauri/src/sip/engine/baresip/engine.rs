@@ -362,6 +362,14 @@ impl SipEngine for BaresipEngine {
         parse_call_stats(&resp.data)
     }
 
+    async fn set_alert_device(&self, name: Option<&str>) -> EngineResult<()> {
+        self.inner.settings.lock().unwrap().alert_device = name.map(str::to_owned);
+        if self.client().await.is_err() {
+            return Ok(()); // read from the configuration at the next start
+        }
+        self.apply_alert_device().await
+    }
+
     async fn set_audio_devices(
         &self,
         input: Option<&str>,
@@ -396,6 +404,24 @@ impl SipEngine for BaresipEngine {
                     .to_owned();
                 return Err(EngineError::CommandFailed(msg));
             }
+        }
+        // Baresip's `auplay` also moves the ringtone to the call player: give it back to its own device.
+        self.apply_alert_device().await
+    }
+}
+
+impl BaresipEngine {
+    /// Points the ringtone at the device chosen for it, when one was chosen (`zealert`, ZePhone's own module).
+    async fn apply_alert_device(&self) -> EngineResult<()> {
+        let alert = self.inner.settings.lock().unwrap().alert_device.clone();
+        let Some(alert) = alert else { return Ok(()) };
+        let driver = config::audio_driver();
+        let dev = config::sanitize_device(Some(&alert));
+        let resp = self.run("zealert", &format!("{driver},{dev}")).await?;
+        if resp.data.contains("Format should be") || resp.data.contains("no config") {
+            return Err(EngineError::CommandFailed(
+                "le périphérique de la sonnerie n'a pas été accepté".into(),
+            ));
         }
         Ok(())
     }

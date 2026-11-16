@@ -60,6 +60,8 @@ pub trait UiSink: Send + Sync + 'static {
     fn call_stats(&self, _sample: &CallStatsSample) {}
     /// The settings were changed by the core itself (not through the settings page): refresh what shows them.
     fn settings_changed(&self, _settings: &Settings) {}
+    /// The audio devices, what each role uses, or a notice about them changed.
+    fn audio_state(&self, _state: &crate::audio::router::AudioState) {}
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -135,15 +137,25 @@ pub struct SipManager {
     stats_interval: std::sync::Mutex<Duration>,
     /// Where a caller the address book does not know is looked up next (the company directory).
     caller_lookup: std::sync::Mutex<Option<Arc<dyn CallerLookup>>>,
+    /// What the audio roles resolve to (the audio router), to start the engine on the right devices.
+    audio_names: std::sync::Mutex<Option<AudioNames>>,
+    /// The device names the engine was last told to use (microphone, conversation output, ringer).
+    audio_applied: std::sync::Mutex<[Option<String>; 3]>,
 }
+
+pub type AudioNames = Arc<dyn Fn() -> [Option<String>; 3] + Send + Sync>;
 
 /// One sample of statistics per second.
 const STATS_INTERVAL: Duration = Duration::from_secs(1);
 
-fn engine_options(s: &Settings) -> EngineOptions {
+/// `devices`: what the microphone, the conversation output and the ringer resolve to now, when the audio router
+/// knows (otherwise the engine is told to follow the system).
+fn engine_options(s: &Settings, devices: Option<[Option<String>; 3]>) -> EngineOptions {
+    let [input, output, alert] = devices.unwrap_or_default();
     EngineOptions {
-        input_device: s.audio.input_device.clone(),
-        output_device: s.audio.output_device.clone(),
+        input_device: input,
+        output_device: output,
+        alert_device: alert,
         ca_file: s.network.custom_ca_file.clone().map(Into::into),
         sip_trace: s.network.sip_trace,
         local_sip_port: s.network.local_sip_port,
@@ -185,6 +197,8 @@ impl SipManager {
             recordings_dir: Default::default(),
             stats_interval: std::sync::Mutex::new(STATS_INTERVAL),
             caller_lookup: Default::default(),
+            audio_names: Default::default(),
+            audio_applied: Default::default(),
         })
     }
 
@@ -209,8 +223,17 @@ impl SipManager {
         *self.options_hook.lock().unwrap() = Some(hook);
     }
 
+    /// Tells the manager where to read the audio device names the engine must start with.
+    pub fn set_audio_names(&self, names: AudioNames) {
+        *self.audio_names.lock().unwrap() = Some(names);
+    }
+
     fn options(&self, settings: &Settings) -> EngineOptions {
-        let base = engine_options(settings);
+        let names = self.audio_names.lock().unwrap().clone().map(|f| f());
+        if let Some(n) = &names {
+            *self.audio_applied.lock().unwrap() = n.clone();
+        }
+        let base = engine_options(settings, names);
         match self.options_hook.lock().unwrap().as_ref() {
             Some(hook) => hook(base),
             None => base,
@@ -989,19 +1012,6 @@ impl SipManager {
         self.db.save_settings(&new)?;
         let mut restart_required = false;
         self.engine.set_options(self.options(&new));
-        if (&old.audio.input_device, &old.audio.output_device)
-            != (&new.audio.input_device, &new.audio.output_device)
-            && let Err(e) = self
-                .engine
-                .set_audio_devices(
-                    new.audio.input_device.as_deref(),
-                    new.audio.output_device.as_deref(),
-                )
-                .await
-        {
-            // Unknown device: keep the choice stored (it may be unplugged now) but tell the UI.
-            self.sink.audio_error(&e.to_string());
-        }
         if (old.audio.input_gain, old.audio.output_gain)
             != (new.audio.input_gain, new.audio.output_gain)
             && let Err(e) = self
@@ -1243,6 +1253,88 @@ fn build_spec(acc: &Account, password: SecretString) -> AccountSpec {
         next_hop_port: port,
         register_interval: acc.register_interval,
         media_encryption: acc.media_encryption,
+    }
+}
+
+// ------------------------------------------------------------------ audio routing
+
+/// The audio router drives the engine through the manager: the same functions the settings call.
+#[async_trait::async_trait]
+impl crate::audio::router::Target for SipManager {
+    fn call_active(&self) -> bool {
+        self.state
+            .lock()
+            .unwrap()
+            .tracker
+            .active()
+            .iter()
+            .any(|c| !c.state.is_terminal())
+    }
+
+    async fn apply(
+        &self,
+        role: crate::audio::routing::Role,
+        device: &crate::audio::devices::DeviceInfo,
+        _mid_call: bool,
+    ) -> Result<(), String> {
+        use crate::audio::routing::Role;
+        let mut names = self.audio_applied.lock().unwrap().clone();
+        match role {
+            Role::Microphone | Role::Speaker => {
+                names[if role == Role::Microphone { 0 } else { 1 }] = Some(device.name.clone());
+                // Both at once: the engine's command takes the pair. The call keeps its SIP session.
+                self.engine
+                    .set_audio_devices(names[0].as_deref(), names[1].as_deref())
+                    .await
+                    .map_err(|e| e.to_string())?;
+            }
+            Role::Ringer => {
+                names[2] = Some(device.name.clone());
+                self.engine
+                    .set_alert_device(names[2].as_deref())
+                    .await
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+        // Only after the engine accepted it.
+        *self.audio_applied.lock().unwrap() = names;
+        Ok(())
+    }
+
+    /// A device change restarts the call's audio: what must survive it is sent again. Muting is idempotent, so
+    /// asking again is safe; a call on hold is left alone (hold is a SIP state a device change does not touch).
+    async fn reassert_call_state(&self) {
+        let muted: Vec<String> = self
+            .calls()
+            .into_iter()
+            .filter(|c| c.muted && !c.state.is_terminal())
+            .map(|c| c.id)
+            .collect();
+        for id in muted {
+            if let Err(e) = self.engine.set_mute(&id, true).await {
+                log::warn!("cannot keep the call muted after a device change: {e}");
+            }
+        }
+    }
+
+    fn publish(&self, state: &crate::audio::router::AudioState) {
+        self.sink.audio_state(state);
+    }
+
+    /// A choice saved by name now has an identifier: keep it, so a second identical device cannot be mistaken
+    /// for it later.
+    fn learned_uid(&self, role: crate::audio::routing::Role, uid: String) {
+        use crate::audio::routing::Selection;
+        let Ok(mut settings) = self.db.get_settings() else {
+            return;
+        };
+        if let Selection::Explicit { device } =
+            &mut settings.audio.routing.choice_mut(role).selection
+            && device.uid.is_none()
+        {
+            device.uid = Some(uid);
+            let _ = self.db.save_settings(&settings);
+        }
     }
 }
 

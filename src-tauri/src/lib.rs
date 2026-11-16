@@ -91,6 +91,23 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(TauriSink::new(handle.clone())),
     );
     manager.set_recordings_dir(data_dir.join("recordings"));
+    // The audio devices: what each role (microphone, conversation, ringer) resolves to is decided before the
+    // engine starts (it is told through its options), and followed afterwards.
+    let audio_router = audio::router::AudioRouter::new(
+        Arc::new(audio::devices::SystemAudio),
+        manager.clone(),
+        settings.audio.routing.clone(),
+    );
+    {
+        let router = Arc::downgrade(&audio_router);
+        manager.set_audio_names(Arc::new(move || {
+            router
+                .upgrade()
+                .map(|r| r.engine_names())
+                .unwrap_or_default()
+        }));
+    }
+    audio_router.prime();
     let directory = DirectoryService::new(
         db.clone(),
         Arc::new(KeyringStore),
@@ -110,10 +127,12 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         db,
         controller: controller.clone(),
         shortcuts,
+        audio: audio_router.clone(),
         control_server: std::sync::Mutex::new(None),
         shutting_down: AtomicBool::new(false),
     });
     start_control_socket(handle.clone(), controller);
+    audio_router.start();
 
     tray::setup(&handle, settings.general.show_tray_icon)?;
     app::window::apply_appearance(&handle, &settings.general);
@@ -368,6 +387,8 @@ pub fn run() {
             commands::directory::directory_delete_group,
             commands::directory::directory_group_add,
             commands::directory::directory_group_remove,
+            commands::audio_state,
+            commands::audio_choose,
             commands::shortcuts_get,
             commands::shortcuts_set,
             commands::shortcuts_set_enabled,

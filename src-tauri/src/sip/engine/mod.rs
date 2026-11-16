@@ -130,6 +130,8 @@ pub struct EngineOptions {
     pub input_device: Option<String>,
     /// Speaker device name (`None` = system default).
     pub output_device: Option<String>,
+    /// Device the incoming-call ringtone plays on (`None` = the speaker device). Read when the engine starts.
+    pub alert_device: Option<String>,
     /// Extra CA bundle used to verify SIP/TLS servers.
     pub ca_file: Option<std::path::PathBuf>,
     pub sip_trace: bool,
@@ -208,6 +210,12 @@ pub trait SipEngine: Send + Sync + 'static {
         input: Option<&str>,
         output: Option<&str>,
     ) -> EngineResult<()>;
+
+    /// Chooses the device the ringtone plays on. The engine reads it at start: the caller restarts the engine
+    /// (when no call is active) for it to take effect.
+    async fn set_alert_device(&self, _name: Option<&str>) -> EngineResult<()> {
+        Ok(())
+    }
 
     /// Silences the incoming-call ringtone (call stays ringing).
     async fn silence_ringtone(&self) -> EngineResult<()>;

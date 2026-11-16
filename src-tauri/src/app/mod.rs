@@ -40,6 +40,8 @@ pub mod events {
     pub const DIRECTORY_CHANGED: &str = "directory:changed";
     /// The window was brought forward on a page: `"dialer"` (number field) or `"search"` (contacts search).
     pub const SHELL_FOCUS: &str = "shell:focus";
+    /// The audio devices, what each role uses, or a notice about them changed.
+    pub const AUDIO_STATE: &str = "audio:state";
 }
 
 pub struct AppState {
@@ -49,6 +51,8 @@ pub struct AppState {
     /// Runs the requests of the shortcuts, the tray menu and the command line.
     pub controller: Arc<Controller>,
     pub shortcuts: Arc<ShortcutService>,
+    /// Keeps the engine's audio devices in step with the system's.
+    pub audio: Arc<crate::audio::router::AudioRouter>,
     /// The local control socket (`zephone ctl`), when it could be opened.
     pub control_server: std::sync::Mutex<Option<socket::Server>>,
     pub shutting_down: AtomicBool,

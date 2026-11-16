@@ -465,6 +465,8 @@ pub struct AudioSettings {
     pub input_gain: u16,
     /// Incoming volume (what we hear), in percent: 0-200.
     pub output_gain: u16,
+    /// Which device each role uses (microphone, conversation output, ringer) and what happens when one goes away.
+    pub routing: crate::audio::routing::Routing,
 }
 
 impl Default for AudioSettings {
@@ -474,6 +476,28 @@ impl Default for AudioSettings {
             output_device: None,
             input_gain: 100,
             output_gain: 100,
+            routing: Default::default(),
+        }
+    }
+}
+
+impl AudioSettings {
+    /// Devices chosen before identifiers were kept were saved by name only. They become an explicit choice by name
+    /// (matched, then upgraded to the identifier, when exactly one device has that name), and the old fields are
+    /// emptied so the choice has a single home.
+    pub fn migrate(&mut self) {
+        use crate::audio::routing::{DeviceRef, Selection};
+        for (name, choice) in [
+            (self.input_device.take(), &mut self.routing.microphone),
+            (self.output_device.take(), &mut self.routing.speaker),
+        ] {
+            if let Some(name) = name
+                && matches!(choice.selection, Selection::Follow { .. })
+            {
+                choice.selection = Selection::Explicit {
+                    device: DeviceRef { uid: None, name },
+                };
+            }
         }
     }
 }

@@ -381,6 +381,18 @@ impl AudioRouter {
         })
     }
 
+    /// Records that the engine is about to start on what each role resolves to (it is told through its options),
+    /// so the first look at the system does not switch what was just set up.
+    pub fn prime(&self) {
+        let snap = self.system.snapshot();
+        let mut core = self.core.lock().unwrap();
+        for role in Role::ALL {
+            if let Some(d) = core.resolution(role, &snap).used.filter(|d| d.selectable) {
+                core.confirmed(role, d);
+            }
+        }
+    }
+
     pub fn snapshot(&self) -> Snapshot {
         self.system.snapshot()
     }

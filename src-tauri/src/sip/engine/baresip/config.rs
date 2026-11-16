@@ -123,7 +123,11 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
         None => {
             c.push_str(&format!("audio_player\t\t{driver},{player}\n"));
             c.push_str(&format!("audio_source\t\t{driver},{source}\n"));
-            c.push_str(&format!("audio_alert\t\t{driver},{player}\n"));
+            let alert = match input.settings.alert_device.as_deref() {
+                Some(a) => sanitize_device(Some(a)),
+                None => player.clone(),
+            };
+            c.push_str(&format!("audio_alert\t\t{driver},{alert}\n"));
         }
     }
     c.push_str(&format!("audio_path\t\t{}\n", path_value(input.sounds_dir)));

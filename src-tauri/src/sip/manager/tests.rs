@@ -1031,26 +1031,92 @@ async fn deleting_an_account_removes_secret_row_and_user_agent() {
 }
 
 #[tokio::test]
-async fn audio_settings_are_applied_live_and_network_changes_flag_a_restart() {
+async fn network_changes_flag_a_restart_and_audio_ones_do_not() {
     let r = rig().await;
     start(&r).await;
     let mut s = r.mgr.settings().unwrap();
-    s.audio.input_device = Some("USB Mic".into());
-    s.audio.output_device = Some("AirPods".into());
+    s.audio.input_gain = 150;
     let applied = r.mgr.update_settings(s.clone()).await.unwrap();
-    assert!(!applied.restart_required);
     assert!(
-        r.engine
-            .cmds()
-            .contains(&"audio Some(\"USB Mic\") Some(\"AirPods\")".to_string())
+        !applied.restart_required,
+        "devices and volumes are applied live"
     );
-    assert_eq!(
-        r.mgr.settings().unwrap().audio.input_device.as_deref(),
-        Some("USB Mic")
-    );
-
     s.network.local_sip_port = Some(5070);
     assert!(r.mgr.update_settings(s).await.unwrap().restart_required);
+}
+
+#[tokio::test]
+async fn the_engine_starts_on_the_devices_the_audio_roles_resolve_to() {
+    let r = rig().await;
+    r.mgr.set_audio_names(Arc::new(|| {
+        [
+            Some("USB Mic".to_string()),
+            Some("AirPods".to_string()),
+            Some("Desk Speaker".to_string()),
+        ]
+    }));
+    let opts = r.mgr.options(&r.mgr.settings().unwrap());
+    assert_eq!(opts.input_device.as_deref(), Some("USB Mic"));
+    assert_eq!(opts.output_device.as_deref(), Some("AirPods"));
+    assert_eq!(opts.alert_device.as_deref(), Some("Desk Speaker"));
+}
+
+#[tokio::test]
+async fn a_device_switch_in_a_call_keeps_the_call_muted() {
+    use crate::audio::{
+        devices::{DeviceInfo, Transport},
+        router::Target,
+        routing::Role,
+    };
+    let (r, _) = registered_rig().await;
+    let call = r.mgr.dial("1002", None).await.unwrap();
+    let rf = cref(&call.id, CallDirection::Outgoing, "sip:1002@example.com");
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Established,
+    });
+    let m = r.mgr.clone();
+    until("connected", move || {
+        m.calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
+    r.mgr.set_mute(&call.id, true).await.unwrap();
+
+    let dev = DeviceInfo {
+        uid: "u".into(),
+        name: "USB Headset".into(),
+        transport: Transport::Usb,
+        input_channels: 1,
+        output_channels: 2,
+        alive: true,
+        public_speaker: false,
+        in_use_elsewhere: false,
+        selectable: true,
+        duplicate_name: false,
+    };
+    r.mgr.apply(Role::Speaker, &dev, true).await.unwrap();
+    r.mgr.reassert_call_state().await;
+    let cmds = r.engine.cmds();
+    assert!(
+        cmds.iter()
+            .any(|c| c.starts_with("audio ") && c.contains("USB Headset")),
+        "{cmds:?}"
+    );
+    let mutes = cmds
+        .iter()
+        .filter(|c| **c == format!("mute {} true", call.id))
+        .count();
+    assert_eq!(
+        mutes, 2,
+        "muted by the user, then asked again after the switch: {cmds:?}"
+    );
+    assert!(r.mgr.calls()[0].muted);
+    // A call that is not muted is not muted by the switch.
+    let (r2, _) = registered_rig().await;
+    r2.mgr.reassert_call_state().await;
+    assert!(!r2.engine.cmds().iter().any(|c| c.starts_with("mute")));
 }
 
 #[tokio::test]

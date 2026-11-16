@@ -23,6 +23,7 @@
  *   zerec_start <base>      start recording; <base> is the whole parameter (spaces allowed)
  *   zerec_stop              finish both files (synchronous: the files are complete when it returns)
  *   zestats <call id>       one line of JSON with the statistics of the call (see stats_json)
+ *   zealert <driver,device> the device the incoming-call ringtone plays on (see cmd_alert)
  *
  * Copyright (C) 2026 ZePhone. BSD-3-Clause, like Baresip.
  */
@@ -782,7 +783,38 @@ static int cmd_stats(struct re_printf *pf, void *arg)
 }
 
 
+/*
+ * zealert <driver,device>: the device the ringtone plays on, independently of the call audio.
+ *
+ * Baresip's own "auplay" command sets the call player AND the alert device to the same device, so the
+ * ringtone cannot be sent elsewhere with it (the headset for the conversation, the speakers for the ring).
+ * The alert device is read from the configuration each time a tone starts, so setting it here takes effect
+ * at the next ring, without restarting the engine. The application sends this after every "auplay".
+ */
+static int cmd_alert(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl pl_driver, pl_device;
+	struct config *cfg = conf_config();
+	char driver[16], device[128] = "";
+
+	if (!cfg)
+		return re_hprintf(pf, "no config object\n");
+	if (!carg || re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+			      &pl_driver, &pl_device))
+		return re_hprintf(pf, "Format should be: driver,device\n");
+
+	pl_strcpy(&pl_driver, driver, sizeof(driver));
+	pl_strcpy(&pl_device, device, sizeof(device));
+	str_ncpy(cfg->audio.alert_mod, driver, sizeof(cfg->audio.alert_mod));
+	str_ncpy(cfg->audio.alert_dev, device, sizeof(cfg->audio.alert_dev));
+
+	return re_hprintf(pf, "ringtone device: %s,%s\n", driver, device);
+}
+
+
 static const struct cmd cmdv[] = {
+	{"zealert",     0, CMD_PRM, "Set the ringtone device: zealert <driver,device>", cmd_alert},
 	{"zegain",      0, CMD_PRM, "Set the gain: zegain tx|rx <factor>", cmd_gain},
 	{"zerec_start", 0, CMD_PRM, "Start recording the call: zerec_start <base path>", cmd_rec_start},
 	{"zerec_stop",  0, 0,       "Stop recording the call", cmd_rec_stop},
