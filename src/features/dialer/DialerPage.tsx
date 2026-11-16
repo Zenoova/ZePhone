@@ -1,11 +1,11 @@
-import { Delete, Phone, UserPlus } from "@/components/icons";
+import { ChevronDown, Delete, Phone, UserPlus } from "@/components/icons";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "@yusufceng1z/ding-react";
 
 import { StatusDot } from "@/components/RegistrationBadge";
 import { Button } from "@/components/ui/button";
 import { Button as ArcButton } from "@/components/arc/button/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DropdownMenu from "@/components/arc/dropdown-menu/dropdown-menu";
 import { isOverlayOpen, isShortcut, isTypingTarget } from "@/lib/keyboard";
 import { looksDialable, sanitizeDialInput } from "@/lib/phone";
 import { redialValue } from "@/lib/redial";
@@ -18,24 +18,31 @@ import { useUiStore } from "@/stores/ui-store";
 
 import { Dialpad } from "./Dialpad";
 
-const DEFAULT_ACCOUNT = "__default__";
-
 export function DialerPage() {
   const accounts = useAccountsStore((s) => s.accounts);
   const statuses = useAccountsStore((s) => s.statuses);
   const engine = useEngineStore((s) => s.info);
   const dialValue = useUiStore((s) => s.dialValue);
   const setDialValue = useUiStore((s) => s.setDialValue);
-  const dialAccountId = useUiStore((s) => s.dialAccountId);
-  const setDialAccount = useUiStore((s) => s.setDialAccount);
   const setSection = useUiStore((s) => s.setSection);
   const openSettings = useUiStore((s) => s.openSettings);
   const dialing = useCallsStore((s) => s.dialing);
   const dial = useCallsStore((s) => s.dial);
   const usable = useMemo(() => accounts.filter((a) => a.enabled), [accounts]);
-  const selected = usable.find((a) => a.id === dialAccountId) ?? selectDefaultAccount(usable);
-  const selectedState = selected ? (statuses[selected.id]?.state ?? "disconnected") : "disconnected";
+  // "Appeler" always calls with the default account; another one is picked from the menu next to it.
+  const selected = selectDefaultAccount(usable);
   const canPlace = !dialing && !!selected && isEngineRunning(engine);
+  /** What the menu calls each account: its label, with the address when two accounts share a label, and "par défaut". */
+  const accountLabels = useMemo(() => {
+    const count = new Map<string, number>();
+    for (const a of usable) count.set(a.label, (count.get(a.label) ?? 0) + 1);
+    return new Map(
+      usable.map((a) => {
+        const name = (count.get(a.label) ?? 0) > 1 ? `${a.label} (${a.username}@${a.domain})` : a.label;
+        return [a.id, a.id === selected?.id ? `${name} · par défaut` : name] as const;
+      }),
+    );
+  }, [usable, selected?.id]);
 
   /** Empty display + "Appeler": bring back the number of the last outgoing call (the user then confirms). */
   const fillWithLastNumber = async () => {
@@ -51,13 +58,14 @@ export function DialerPage() {
     }
   };
 
-  const place = async () => {
+  /** Places the call with `accountId`, or with the default account. */
+  const place = async (accountId?: string) => {
     if (!canPlace) return;
     if (!looksDialable(dialValue)) {
       await fillWithLastNumber();
       return;
     }
-    const call = await dial(dialValue.trim(), dialAccountId ?? selected?.id ?? null);
+    const call = await dial(dialValue.trim(), accountId ?? selected?.id ?? null);
     if (call) {
       setDialValue("");
       setSection("dialer");
@@ -67,7 +75,7 @@ export function DialerPage() {
   const append = (k: string) => setDialValue(sanitizeDialInput(dialValue + k));
 
   // The keyboard listener below outlives renders: it always calls the latest `place`.
-  const placeRef = useRef<() => Promise<void>>(async () => {});
+  const placeRef = useRef<(accountId?: string) => Promise<void>>(async () => {});
   useEffect(() => {
     placeRef.current = place;
   });
@@ -128,30 +136,6 @@ export function DialerPage() {
 
   return (
     <div className="mx-auto flex h-full w-full max-w-sm flex-col justify-center gap-4 p-5 pb-[6.5rem]">
-      {usable.length > 1 && (
-        <Select
-          value={dialAccountId ?? DEFAULT_ACCOUNT}
-          onValueChange={(v) => setDialAccount(v === DEFAULT_ACCOUNT ? null : v)}
-        >
-          <SelectTrigger className="w-full" aria-label="Compte utilisé pour l'appel">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={DEFAULT_ACCOUNT}>Compte par défaut</SelectItem>
-            {usable.map((a) => (
-              <SelectItem key={a.id} value={a.id}>
-                <StatusDot state={statuses[a.id]?.state ?? "disconnected"} /> {a.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-      {usable.length === 1 && selected && (
-        <p className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
-          <StatusDot state={selectedState} /> {selected.label}
-        </p>
-      )}
-
       {/* The number is written straight on the background: no field, no placeholder. */}
       <div className="relative">
         <div
@@ -187,16 +171,46 @@ export function DialerPage() {
 
       <Dialpad captureKeyboard onKey={append} onLongZero={() => append("+")} />
 
-      <Button
-        size="lg"
-        disabled={!canPlace}
-        title={looksDialable(dialValue) ? undefined : "Rappeler le dernier numéro composé"}
-        onClick={() => void place()}
-        className="bg-success text-success-foreground hover:bg-success/90 h-14 w-full rounded-2xl text-base font-semibold"
-      >
-        <Phone className="size-5" aria-hidden />
-        {dialing ? "Appel…" : "Appeler"}
-      </Button>
+      <div className="flex w-full gap-1">
+        <Button
+          size="lg"
+          disabled={!canPlace}
+          title={looksDialable(dialValue) ? undefined : "Rappeler le dernier numéro composé"}
+          onClick={() => void place()}
+          className={cn(
+            "bg-success text-success-foreground hover:bg-success/90 h-14 flex-1 text-base font-semibold",
+            usable.length > 1 ? "rounded-l-2xl rounded-r-md" : "rounded-2xl",
+          )}
+        >
+          <Phone className="size-5" aria-hidden />
+          {dialing ? "Appel…" : "Appeler"}
+        </Button>
+        {usable.length > 1 && (
+          <DropdownMenu
+            label="Appeler avec"
+            items={usable.map((a) => ({
+              label: accountLabels.get(a.id) ?? a.label,
+              icon: <StatusDot state={statuses[a.id]?.state ?? "disconnected"} />,
+              onSelect: () => void place(a.id),
+            }))}
+            trigger={
+              <Button
+                size="lg"
+                disabled={!canPlace || !looksDialable(dialValue)}
+                aria-label="Choisir le compte pour appeler"
+                title={
+                  looksDialable(dialValue)
+                    ? "Appeler avec un autre compte"
+                    : "Saisissez un numéro pour choisir le compte"
+                }
+                className="bg-success text-success-foreground hover:bg-success/90 h-14 w-12 shrink-0 rounded-l-md rounded-r-2xl px-0"
+              >
+                <ChevronDown className="size-5" aria-hidden />
+              </Button>
+            }
+          />
+        )}
+      </div>
       {!isEngineRunning(engine) && engine && (
         <p className="text-destructive text-center text-xs">Le moteur SIP n'est pas démarré.</p>
       )}

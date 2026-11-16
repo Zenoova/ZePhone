@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { invoke, toast, playDtmfTone } = vi.hoisted(() => ({
@@ -42,7 +42,7 @@ beforeEach(() => {
   useAccountsStore.setState({ accounts: [makeAccount()], statuses: { acc1: makeStatus() }, loaded: true });
   useEngineStore.setState({ info: { name: "baresip", version: "4.13.0", codecs: ["PCMU"], state: "running" } });
   useCallsStore.setState({ calls: {}, dialing: false });
-  useUiStore.setState({ section: "dialer", dialValue: "", dialAccountId: null });
+  useUiStore.setState({ section: "dialer", dialValue: "" });
 });
 
 describe("DialerPage keyboard", () => {
@@ -176,5 +176,124 @@ describe("DialerPage redial", () => {
     useEngineStore.setState({ info: { name: "baresip", version: null, codecs: [], state: "stopped" } });
     render(<DialerPage />);
     expect(screen.getByRole("button", { name: /Appeler/ })).toBeDisabled();
+  });
+});
+
+describe("DialerPage accounts", () => {
+  const two = () => {
+    useAccountsStore.setState({
+      accounts: [
+        makeAccount(),
+        makeAccount({ id: "acc2", label: "Mobile VoIP", username: "0987654321", isDefault: false }),
+      ],
+      statuses: { acc1: makeStatus(), acc2: makeStatus({ accountId: "acc2" }) },
+      loaded: true,
+    });
+  };
+  const type = (n: string) => n.split("").forEach((k) => press(k));
+  const choose = () => screen.getByRole("button", { name: "Choisir le compte pour appeler" });
+  const openMenu = () => fireEvent.keyDown(choose(), { key: "Enter" });
+
+  it("with one account there is nothing to choose and no account name: just the keypad and the call button", () => {
+    render(<DialerPage />);
+    expect(screen.queryByText("Bureau")).toBeNull();
+    expect(screen.queryByText("Compte par défaut")).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Choisir le compte pour appeler" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Appeler" })).toBeInTheDocument();
+  });
+
+  it("with several accounts the list is not on top of the keypad any more", () => {
+    two();
+    render(<DialerPage />);
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.queryByText("Compte par défaut")).toBeNull();
+    expect(screen.queryByText("Mobile VoIP")).toBeNull(); // only in the menu, once opened
+  });
+
+  it("with several accounts a menu sits next to the call button", () => {
+    two();
+    render(<DialerPage />);
+    const call = screen.getByRole("button", { name: "Appeler" });
+    expect(call.parentElement).toContainElement(choose());
+  });
+
+  it("the call button calls with the default account", async () => {
+    two();
+    render(<DialerPage />);
+    type("1002");
+    fireEvent.click(screen.getByRole("button", { name: "Appeler" }));
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1002", accountId: "acc1" }));
+  });
+
+  it("the default account is the one marked as such, not the first", async () => {
+    useAccountsStore.setState({
+      accounts: [makeAccount({ isDefault: false }), makeAccount({ id: "acc2", label: "Mobile VoIP", isDefault: true })],
+      statuses: { acc1: makeStatus(), acc2: makeStatus({ accountId: "acc2" }) },
+      loaded: true,
+    });
+    render(<DialerPage />);
+    type("1002");
+    press("Enter");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1002", accountId: "acc2" }));
+  });
+
+  it("Enter calls with the default account too", async () => {
+    two();
+    render(<DialerPage />);
+    type("1002");
+    press("Enter");
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1002", accountId: "acc1" }));
+  });
+
+  it("the menu lists the accounts, says which is the default, and calls with the one picked", async () => {
+    two();
+    render(<DialerPage />);
+    type("1002");
+    openMenu();
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((i) => i.textContent)).toEqual(["Bureau · par défaut", "Mobile VoIP"]);
+    fireEvent.click(within(document.body).getByRole("menuitem", { name: "Mobile VoIP" }));
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1002", accountId: "acc2" }));
+    // the choice was for this call only: the next "Appeler" is the default account again
+    await vi.waitFor(() => expect(display().textContent).toBe("")); // the call went out: the display is clear
+    invoke.mockClear();
+    type("1003");
+    fireEvent.click(await screen.findByRole("button", { name: "Appeler" }));
+    await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith("dial", { target: "1003", accountId: "acc1" }));
+  });
+
+  it("the menu waits for a number: there is nothing to call yet", () => {
+    two();
+    render(<DialerPage />);
+    expect(choose()).toBeDisabled();
+    type("1");
+    expect(choose()).toBeEnabled();
+  });
+
+  it("an account that is switched off is not offered", () => {
+    useAccountsStore.setState({
+      accounts: [makeAccount(), makeAccount({ id: "acc2", label: "Mobile VoIP", isDefault: false, enabled: false })],
+      statuses: { acc1: makeStatus() },
+      loaded: true,
+    });
+    render(<DialerPage />);
+    expect(screen.queryByRole("button", { name: "Choisir le compte pour appeler" })).toBeNull();
+  });
+
+  it("two accounts with the same name are told apart by their address", async () => {
+    useAccountsStore.setState({
+      accounts: [
+        makeAccount({ label: "Bureau", username: "1001" }),
+        makeAccount({ id: "acc2", label: "Bureau", username: "2002", isDefault: false }),
+      ],
+      statuses: { acc1: makeStatus(), acc2: makeStatus({ accountId: "acc2" }) },
+      loaded: true,
+    });
+    render(<DialerPage />);
+    type("1");
+    openMenu();
+    const items = (await screen.findAllByRole("menuitem")).map((i) => i.textContent);
+    expect(items).toEqual(["Bureau (1001@example.com) · par défaut", "Bureau (2002@example.com)"]);
   });
 });
