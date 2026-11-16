@@ -360,9 +360,11 @@ pub fn translate_error(e: &LdapError) -> SyncError {
                 SyncErrorKind::Forbidden,
                 "Ce compte n'a pas le droit de lire l'annuaire. Demandez l'accès à votre administrateur.",
             ),
+            // A server also answers "no such object" to an account that may not see the base at all.
             32 => err(
                 SyncErrorKind::Config,
-                "La base de recherche (Base DN) est introuvable sur ce serveur.",
+                "La base de recherche (Base DN) est introuvable, ou ce compte n'a pas le droit d'y accéder : \
+                 vérifiez la base et les droits du compte.",
             ),
             87 | 12 | 18 => err(
                 SyncErrorKind::Config,
