@@ -55,6 +55,7 @@ import {
   FolderOpenIcon,
   MenuIcon,
   PinIcon,
+  ChartLineIcon,
 } from "@animateicons/react/lucide";
 import {
   type ComponentProps,
@@ -188,3 +189,4 @@ export const Copy = createIcon(CopyIcon, "Copy");
 export const FolderOpen = createIcon(FolderOpenIcon, "FolderOpen");
 export const Menu = createIcon(MenuIcon, "Menu");
 export const Pin = createIcon(PinIcon, "Pin");
+export const ChartLine = createIcon(ChartLineIcon, "ChartLine");

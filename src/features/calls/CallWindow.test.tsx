@@ -8,9 +8,10 @@ const { invoke, toast } = vi.hoisted(() => ({
 vi.mock("@tauri-apps/api/core", () => ({ invoke: (...a: unknown[]) => invoke(...a) }));
 vi.mock("@yusufceng1z/ding-react", () => ({ toast }));
 
+import { useCallStatsStore } from "@/stores/call-stats-store";
 import { useCallsStore } from "@/stores/calls-store";
 import { DEFAULT_SETTINGS, useSettingsStore } from "@/stores/settings-store";
-import { makeCall } from "@/test/fixtures";
+import { makeCall, makeRun } from "@/test/fixtures";
 
 import { CallWindow } from "./CallWindow";
 
@@ -30,6 +31,7 @@ beforeEach(() => {
   );
   Object.values(toast).forEach((f) => f.mockReset());
   useCallsStore.setState({ calls: {}, dialing: false });
+  useCallStatsStore.setState({ samples: {} });
   useSettingsStore.setState({ settings: DEFAULT_SETTINGS });
 });
 
@@ -111,6 +113,7 @@ describe("the toolbar", () => {
       "Garder au premier plan",
       "Ouvrir ZePhone",
       "Informations de l'appel",
+      "Statistiques avancées",
       "Journal du moteur SIP",
       "Copier l'identifiant de l'appel",
     ]);
@@ -124,6 +127,18 @@ describe("the toolbar", () => {
     const info = await screen.findByTestId("call-info");
     expect(info).toHaveTextContent("call1");
     expect(info).toHaveTextContent("1002");
+  });
+
+  it("opens the advanced statistics of the call, with what was measured before it opened", async () => {
+    const run = makeRun(8, (i) => (i === 5 ? { jbufLate: 2 } : {}));
+    invoke.mockImplementation(async (cmd: string) => (cmd === "get_call_stats" ? run : undefined));
+    useCallsStore.setState({ calls: { call1: connected() } });
+    show();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Options de l'appel" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: /Statistiques avancées/ }));
+    expect(await screen.findByTestId("call-stats")).toBeInTheDocument();
+    expect(invoke).toHaveBeenCalledWith("get_call_stats", { callId: "call1" });
+    expect(await screen.findByTestId("stats-count")).toHaveTextContent("8 secondes mesurées");
   });
 
   it("keeps the call window on top on request", async () => {

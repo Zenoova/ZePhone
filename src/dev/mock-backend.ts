@@ -12,6 +12,7 @@ import type {
   AccountView,
   AudioDevices,
   Call,
+  CallStatsSample,
   Contact,
   HistoryEntry,
   Recording,
@@ -190,6 +191,72 @@ export function installMockBackend(): void {
       emit("audio:level", { callId: c.id, tx: true, db: tx });
     }
   }, 62);
+
+  // Fake call statistics, one second apart: a steady call with a glitch every 9 s, to review the charts.
+  const statsHistory = new Map<string, CallStatsSample[]>();
+  const statsSince = new Map<string, number>();
+  let statsTick = 0;
+  setInterval(() => {
+    statsTick += 1;
+    for (const c of calls.values()) {
+      if (c.state !== "connected") continue;
+      const list = statsHistory.get(c.id) ?? [];
+      const t0 = statsSince.get(c.id) ?? Date.now();
+      statsSince.set(c.id, t0);
+      const glitch = statsTick % 9 === 0;
+      const prev = list.at(-1)?.totals;
+      const rxPackets = (prev?.rxPackets ?? 0) + (glitch ? 47 : 50);
+      const sample: CallStatsSample = {
+        callId: c.id,
+        atMs: Date.now(),
+        elapsedSecs: (Date.now() - t0) / 1000,
+        rxPackets: glitch ? 47 : 50,
+        txPackets: 50,
+        rxBitrate: glitch ? 60_000 : 64_000,
+        txBitrate: 64_000,
+        rxJitterMs: 3 + Math.random() * 3 + (glitch ? 28 : 0),
+        txJitterMs: 2 + Math.random() * 2,
+        rttMs: 28 + Math.random() * 8,
+        jbufDelayMs: glitch ? 90 : 40 + Math.random() * 8,
+        jbufPackets: 2,
+        jbufSkewMs: 0,
+        jbufLost: glitch ? 1 : 0,
+        jbufLate: glitch ? 2 : 0,
+        jbufOverflow: 0,
+        jbufFlush: 0,
+        jbufOutOfSeq: 0,
+        rxGapMaxMs: glitch ? 62 : 20 + Math.random() * 3,
+        txGapMaxMs: 20 + Math.random() * 4,
+        rxLateBlocks: glitch ? 1 : 0,
+        txLateBlocks: 0,
+        rxBusyMaxUs: 20 + Math.random() * 30,
+        txBusyMaxUs: 15 + Math.random() * 20,
+        recDropped: 0,
+        totals: {
+          codec: "PCMA",
+          txCodec: "PCMA",
+          clockRate: 8000,
+          rxPackets,
+          txPackets: (prev?.txPackets ?? 0) + 50,
+          rxBytes: rxPackets * 160,
+          txBytes: ((prev?.txPackets ?? 0) + 50) * 160,
+          rxErrors: 0,
+          txErrors: 0,
+          rxLost: (prev?.rxLost ?? 0) + (glitch ? 1 : 0),
+          lossPct: 0.4,
+          jbufLost: (prev?.jbufLost ?? 0) + (glitch ? 1 : 0),
+          jbufLate: (prev?.jbufLate ?? 0) + (glitch ? 2 : 0),
+          jbufOverflow: 0,
+          jbufFlush: 0,
+          rxLateBlocks: (prev?.rxLateBlocks ?? 0) + (glitch ? 1 : 0),
+          txLateBlocks: 0,
+          recDropped: 0,
+        },
+      };
+      statsHistory.set(c.id, [...list, sample].slice(-900));
+      emit("call:stats", sample);
+    }
+  }, 1000);
 
   // Sample recordings for the preview: short tone bursts, as real WAV files the player can read.
   const toneWav = (secs: number, hz: number): string => {
@@ -387,6 +454,7 @@ export function installMockBackend(): void {
       emit("recordings:changed", null);
     },
     set_audio_gains: () => undefined,
+    get_call_stats: (a) => statsHistory.get(String(a?.callId)) ?? [],
     open_call_window: () => undefined,
     close_call_window: () => undefined,
     set_call_window_on_top: () => undefined,

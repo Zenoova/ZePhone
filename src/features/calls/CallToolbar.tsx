@@ -4,21 +4,23 @@ import { useState } from "react";
 import { Button } from "@/components/arc/button/button";
 import DropdownMenu from "@/components/arc/dropdown-menu/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/arc/popover/popover";
-import { AppWindow, Copy, Menu, Pin, ScrollText, Info, Volume2 } from "@/components/icons";
+import { AppWindow, ChartLine, Copy, Menu, Pin, ScrollText, Info, Volume2 } from "@/components/icons";
 import { VolumeSliders } from "@/components/VolumeSliders";
 import { telephony } from "@/services/telephony";
 import type { Call } from "@/types/telephony";
 
 import { CallInfoDialog } from "./CallInfoDialog";
 import { EngineLogDialog } from "./EngineLogDialog";
+import { CallStatsDialog } from "./stats/CallStatsDialog";
 
 /**
- * Top right of the call: the volumes, and the menu of options — the developer ones (call details,
- * engine log, call id) and a few others (keep the window on top, bring up the main window).
+ * Top right of the call: the volumes, and the menu of options — the developer ones (call details, advanced
+ * statistics, engine log, call id) and a few others (keep the window on top, bring up the main window).
  */
 export function CallToolbar({ call }: { call: Call }) {
   const [infoOpen, setInfoOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [onTop, setOnTop] = useState(false);
 
   const copyId = async () => {
@@ -73,6 +75,11 @@ export function CallToolbar({ call }: { call: Call }) {
             onSelect: () => setInfoOpen(true),
             separatorBefore: true,
           },
+          {
+            label: "Statistiques avancées",
+            icon: <ChartLine className="size-4" />,
+            onSelect: () => setStatsOpen(true),
+          },
           { label: "Journal du moteur SIP", icon: <ScrollText className="size-4" />, onSelect: () => setLogOpen(true) },
           {
             label: "Copier l'identifiant de l'appel",
@@ -83,6 +90,7 @@ export function CallToolbar({ call }: { call: Call }) {
       />
 
       <CallInfoDialog call={call} open={infoOpen} onOpenChange={setInfoOpen} />
+      <CallStatsDialog call={call} open={statsOpen} onOpenChange={setStatsOpen} />
       <EngineLogDialog open={logOpen} onOpenChange={setLogOpen} />
     </div>
   );
