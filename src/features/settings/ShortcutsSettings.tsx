@@ -163,6 +163,8 @@ export function ShortcutsSettings() {
         {mac
           ? "Sur macOS, ces raccourcis ne demandent aucune autorisation : ZePhone est seulement prévenu quand l'une de ces combinaisons est pressée, il ne lit pas le clavier. "
           : "Ces raccourcis ne demandent aucune autorisation particulière. "}
+        {mac &&
+          "macOS ne signale pas qu'une autre application utilise la même combinaison : si un raccourci actif ne réagit pas, changez-le. "}
         Pour les déclencher depuis un Stream Deck ou un autre outil, voir « Commande externe » dans la documentation
         (docs/CONTROL.md).
       </Alert>
@@ -242,7 +244,12 @@ function ShortcutRow({
               {item.display ?? "Aucun"}
             </Button>
             {item.accelerator && (
-              <Button variant="ghost" size="sm" aria-label={`Supprimer le raccourci : ${item.label}`} onClick={onRemove}>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Supprimer le raccourci : ${item.label}`}
+                onClick={onRemove}
+              >
                 <X className="size-4" />
               </Button>
             )}
