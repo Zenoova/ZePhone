@@ -76,9 +76,16 @@ impl RemoteContact {
             .unwrap_or_default()
     }
 
-    /// A record worth keeping: it has a name or an address, and at least one way to reach the person.
+    /// A record worth keeping: it says who the person is (a name, a company or an e-mail address — a bare number
+    /// is not an identity), and gives at least one way to reach them.
     pub fn is_useful(&self) -> bool {
-        !self.external_id.is_empty() && !self.name().is_empty() && !self.phones.is_empty()
+        let says_who = [&self.display_name, &self.first_name, &self.last_name]
+            .iter()
+            .any(|s| !s.trim().is_empty())
+            || [&self.company, &self.email]
+                .iter()
+                .any(|o| o.as_deref().is_some_and(|s| !s.trim().is_empty()));
+        !self.external_id.is_empty() && says_who && !self.phones.is_empty()
     }
 }
 
@@ -310,6 +317,11 @@ mod tests {
         assert!(c.is_useful());
         c.external_id.clear();
         assert!(!c.is_useful(), "no identifier from the source");
+        c.external_id = "1".into();
+        c.display_name.clear();
+        assert!(!c.is_useful(), "a number alone does not say who it is");
+        c.email = Some("a@example.com".into());
+        assert!(c.is_useful());
     }
 
     #[test]

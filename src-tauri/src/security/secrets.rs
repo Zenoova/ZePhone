@@ -16,8 +16,14 @@ pub trait SecretStore: Send + Sync {
     fn delete(&self, account_id: &str) -> AppResult<()>;
 }
 
+/// Keychain item name. SIP passwords keep their historical `sip-account:` prefix; the directory's secrets (LDAP
+/// password, Microsoft refresh token) carry their own `dir:` namespace.
 fn entry_name(account_id: &str) -> String {
-    format!("sip-account:{account_id}")
+    if account_id.starts_with("dir:") {
+        account_id.to_owned()
+    } else {
+        format!("sip-account:{account_id}")
+    }
 }
 
 /// OS-native store through the `keyring` crate.
@@ -97,6 +103,12 @@ mod tests {
         s.delete("a").unwrap();
         assert!(s.get("a").unwrap().is_none());
         s.delete("a").unwrap();
+    }
+
+    #[test]
+    fn directory_secrets_have_their_own_namespace() {
+        assert_eq!(entry_name("dir:abc:password"), "dir:abc:password");
+        assert_eq!(entry_name("abc"), "sip-account:abc");
     }
 
     #[test]

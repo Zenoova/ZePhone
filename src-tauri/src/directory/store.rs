@@ -458,13 +458,6 @@ impl DirectoryStore {
         Ok(n.to_owned())
     }
 
-    fn is_name_taken(err: &rusqlite::Error) -> bool {
-        matches!(
-            err,
-            rusqlite::Error::SqliteFailure(e, _) if e.code == rusqlite::ErrorCode::ConstraintViolation
-        )
-    }
-
     pub fn create_group(&self, name: &str) -> AppResult<GroupView> {
         let name = Self::check_group_name(name)?;
         let id = Uuid::new_v4().to_string();

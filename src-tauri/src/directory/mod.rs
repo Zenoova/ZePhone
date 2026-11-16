@@ -8,4 +8,6 @@
 pub mod index;
 pub mod model;
 pub mod normalize;
+pub mod service;
 pub mod store;
+pub mod sync;
