@@ -4,7 +4,9 @@
 //! here we only list devices the user can pick from, using the same CoreAudio
 //! device names Baresip matches against.
 
+pub mod devices;
 pub mod permissions;
+pub mod routing;
 
 use cpal::traits::{DeviceTrait, HostTrait};
 use serde::Serialize;

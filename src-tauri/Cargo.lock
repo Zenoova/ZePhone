@@ -6484,6 +6484,7 @@ dependencies = [
  "base64 0.23.1",
  "block2",
  "chrono",
+ "core-foundation 0.10.1",
  "cpal",
  "keyring",
  "ldap3",
