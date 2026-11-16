@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type Section = "dialer" | "contacts" | "history" | "recordings" | "settings";
-export type SettingsTab = "accounts" | "audio" | "network" | "notifications" | "general" | "about";
+export type SettingsTab = "accounts" | "directory" | "audio" | "network" | "notifications" | "general" | "about";
 
 interface UiState {
   section: Section;

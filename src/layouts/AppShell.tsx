@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { Toaster } from "@/components/Toaster";
 import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
-import { ContactsPage } from "@/features/contacts/ContactsPage";
+import { DirectoryPage } from "@/features/directory/DirectoryPage";
 import { HomePage } from "@/features/home/HomePage";
 import { HistoryPage } from "@/features/history/HistoryPage";
 import { RecordingsPage } from "@/features/recordings/RecordingsPage";
@@ -15,7 +15,7 @@ import { NavDock } from "./NavDock";
 
 const PAGES: Record<Section, () => React.JSX.Element> = {
   dialer: HomePage,
-  contacts: ContactsPage,
+  contacts: DirectoryPage,
   history: HistoryPage,
   recordings: RecordingsPage,
   settings: SettingsPage,

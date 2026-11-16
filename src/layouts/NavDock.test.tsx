@@ -36,7 +36,7 @@ describe("NavDock", () => {
       "Choisir l'orbe vocal",
       "Comptes SIP",
       "Clavier",
-      "Contacts",
+      "Annuaire",
       "Historique",
       "Enregistrements",
       "Paramètres",
@@ -46,10 +46,10 @@ describe("NavDock", () => {
   it("goes to a page when its icon is clicked, and marks the page being shown", () => {
     render(<NavDock />);
     expect(screen.getByRole("button", { name: "Paramètres" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("button", { name: "Contacts" })).not.toHaveAttribute("aria-current");
-    fireEvent.click(screen.getByRole("button", { name: "Contacts" }));
+    expect(screen.getByRole("button", { name: "Annuaire" })).not.toHaveAttribute("aria-current");
+    fireEvent.click(screen.getByRole("button", { name: "Annuaire" }));
     expect(useUiStore.getState().section).toBe("contacts");
-    expect(screen.getByRole("button", { name: "Contacts" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Annuaire" })).toHaveAttribute("aria-current", "page");
   });
 
   it("tells how many missed calls are waiting on the history icon", () => {

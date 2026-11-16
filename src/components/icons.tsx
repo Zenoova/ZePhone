@@ -56,6 +56,17 @@ import {
   MenuIcon,
   PinIcon,
   ChartLineIcon,
+  Building2Icon,
+  CloudIcon,
+  FolderPlusIcon,
+  FolderIcon,
+  KeyRoundIcon,
+  ListChecksIcon,
+  LogOutIcon,
+  MailIcon,
+  ServerIcon,
+  ShieldCheckIcon,
+  SquareCheckIcon,
 } from "@animateicons/react/lucide";
 import {
   type ComponentProps,
@@ -190,3 +201,14 @@ export const FolderOpen = createIcon(FolderOpenIcon, "FolderOpen");
 export const Menu = createIcon(MenuIcon, "Menu");
 export const Pin = createIcon(PinIcon, "Pin");
 export const ChartLine = createIcon(ChartLineIcon, "ChartLine");
+export const Building2 = createIcon(Building2Icon, "Building2");
+export const Cloud = createIcon(CloudIcon, "Cloud");
+export const Folder = createIcon(FolderIcon, "Folder");
+export const FolderPlus = createIcon(FolderPlusIcon, "FolderPlus");
+export const KeyRound = createIcon(KeyRoundIcon, "KeyRound");
+export const ListChecks = createIcon(ListChecksIcon, "ListChecks");
+export const LogOut = createIcon(LogOutIcon, "LogOut");
+export const Mail = createIcon(MailIcon, "Mail");
+export const Server = createIcon(ServerIcon, "Server");
+export const ShieldCheck = createIcon(ShieldCheckIcon, "ShieldCheck");
+export const SquareCheck = createIcon(SquareCheckIcon, "SquareCheck");
