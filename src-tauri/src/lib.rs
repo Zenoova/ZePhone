@@ -2,6 +2,7 @@ pub mod app;
 pub mod audio;
 pub mod commands;
 pub mod database;
+pub mod directory;
 pub mod error;
 pub mod recording;
 pub mod security;
