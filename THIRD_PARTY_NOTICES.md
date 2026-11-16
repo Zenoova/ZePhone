@@ -38,7 +38,8 @@ Notes:
 ## Rust crates
 
 Tauri 2 and its plugins (`notification`, `autostart`, `single-instance`, `log`), `rusqlite` (SQLite is public domain),
-`keyring`, `cpal`, `tokio`, `serde`, `chrono`, `uuid`, `sysinfo`, `secrecy`, `thiserror`, `async-trait`, `objc2` …
+`keyring`, `cpal`, `tokio`, `serde`, `chrono`, `uuid`, `sysinfo`, `secrecy`, `thiserror`, `async-trait`, `objc2`, and for the
+company directory `ldap3` (MIT or Unlicense), `reqwest`, `native-tls`, `sha2`, `base64` and `unicode-normalization` …
 are MIT and/or Apache-2.0 licensed. List them with `cargo install cargo-license && (cd src-tauri && cargo license)`.
 
 ## JavaScript packages
