@@ -9,7 +9,7 @@ export interface PhoneEntry {
   label?: string;
 }
 
-export type SourceKind = "local" | "ldap" | "microsoftOrg" | "microsoftPersonal";
+export type SourceKind = "local" | "ldap" | "microsoftOrg" | "microsoftPersonal" | "systemContacts";
 
 /** Why the last synchronisation failed; decides which action the UI offers. */
 export type SyncErrorKind = "network" | "auth" | "forbidden" | "throttled" | "config" | "invalid" | "server";
@@ -178,4 +178,16 @@ export interface MicrosoftSourceInput {
   name: string;
   config: MicrosoftConfig;
   syncIntervalMin: number;
+}
+
+// ------------------------------------------------------------------ the device's own address book
+
+export type ContactsAccess = "notDetermined" | "denied" | "restricted" | "authorized" | "unsupported";
+
+export interface SystemContactsInfo {
+  /** This platform has an address book ZePhone can read. */
+  available: boolean;
+  /** What it is called here ("Contacts du Mac"). */
+  name: string;
+  access: ContactsAccess;
 }

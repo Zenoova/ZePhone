@@ -27,6 +27,7 @@ import type {
   LdapTestResult,
   MicrosoftSourceInput,
   SourceView,
+  SystemContactsInfo,
 } from "@/types/directory";
 
 import { toAppError } from "./errors";
@@ -99,6 +100,11 @@ export const telephony = {
   directorySources: () => call<SourceView[]>("directory_sources"),
   /** What to dial for a number as the directory shows it (spaces, brackets and extension marker removed). */
   directoryDialable: (number: string) => call<string | null>("directory_dialable", { number }),
+  /** Whether the device's own address book can be connected here, and whether it was already allowed. */
+  directorySystemContactsInfo: () => call<SystemContactsInfo>("directory_system_contacts_info"),
+  /** Connects the device's address book; the system asks the user's permission the first time. */
+  directoryConnectSystemContacts: () => call<SourceView>("directory_connect_system_contacts"),
+  directoryOpenContactsPrivacySettings: () => call<void>("directory_open_contacts_privacy_settings"),
   directoryTestLdap: (input: LdapSourceInput) => call<LdapTestResult>("directory_test_ldap", { input }),
   directorySaveLdap: (input: LdapSourceInput) => call<SourceView>("directory_save_ldap", { input }),
   /** Signs in with Microsoft in the browser; returns when the sign-in is over. */

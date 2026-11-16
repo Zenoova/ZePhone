@@ -116,6 +116,7 @@ const TITLES = [
 const DEMO_LDAP = "demo-ldap";
 const DEMO_MS = "demo-ms";
 const DEMO_OUTLOOK = "demo-outlook";
+const DEMO_DEVICE = "demo-device";
 
 function ref(sourceId: string, name: string, kind: SourceKind, external: string): SourceRef {
   return { recordId: `${sourceId}/${external}`, sourceId, sourceName: name, kind, externalId: external };
@@ -232,6 +233,33 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       email: `ms.${i}@contoso-demo.invalid`,
       phones: [{ kind: "work", number: `+33 1 55 00 00 ${String(i).padStart(2, "0")}` }],
       sources: [ref(DEMO_MS, msName, "microsoftOrg", `g-${i}`)],
+      favorite: false,
+      groups: [],
+      readOnly: true,
+    });
+  }
+
+  // The device's own address book (connected on demand): invented cards, like everything here.
+  const deviceName = "DÉMO · Contacts du Mac (fictif)";
+  for (const [i, [first, last, number, kind]] of (
+    [
+      ["Maman", "(démo)", "06 11 22 33 44", "mobile"],
+      ["Docteur", "Démo", "01 55 55 55 55", "work"],
+      ["Plombier", "Démo", "06 99 88 77 66", "mobile"],
+      ["Mamie", "Démo", "02 99 00 11 22", "home"],
+    ] as const
+  ).entries()) {
+    add({
+      id: `${DEMO_DEVICE}/c-${i}`,
+      displayName: `${first} ${last}`,
+      firstName: first,
+      lastName: last,
+      company: null,
+      department: null,
+      title: null,
+      email: null,
+      phones: [{ kind, number }],
+      sources: [ref(DEMO_DEVICE, deviceName, "systemContacts", `c-${i}`)],
       favorite: false,
       groups: [],
       readOnly: true,
@@ -475,6 +503,38 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
         },
       };
     },
+    directory_system_contacts_info: () => ({
+      available: true,
+      name: "Contacts du Mac",
+      access: sources.some((s) => s.id === DEMO_DEVICE) ? "authorized" : "notDetermined",
+    }),
+    directory_connect_system_contacts: async () => {
+      await new Promise((r) => setTimeout(r, 1500)); // the system's question, answered
+      if (!sources.some((s) => s.id === DEMO_DEVICE)) {
+        sources = [
+          ...sources,
+          {
+            id: DEMO_DEVICE,
+            kind: "systemContacts",
+            name: deviceName,
+            enabled: true,
+            readOnly: true,
+            state: "idle",
+            contactCount: 4,
+            lastSuccessAt: new Date().toISOString(),
+            lastAttemptAt: new Date().toISOString(),
+            lastError: null,
+            errorKind: null,
+            syncIntervalMin: 15,
+            stale: false,
+            config: {},
+          },
+        ];
+        changed();
+      }
+      return sources.find((s) => s.id === DEMO_DEVICE);
+    },
+    directory_open_contacts_privacy_settings: () => undefined,
     directory_save_ldap: (a: Args) => {
       const input = a?.input as { id?: string; name: string; config: Record<string, unknown>; syncIntervalMin: number };
       if (input.id) {

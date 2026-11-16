@@ -1,7 +1,18 @@
 import { toast } from "@yusufceng1z/ding-react";
 import { useEffect, useState } from "react";
 
-import { Building2, Cloud, LogOut, Pencil, Plus, RefreshCw, Server, Trash2, Users } from "@/components/icons";
+import {
+  Building2,
+  Cloud,
+  LogOut,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Server,
+  Trash2,
+  UserRound,
+  Users,
+} from "@/components/icons";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { Badge, type BadgeTone } from "@/components/arc/badge/badge";
@@ -13,7 +24,7 @@ import { INTERVAL_OPTIONS, SOURCE_KIND_LABEL, failureAction, intervalLabel, sour
 import { errorMessage, telephony } from "@/services/telephony";
 import { useDirectoryStore } from "@/stores/directory-store";
 import { useUiStore } from "@/stores/ui-store";
-import type { SourceKind, SourceState, SourceView } from "@/types/directory";
+import type { SourceKind, SourceState, SourceView, SystemContactsInfo } from "@/types/directory";
 
 import { Alert } from "./alert";
 import { LdapSourceDialog } from "./LdapSourceDialog";
@@ -41,6 +52,7 @@ const KIND_ICON: Record<SourceKind, typeof Server> = {
   ldap: Server,
   microsoftOrg: Building2,
   microsoftPersonal: Cloud,
+  systemContacts: UserRound,
 };
 
 type Editor =
@@ -71,15 +83,20 @@ function SourceCard({
   source,
   onEdit,
   onConfirm,
+  onAuthorize,
 }: {
   source: SourceView;
   onEdit: (s: SourceView) => void;
   onConfirm: (c: Confirm) => void;
+  /** Asks again for the permission to read the device's address book. */
+  onAuthorize: () => void;
 }) {
   const Icon = KIND_ICON[source.kind];
   const failure = failureAction(source);
   const local = source.kind === "local";
   const microsoft = source.kind === "microsoftOrg" || source.kind === "microsoftPersonal";
+  // The device's address book has no settings and no password: what it can lack is the user's permission.
+  const device = source.kind === "systemContacts";
 
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     try {
@@ -142,10 +159,20 @@ function SourceCard({
                 variant="secondary"
                 onClick={() => {
                   if (failure.action === "retry") void run(() => telephony.directorySync(source.id));
+                  else if (device) onAuthorize();
                   else onEdit(source);
                 }}
               >
                 {failure.label}
+              </Button>
+            )}
+            {device && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => void run(() => telephony.directoryOpenContactsPrivacySettings())}
+              >
+                Ouvrir les réglages
               </Button>
             )}
           </div>
@@ -170,9 +197,11 @@ function SourceCard({
               <RefreshCw className="size-4" aria-hidden /> Synchroniser
             </Button>
           )}
-          <Button size="sm" variant="ghost" onClick={() => onEdit(source)}>
-            <Pencil className="size-4" aria-hidden /> Modifier
-          </Button>
+          {!device && (
+            <Button size="sm" variant="ghost" onClick={() => onEdit(source)}>
+              <Pencil className="size-4" aria-hidden /> Modifier
+            </Button>
+          )}
           {microsoft && (
             <Button size="sm" variant="ghost" onClick={() => onEdit(source)}>
               Reconnecter
@@ -222,10 +251,45 @@ export function DirectorySettings() {
   const setSection = useUiStore((s) => s.setSection);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
+  const [device, setDevice] = useState<SystemContactsInfo | null>(null);
+  /** The system's question about the address book is on screen, waiting for the user. */
+  const [asking, setAsking] = useState(false);
+  /** Why connecting the address book failed (most often: the user said no). */
+  const [deviceError, setDeviceError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadSources();
   }, [loadSources]);
+
+  useEffect(() => {
+    let cancelled = false;
+    telephony
+      .directorySystemContactsInfo()
+      .then((info) => !cancelled && setDevice(info))
+      .catch(() => !cancelled && setDevice(null));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Asks the user's permission (the system's own question), then reads the address book. Nothing is created if
+   * the answer is no. */
+  const connectDevice = async () => {
+    setDeviceError(null);
+    setAsking(true);
+    try {
+      await telephony.directoryConnectSystemContacts();
+      toast.success("Contacts connectés : lecture en cours");
+    } catch (e) {
+      setDeviceError(errorMessage(e));
+    } finally {
+      setAsking(false);
+      telephony
+        .directorySystemContactsInfo()
+        .then(setDevice)
+        .catch(() => {});
+    }
+  };
 
   const edit = (s: SourceView) => {
     setEditor(
@@ -260,7 +324,13 @@ export function DirectorySettings() {
           <ul className="space-y-3" aria-label="Sources de contacts">
             {!loaded && <li className="text-muted-foreground text-sm">Chargement…</li>}
             {sources.map((s) => (
-              <SourceCard key={s.id} source={s} onEdit={edit} onConfirm={setConfirm} />
+              <SourceCard
+                key={s.id}
+                source={s}
+                onEdit={edit}
+                onConfirm={setConfirm}
+                onAuthorize={() => void connectDevice()}
+              />
             ))}
           </ul>
           {loaded && sources.length <= 1 && (
@@ -269,6 +339,29 @@ export function DirectorySettings() {
               title="Aucun annuaire d'entreprise connecté"
               description="Connectez un annuaire LDAP ou Microsoft 365 : ses contacts s'ajoutent à vos contacts locaux, en lecture seule."
             />
+          )}
+          {asking && (
+            <Alert tone="info">
+              <span data-testid="contacts-asking">
+                En attente de votre réponse à la question du système… Répondez dans la fenêtre qui s'est ouverte.
+              </span>
+            </Alert>
+          )}
+          {deviceError && (
+            <Alert tone="error" className="items-center">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="contacts-error">
+                <span>{deviceError}</span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    void telephony.directoryOpenContactsPrivacySettings().catch((e) => toast.error(errorMessage(e)))
+                  }
+                >
+                  Ouvrir les réglages
+                </Button>
+              </div>
+            </Alert>
           )}
           <div className="flex flex-wrap items-center gap-2">
             <DropdownMenu
@@ -291,6 +384,17 @@ export function DirectorySettings() {
                   icon: <Cloud className="size-4" />,
                   onSelect: () => setEditor({ type: "microsoft", kind: "microsoftPersonal", source: null }),
                 },
+                // The device's own address book: only where there is one to read, and only once.
+                ...(device?.available && !sources.some((s) => s.kind === "systemContacts")
+                  ? [
+                      {
+                        label: `${device.name} (lecture seule)`,
+                        icon: <UserRound className="size-4" />,
+                        onSelect: () => void connectDevice(),
+                        separatorBefore: true,
+                      },
+                    ]
+                  : []),
               ]}
             />
             <Button variant="ghost" onClick={() => setSection("contacts")}>
@@ -310,6 +414,10 @@ export function DirectorySettings() {
             Les contacts sont gardés en mémoire sur cet ordinateur pour que la recherche reste instantanée et fonctionne
             même si le serveur est injoignable. Une panne n'efface jamais l'annuaire ; la mémoire d'une source est
             effacée à sa déconnexion, ou après 30 jours sans synchronisation réussie.
+          </p>
+          <p>
+            Les contacts de l'appareil restent sur cet ordinateur : ZePhone les lit après votre autorisation, ne les
+            modifie jamais, et vous pouvez retirer l'autorisation à tout moment dans les réglages du système.
           </p>
           <p>La présence (disponible, en ligne) n'est pas affichée : ZePhone ne la reçoit pas de ces sources.</p>
         </div>

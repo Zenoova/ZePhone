@@ -14,6 +14,7 @@ export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
   ldap: "Annuaire LDAP",
   microsoftOrg: "Microsoft 365 · annuaire de l'organisation",
   microsoftPersonal: "Outlook · contacts personnels",
+  systemContacts: "Contacts de l'appareil",
 };
 
 /** Short names for the badge that tells where a person comes from. */
@@ -22,6 +23,7 @@ export const SOURCE_BADGE: Record<SourceKind, string> = {
   ldap: "LDAP",
   microsoftOrg: "Microsoft 365",
   microsoftPersonal: "Outlook",
+  systemContacts: "Appareil",
 };
 
 /** "Directrice · Société · Comptabilité": what is known about the person's role, without the name. */
@@ -67,6 +69,8 @@ export type SourceAction = "retry" | "reconnect" | "configure" | "none";
 /** What the user can do about a failed source: the action that fits the failure, and a sentence that says so. */
 export function failureAction(source: Pick<SourceView, "errorKind" | "kind">): { action: SourceAction; label: string } {
   const k: SyncErrorKind | null = source.errorKind;
+  // The device's address book has no password: what it lacks is the user's permission.
+  if (source.kind === "systemContacts" && k === "forbidden") return { action: "reconnect", label: "Autoriser l'accès" };
   switch (k) {
     case "auth":
       return { action: "reconnect", label: source.kind === "ldap" ? "Saisir le mot de passe" : "Reconnecter" };

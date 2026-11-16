@@ -12,7 +12,7 @@ import { NO_FILTERS, useDirectoryStore } from "@/stores/directory-store";
 import { useUiStore } from "@/stores/ui-store";
 import { makeBackend } from "@/test/backend";
 import { makeSource } from "@/test/fixtures";
-import type { LdapTestResult, LdapSourceInput, SourceView } from "@/types/directory";
+import type { LdapTestResult, LdapSourceInput, SourceView, SystemContactsInfo } from "@/types/directory";
 
 import { DirectorySettings } from "./DirectorySettings";
 import { LdapSourceDialog } from "./LdapSourceDialog";
@@ -22,9 +22,12 @@ const local = makeSource({ id: "local", kind: "local", name: "Contacts locaux", 
 let sources: SourceView[];
 let backend: ReturnType<typeof makeBackend>;
 
-function setup(list: SourceView[]) {
+const MAC: SystemContactsInfo = { available: true, name: "Contacts du Mac", access: "notDetermined" };
+
+function setup(list: SourceView[], info: SystemContactsInfo = { ...MAC, available: false }) {
   sources = list;
   backend = makeBackend(invoke, {
+    directory_system_contacts_info: () => info,
     directory_sources: () => sources,
     directory_groups: () => [],
     directory_departments: () => [],
@@ -493,5 +496,114 @@ describe("The Microsoft dialog", () => {
     fireEvent.click(screen.getByText("Où trouver l'identifiant d'application ?"));
     expect(screen.getByText(/Application mobile et de bureau/)).toBeInTheDocument();
     expect(screen.getByText(/http:\/\/localhost/)).toBeInTheDocument();
+  });
+});
+
+// ------------------------------------------------------------------ the device's own address book
+
+describe("Settings → Annuaire: the device's address book", () => {
+  const device = (over: Partial<SourceView> = {}) =>
+    makeSource({ id: "dev", kind: "systemContacts", name: "Contacts du Mac", contactCount: 240, ...over });
+
+  async function addSourceMenu() {
+    fireEvent.keyDown(await screen.findByRole("button", { name: "Ajouter une source" }), { key: "Enter" });
+    return (await screen.findAllByRole("menuitem")).map((i) => i.textContent);
+  }
+
+  it("is offered where there is an address book to read, in read-only", async () => {
+    setup([local], MAC);
+    render(<DirectorySettings />);
+    expect(await addSourceMenu()).toContain("Contacts du Mac (lecture seule)");
+  });
+
+  it("is not offered where there is none", async () => {
+    setup([local]); // available: false
+    render(<DirectorySettings />);
+    expect(await addSourceMenu()).not.toContain("Contacts du Mac (lecture seule)");
+  });
+
+  it("is offered once: not again when it is already connected", async () => {
+    setup([local, device()], { ...MAC, access: "authorized" });
+    render(<DirectorySettings />);
+    await screen.findAllByTestId("source-card");
+    expect(await addSourceMenu()).not.toContain("Contacts du Mac (lecture seule)");
+  });
+
+  it("waits for the user's answer to the system's question, then says it is reading", async () => {
+    setup([local], MAC);
+    let answer!: () => void;
+    const answered = new Promise<void>((r) => (answer = r));
+    backend.handle("directory_connect_system_contacts", async () => {
+      await answered;
+      return device();
+    });
+    render(<DirectorySettings />);
+    await addSourceMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Contacts du Mac/ }));
+    expect(await screen.findByTestId("contacts-asking")).toHaveTextContent("En attente de votre réponse");
+    answer();
+    await waitFor(() => expect(screen.queryByTestId("contacts-asking")).toBeNull());
+    expect(toast.success).toHaveBeenCalledWith("Contacts connectés : lecture en cours");
+    expect(backend.calls("directory_connect_system_contacts")).toHaveLength(1);
+  });
+
+  it("a refusal creates nothing, says where to change it, and offers to open the settings", async () => {
+    setup([local], MAC);
+    backend.handle("directory_connect_system_contacts", () => {
+      throw {
+        kind: "other",
+        message:
+          "L'accès à vos contacts est refusé. Autorisez ZePhone dans Réglages Système → Confidentialité et sécurité → Contacts, puis reconnectez la source.",
+      };
+    });
+    render(<DirectorySettings />);
+    await addSourceMenu();
+    fireEvent.click(screen.getByRole("menuitem", { name: /Contacts du Mac/ }));
+    const error = await screen.findByTestId("contacts-error");
+    expect(error).toHaveTextContent("Confidentialité et sécurité → Contacts");
+    expect(cards()).toHaveLength(1); // no source was made
+    fireEvent.click(within(error).getByRole("button", { name: "Ouvrir les réglages" }));
+    await waitFor(() => expect(backend.calls("directory_open_contacts_privacy_settings")).toHaveLength(1));
+  });
+
+  it("shows the connected address book as read-only, with nothing to configure", async () => {
+    setup([local, device()], { ...MAC, access: "authorized" });
+    render(<DirectorySettings />);
+    const card = (await screen.findAllByTestId("source-card"))[1]!;
+    expect(card).toHaveTextContent("Contacts de l'appareil");
+    expect(card).toHaveTextContent("240 contacts");
+    expect(card).toHaveTextContent("Lecture seule");
+    expect(within(card).queryByRole("button", { name: /Modifier/ })).toBeNull();
+    expect(within(card).queryByRole("button", { name: "Reconnecter" })).toBeNull();
+    expect(within(card).getByRole("button", { name: "Synchroniser" })).toBeInTheDocument();
+  });
+
+  it("a permission taken back says so and offers to give it again", async () => {
+    setup(
+      [
+        local,
+        device({
+          state: "error",
+          errorKind: "forbidden",
+          lastError: "L'accès à vos contacts est refusé.",
+        }),
+      ],
+      { ...MAC, access: "denied" },
+    );
+    render(<DirectorySettings />);
+    const card = (await screen.findAllByTestId("source-card"))[1]!;
+    const error = within(card).getByTestId("source-error");
+    expect(error).toHaveTextContent("L'accès à vos contacts est refusé.");
+    fireEvent.click(within(error).getByRole("button", { name: "Autoriser l'accès" }));
+    await waitFor(() => expect(backend.calls("directory_connect_system_contacts")).toHaveLength(1));
+    fireEvent.click(within(error).getByRole("button", { name: "Ouvrir les réglages" }));
+    await waitFor(() => expect(backend.calls("directory_open_contacts_privacy_settings")).toHaveLength(1));
+  });
+
+  it("says that the contacts stay on this computer and are never changed", async () => {
+    setup([local]);
+    render(<DirectorySettings />);
+    expect(await screen.findByText(/restent sur cet ordinateur/)).toBeInTheDocument();
+    expect(screen.getByText(/ne les modifie jamais/)).toBeInTheDocument();
   });
 });

@@ -50,6 +50,11 @@ describe("failureAction", () => {
       expect(failureAction({ errorKind: k, kind: "ldap" }).action).toBe("retry");
     }
     expect(failureAction({ errorKind: null, kind: "ldap" }).action).toBe("none");
+    // the device's address book has no password: what it lacks is the user's permission
+    expect(failureAction({ errorKind: "forbidden", kind: "systemContacts" })).toEqual({
+      action: "reconnect",
+      label: "Autoriser l'accès",
+    });
   });
 });
 
