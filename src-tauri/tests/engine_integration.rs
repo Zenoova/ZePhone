@@ -1249,3 +1249,224 @@ async fn two_accounts_on_one_engine_receive_calls_at_the_same_time() {
     a.stop().await;
     b.stop().await;
 }
+
+/// The dropouts of a recording of a steady tone: where (in seconds) and how long (in milliseconds) each run of
+/// near silence longer than 8 ms is.
+fn holes(rate: u32, samples: &[i16]) -> Vec<(f32, f32)> {
+    let min = (rate as usize * 8) / 1000;
+    let (mut start, mut found) = (None::<usize>, Vec::new());
+    for (i, s) in samples.iter().enumerate() {
+        if s.unsigned_abs() < 60 {
+            start.get_or_insert(i);
+        } else if let Some(st) = start.take()
+            && i - st >= min
+        {
+            found.push((
+                st as f32 / rate as f32,
+                (i - st) as f32 * 1000.0 / rate as f32,
+            ));
+        }
+    }
+    found
+}
+
+/// Two engines call each other and talk for a while: returns both engines, the call ids and the files each side's
+/// player writes (what it heard). Shared by the audio-quality tests.
+struct Talk {
+    a: zephone_lib::sip::engine::baresip::BaresipEngine,
+    b: zephone_lib::sip::engine::baresip::BaresipEngine,
+    call_a: String,
+    call_b: String,
+    a_wav: PathBuf,
+    b_wav: PathBuf,
+    _tmp: tempfile::TempDir,
+}
+
+async fn talk() -> Option<Talk> {
+    let tmp = tempfile::tempdir().unwrap();
+    let port_b = std::net::UdpSocket::bind("127.0.0.1:0")
+        .unwrap()
+        .local_addr()
+        .unwrap()
+        .port();
+    let (a_wav, b_wav) = (tmp.path().join("a.wav"), tmp.path().join("b.wav"));
+    let (Some(a), Some(b)) = (
+        remote_phone(tmp.path(), "a", 440, &a_wav, None).await,
+        remote_phone(tmp.path(), "b", 880, &b_wav, Some(port_b)).await,
+    ) else {
+        eprintln!("SKIPPED: sidecar/test modules missing");
+        return None;
+    };
+    let (mut ea, mut eb) = (a.subscribe(), b.subscribe());
+    a.add_account(&spec_at("alice", "pw", LOOPBACK, port_b, 0))
+        .await
+        .unwrap();
+    b.add_account(&spec_at("bob", "pw", LOOPBACK, 9, 0))
+        .await
+        .unwrap();
+    let call_a = a
+        .dial(
+            "sip:alice@127.0.0.1",
+            &format!("sip:bob@127.0.0.1:{port_b}"),
+        )
+        .await
+        .unwrap();
+    let call_b = match wait_for(&mut eb, 10, |e| {
+        matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Incoming,
+                ..
+            }
+        )
+    })
+    .await
+    {
+        Some(EngineEvent::Call { call, .. }) => call.id,
+        other => panic!("B was not called: {other:?}"),
+    };
+    b.accept(&call_b).await.unwrap();
+    assert!(
+        wait_for(&mut ea, 10, |e| matches!(
+            e,
+            EngineEvent::Call {
+                event: CallEvent::Established,
+                ..
+            }
+        ))
+        .await
+        .is_some()
+    );
+    Some(Talk {
+        a,
+        b,
+        call_a,
+        call_b,
+        a_wav,
+        b_wav,
+        _tmp: tmp,
+    })
+}
+
+/// Recording used to write files from the audio threads, which made them wait (the filter took up to 12 ms on a
+/// 20 ms block). Now they only copy samples into a ring and a separate thread writes the files. Measured with the
+/// module's own statistics on a 15 s call, both ends recording: the filter stays fast, nothing is dropped, and
+/// the recordings are complete. (Holes in the heard tone are printed, not asserted: on a busy machine the OS can
+/// delay a thread for reasons that have nothing to do with ZePhone.)
+#[tokio::test]
+async fn recording_does_not_hold_the_audio_threads_up() {
+    let Some(t) = talk().await else { return };
+    let tmp = tempfile::tempdir().unwrap();
+    t.a.start_recording(&tmp.path().join("ra")).await.unwrap();
+    t.b.start_recording(&tmp.path().join("rb")).await.unwrap();
+
+    let mut busy = Vec::new(); // per second and direction: the longest time the filter took on one block
+    let mut late = 0u64;
+    let mut dropped = 0u32;
+    for _ in 0..15 {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        for (e, id) in [(&t.a, &t.call_a), (&t.b, &t.call_b)] {
+            let s = e.call_stats(id).await.unwrap().expect("stats of the call");
+            busy.push(s.filters.rx.busy_max_us);
+            busy.push(s.filters.tx.busy_max_us);
+            late = late.max(s.filters.rx.late).max(s.filters.tx.late);
+            dropped += s.filters.recording.dropped_samples;
+        }
+    }
+    t.a.stop_recording().await.unwrap();
+    t.b.stop_recording().await.unwrap();
+    t.a.hangup(&t.call_a, None).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    t.a.stop().await;
+    t.b.stop().await;
+
+    busy.sort_unstable();
+    let (median, max) = (busy[busy.len() / 2], *busy.last().unwrap());
+    println!(
+        "filter time per block: median {median} us, worst {max} us; late blocks {late}; dropped samples {dropped}"
+    );
+    assert!(
+        median < 2_000,
+        "the audio filter is slow: median {median} us"
+    );
+    assert_eq!(dropped, 0, "recorded samples were dropped");
+
+    for (who, path) in [("A hears", &t.a_wav), ("B hears", &t.b_wav)] {
+        let (rate, s) = wav_samples(path);
+        // Skip the first second (call set-up) and the last one (hang-up).
+        let body = &s[rate as usize..s.len().saturating_sub(rate as usize)];
+        let h = holes(rate, body);
+        println!(
+            "{who}: {} holes over {:.1} s: {:?}",
+            h.len(),
+            body.len() as f32 / rate as f32,
+            h.iter()
+                .take(12)
+                .map(|(t, ms)| format!("{t:.2}s/{ms:.0}ms"))
+                .collect::<Vec<_>>()
+        );
+    }
+    for base in ["ra", "rb"] {
+        let (_, s) = wav_samples(&tmp.path().join(format!("{base}-rx.wav")));
+        assert!(s.len() > 48_000 * 12, "{base}: the recording is incomplete");
+    }
+}
+
+/// `call_stats` tells what the audio of a call is doing: codec, packets both ways, jitter buffer, and how
+/// regularly the audio blocks go through (20 ms apart on a healthy call).
+#[tokio::test]
+async fn call_stats_describe_the_audio_of_a_call_in_progress() {
+    let Some(t) = talk().await else { return };
+    tokio::time::sleep(Duration::from_secs(4)).await;
+
+    for (who, e, id) in [("A", &t.a, &t.call_a), ("B", &t.b, &t.call_b)] {
+        let s = e.call_stats(id).await.unwrap().expect("stats of the call");
+        println!("{who}: {s:?}");
+        assert!(!s.codec.is_empty() && s.clock_rate >= 8000, "{who}: codec");
+        // ~50 packets a second for ~4 s, less the set-up.
+        assert!(
+            (100..=260).contains(&s.rtp.rx_packets),
+            "{who}: rx {}",
+            s.rtp.rx_packets
+        );
+        assert!(
+            (100..=260).contains(&s.rtp.tx_packets),
+            "{who}: tx {}",
+            s.rtp.tx_packets
+        );
+        assert!(s.rtp.rx_bytes > 10_000 && s.rtp.tx_bytes > 10_000);
+        assert_eq!((s.rtp.rx_errors, s.rtp.tx_errors), (0, 0));
+        assert!(
+            s.jbuf.put >= 100 && s.jbuf.get >= 100,
+            "{who}: jitter buffer"
+        );
+        assert!(s.jbuf.delay_ms <= 300);
+        // The audio blocks of the filter: one per 20 ms, so 4 s hold 150 or more, 20 ms apart.
+        for (dir, f) in [("rx", &s.filters.rx), ("tx", &s.filters.tx)] {
+            assert!(f.frames >= 120, "{who} {dir}: {} blocks", f.frames);
+            assert!(f.srate >= 8000 && f.channels >= 1, "{who} {dir}: format");
+            assert!(f.gap_max_us >= 15_000, "{who} {dir}: gap {}", f.gap_max_us);
+            assert!(
+                f.busy_max_us < 20_000,
+                "{who} {dir}: busy {}",
+                f.busy_max_us
+            );
+        }
+        assert!(!s.filters.recording.on);
+    }
+
+    // The maxima cover the time since the previous read: a second read right away starts a new window.
+    let again = t.a.call_stats(&t.call_a).await.unwrap().unwrap();
+    assert!(again.filters.rx.gap_max_us < 100_000);
+
+    // An unknown call has no audio.
+    assert_eq!(t.a.call_stats("nonexistent").await.unwrap(), None);
+    // A call id that is not one is refused before it reaches the engine.
+    assert!(t.a.call_stats("a b").await.is_err());
+
+    t.a.hangup(&t.call_a, None).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    assert_eq!(t.a.call_stats(&t.call_a).await.unwrap(), None);
+    t.a.stop().await;
+    t.b.stop().await;
+}
