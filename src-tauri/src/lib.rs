@@ -21,8 +21,12 @@ use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_log::{Target, TargetKind};
 
 use crate::{
-    app::{AppState, MAIN_WINDOW, show_main_window, sink::TauriSink, tray},
+    app::{
+        AppState, MAIN_WINDOW, directory_events::TauriDirectoryEvents, show_main_window,
+        sink::TauriSink, tray,
+    },
     database::Database,
+    directory::{connectors::RealConnectorFactory, service::DirectoryService},
     error::{AppError, AppResult},
     security::secrets::KeyringStore,
     sip::{
@@ -83,8 +87,16 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(TauriSink::new(handle.clone())),
     );
     manager.set_recordings_dir(data_dir.join("recordings"));
+    let directory = DirectoryService::new(
+        db.clone(),
+        Arc::new(KeyringStore),
+        Arc::new(TauriDirectoryEvents::new(handle.clone())),
+        Arc::new(RealConnectorFactory::new(db.clone())),
+    );
+    directory.start();
     app.manage(AppState {
         manager: manager.clone(),
+        directory,
         db,
         shutting_down: AtomicBool::new(false),
     });
@@ -269,6 +281,26 @@ pub fn run() {
             commands::delete_recording,
             commands::set_audio_gains,
             commands::get_call_stats,
+            commands::directory::directory_search,
+            commands::directory::directory_departments,
+            commands::directory::directory_sources,
+            commands::directory::directory_dialable,
+            commands::directory::directory_test_ldap,
+            commands::directory::directory_save_ldap,
+            commands::directory::directory_connect_microsoft,
+            commands::directory::directory_cancel_connect,
+            commands::directory::directory_sync,
+            commands::directory::directory_set_source,
+            commands::directory::directory_disconnect,
+            commands::directory::directory_remove_source,
+            commands::directory::directory_clear_cache,
+            commands::directory::directory_set_favorite,
+            commands::directory::directory_groups,
+            commands::directory::directory_create_group,
+            commands::directory::directory_rename_group,
+            commands::directory::directory_delete_group,
+            commands::directory::directory_group_add,
+            commands::directory::directory_group_remove,
             commands::get_microphone_permission,
             commands::request_microphone_permission,
             commands::open_microphone_settings,

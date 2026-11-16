@@ -1,6 +1,8 @@
 //! Tauri commands: the only API the webview can call. They are thin: validation and
 //! business rules live in the SIP manager, the database and the `sip::uri` module.
 
+pub mod directory;
+
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_autostart::ManagerExt;
@@ -179,12 +181,16 @@ pub fn list_contacts(state: S, query: Option<String>) -> AppResult<Vec<Contact>>
 
 #[tauri::command]
 pub fn save_contact(state: S, input: ContactInput) -> AppResult<Contact> {
-    state.db.save_contact(&input)
+    let saved = state.db.save_contact(&input)?;
+    state.directory.contacts_changed(); // the directory lists the local address book too
+    Ok(saved)
 }
 
 #[tauri::command]
 pub fn delete_contact(state: S, id: String) -> AppResult<()> {
-    state.db.delete_contact(&id)
+    state.db.delete_contact(&id)?;
+    state.directory.contacts_changed();
+    Ok(())
 }
 
 // ------------------------------------------------------------------ history

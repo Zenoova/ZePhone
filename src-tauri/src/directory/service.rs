@@ -57,6 +57,8 @@ pub struct DirectoryService {
     /// Sources being synchronised right now.
     running: Mutex<HashSet<String>>,
     backoff: Mutex<HashMap<String, Backoff>>,
+    /// A browser sign-in in progress (only one at a time): sending on it cancels it.
+    connecting: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 /// A local address-book entry, as the directory sees it.
@@ -95,6 +97,7 @@ impl DirectoryService {
             index: RwLock::new(Index::build(Vec::new(), &HashMap::new())),
             running: Mutex::default(),
             backoff: Mutex::default(),
+            connecting: Mutex::default(),
         });
         if let Err(e) = svc.rebuild_index() {
             log::warn!("directory index not built: {e}");
@@ -276,6 +279,12 @@ impl DirectoryService {
 
     pub fn set_secret(&self, source_id: &str, what: &str, value: &SecretString) -> AppResult<()> {
         self.secrets.set(&secret_key(source_id, what), value)
+    }
+
+    /// A secret of a source, for the settings screens that test a connection without asking for the password
+    /// again. It never leaves the backend.
+    pub fn secret(&self, source_id: &str, what: &str) -> AppResult<Option<SecretString>> {
+        self.secrets.get(&secret_key(source_id, what))
     }
 
     /// Changes the name, the schedule or the configuration of a source. A new configuration starts the
@@ -528,6 +537,33 @@ impl DirectoryService {
                 me.tick(Utc::now());
             }
         });
+    }
+
+    // ------------------------------------------------------------- sign-in in the browser
+
+    /// Starts a sign-in. Only one can wait at a time; the receiver fires when it is cancelled.
+    pub fn begin_connect(&self) -> AppResult<tokio::sync::oneshot::Receiver<()>> {
+        let mut slot = self.connecting.lock().unwrap();
+        if slot.is_some() {
+            return Err(AppError::validation(
+                "Une connexion est déjà en attente dans votre navigateur",
+            ));
+        }
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        *slot = Some(tx);
+        Ok(rx)
+    }
+
+    /// Cancels the sign-in that is waiting, if any.
+    pub fn cancel_connect(&self) {
+        if let Some(tx) = self.connecting.lock().unwrap().take() {
+            let _ = tx.send(());
+        }
+    }
+
+    /// The sign-in is over, whatever came of it.
+    pub fn end_connect(&self) {
+        self.connecting.lock().unwrap().take();
     }
 
     // ------------------------------------------------------------- favourites and groups
@@ -1278,6 +1314,19 @@ mod tests {
         let page = r.svc.search(&DirectoryQuery::default()).unwrap();
         assert!(page.items[0].read_only);
         assert!(r.svc.source(&id).unwrap().read_only);
+    }
+
+    #[test]
+    fn only_one_sign_in_waits_at_a_time_and_it_can_be_cancelled() {
+        let r = rig();
+        let mut first = r.svc.begin_connect().unwrap();
+        assert!(r.svc.begin_connect().is_err());
+        r.svc.cancel_connect();
+        assert!(first.try_recv().is_ok(), "the waiting sign-in is told");
+        // free again, by cancelling or by finishing
+        let _second = r.svc.begin_connect().unwrap();
+        r.svc.end_connect();
+        assert!(r.svc.begin_connect().is_ok());
     }
 
     #[test]

@@ -2,6 +2,7 @@
 //! notifications, tray icon, window behaviour.
 
 pub mod call_window;
+pub mod directory_events;
 pub mod sink;
 pub mod tray;
 pub mod window;
@@ -10,7 +11,7 @@ use std::sync::{Arc, atomic::AtomicBool};
 
 use tauri::{AppHandle, Manager};
 
-use crate::{database::Database, sip::manager::SipManager};
+use crate::{database::Database, directory::service::DirectoryService, sip::manager::SipManager};
 
 pub const MAIN_WINDOW: &str = "main";
 
@@ -27,10 +28,13 @@ pub mod events {
     pub const RECORDINGS_CHANGED: &str = "recordings:changed";
     /// The settings were saved: every window refreshes its copy.
     pub const SETTINGS_CHANGED: &str = "settings:changed";
+    /// The company directory changed (a synchronisation, a favourite, a group, a source): re-read what is shown.
+    pub const DIRECTORY_CHANGED: &str = "directory:changed";
 }
 
 pub struct AppState {
     pub manager: Arc<SipManager>,
+    pub directory: Arc<DirectoryService>,
     pub db: Arc<Database>,
     pub shutting_down: AtomicBool,
 }
