@@ -16,7 +16,7 @@ use super::*;
 use crate::{
     security::secrets::MemoryStore,
     sip::{
-        engine::{CallEvent, CallRef, EngineError, EngineResult, RegistrationEvent},
+        engine::{CallEvent, CallRef, EngineError, EngineResult, RawCallStats, RegistrationEvent},
         types::{CallDirection, MediaEncryption, Transport},
     },
 };
@@ -30,6 +30,9 @@ struct FakeEngine {
     commands: Mutex<Vec<String>>,
     next_call: AtomicU32,
     fail_add: AtomicBool,
+    /// What `call_stats` answers: a report whose counters grow by one packet per read.
+    stats_reads: AtomicU32,
+    no_stats: AtomicBool,
 }
 
 impl FakeEngine {
@@ -41,6 +44,8 @@ impl FakeEngine {
             commands: Default::default(),
             next_call: AtomicU32::new(1),
             fail_add: AtomicBool::new(false),
+            stats_reads: AtomicU32::new(0),
+            no_stats: AtomicBool::new(false),
         })
     }
     fn emit(&self, ev: EngineEvent) {
@@ -165,6 +170,23 @@ impl SipEngine for FakeEngine {
         self.log("rec-stop");
         Ok(())
     }
+    async fn call_stats(&self, id: &str) -> EngineResult<Option<RawCallStats>> {
+        self.log(format!("stats {id}"));
+        if self.no_stats.load(Ordering::SeqCst) {
+            return Ok(None);
+        }
+        let n = self.stats_reads.fetch_add(1, Ordering::SeqCst) + 1;
+        let mut raw = RawCallStats {
+            found: true,
+            codec: "PCMA".into(),
+            tx_codec: "PCMA".into(),
+            clock_rate: 8000,
+            ..Default::default()
+        };
+        raw.rtp.rx_packets = 50 * n;
+        raw.rtp.tx_packets = 50 * n;
+        Ok(Some(raw))
+    }
     fn set_options(&self, _o: EngineOptions) {}
     fn log_tail(&self, _n: usize) -> Vec<String> {
         vec![]
@@ -181,6 +203,7 @@ enum Seen {
     Missed { notify: bool },
     AudioError(String),
     Level { call_id: String, tx: bool },
+    Stats(CallStatsSample),
 }
 
 #[derive(Default)]
@@ -243,6 +266,12 @@ impl UiSink for RecordingSink {
             call_id: call_id.to_owned(),
             tx,
         });
+    }
+    fn call_stats(&self, sample: &CallStatsSample) {
+        self.events
+            .lock()
+            .unwrap()
+            .push(Seen::Stats(sample.clone()));
     }
 }
 
@@ -1238,4 +1267,114 @@ async fn volumes_are_applied_live_bounded_and_restored_after_a_restart() {
         e.cmds().iter().filter(|c| *c == "gains 0.80 1.20").count() >= 2
     })
     .await;
+}
+
+// ------------------------------------------------------------ call statistics
+
+async fn established(r: &Rig, id: &str) -> CallRef {
+    let rf = cref(id, CallDirection::Incoming, "sip:2000@example.com");
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Incoming,
+    });
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Established,
+    });
+    let m = r.mgr.clone();
+    until("connected", move || {
+        m.calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
+    rf
+}
+
+fn stats_seen(sink: &RecordingSink) -> Vec<CallStatsSample> {
+    sink.all()
+        .into_iter()
+        .filter_map(|e| {
+            if let Seen::Stats(s) = e {
+                Some(s)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn statistics_of_a_call_in_progress_reach_the_ui_every_interval_and_are_kept() {
+    let (r, _) = registered_rig().await;
+    r.mgr.set_stats_interval(Duration::from_millis(20));
+    let rf = established(&r, "st1").await;
+
+    let sink = r.sink.clone();
+    until("three samples", move || stats_seen(&sink).len() >= 3).await;
+    let seen = stats_seen(&r.sink);
+    assert!(seen.iter().all(|s| s.call_id == "st1"));
+    assert_eq!(seen[0].totals.codec, "PCMA");
+    // The fake engine counts 50 more packets at every read: a sample is the difference.
+    assert_eq!(seen[0].rx_packets, 50);
+    assert_eq!(seen[1].rx_packets, 50);
+    assert_eq!(seen[2].totals.rx_packets, 150);
+    assert!(seen[2].elapsed_secs > seen[0].elapsed_secs);
+
+    // A window opened during the call gets what happened before it opened.
+    assert!(r.mgr.call_stats_history("st1").len() >= 3);
+    assert!(r.mgr.call_stats_history("nope").is_empty());
+
+    // The call ends: the history is dropped and the engine is not asked again.
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Closed {
+            code: None,
+            reason: String::new(),
+        },
+    });
+    let m = r.mgr.clone();
+    until("history dropped", move || {
+        m.call_stats_history("st1").is_empty()
+    })
+    .await;
+    tokio::time::sleep(Duration::from_millis(60)).await; // a read that was already under way
+    let reads = r
+        .engine
+        .cmds()
+        .iter()
+        .filter(|c| c.starts_with("stats "))
+        .count();
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    let later = r
+        .engine
+        .cmds()
+        .iter()
+        .filter(|c| c.starts_with("stats "))
+        .count();
+    assert_eq!(
+        reads, later,
+        "the statistics keep being read after the call"
+    );
+}
+
+#[tokio::test]
+async fn nothing_is_sent_while_the_call_has_no_audio_stream() {
+    let (r, _) = registered_rig().await;
+    r.engine.no_stats.store(true, Ordering::SeqCst);
+    r.mgr.set_stats_interval(Duration::from_millis(20));
+    established(&r, "st2").await;
+
+    let engine = r.engine.clone();
+    until("the engine was asked", move || {
+        engine
+            .cmds()
+            .iter()
+            .filter(|c| c.starts_with("stats "))
+            .count()
+            >= 3
+    })
+    .await;
+    assert!(stats_seen(&r.sink).is_empty());
+    assert!(r.mgr.call_stats_history("st2").is_empty());
 }

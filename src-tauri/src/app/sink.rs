@@ -9,6 +9,7 @@ use tauri_plugin_notification::NotificationExt;
 use super::{call_window, events, tray};
 use crate::sip::{
     manager::{EngineInfo, UiSink},
+    stats::CallStatsSample,
     types::{AccountStatus, Call, CallState, RegistrationState},
 };
 
@@ -129,6 +130,10 @@ impl UiSink for TauriSink {
             db: f32,
         }
         self.emit(events::AUDIO_LEVEL, Level { call_id, tx, db });
+    }
+
+    fn call_stats(&self, sample: &CallStatsSample) {
+        self.emit(events::CALL_STATS, sample.clone());
     }
 
     fn audio_error(&self, message: &str) {

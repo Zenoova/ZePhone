@@ -12,6 +12,7 @@ use secrecy::SecretString;
 use serde::Serialize;
 use tokio::sync::broadcast;
 
+pub use crate::sip::stats::RawCallStats;
 use crate::sip::types::{CallDirection, MediaEncryption, Transport};
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -221,6 +222,11 @@ pub trait SipEngine: Send + Sync + 'static {
     async fn start_recording(&self, base: &std::path::Path) -> EngineResult<()>;
     /// Finishes the files started by [`start_recording`](Self::start_recording): complete when this returns.
     async fn stop_recording(&self) -> EngineResult<()>;
+
+    /// What the engine measures about the audio of a call right now: network, jitter buffer, regularity of the
+    /// audio blocks. `None` when the call has no audio stream (yet). The maxima it reports cover the time since
+    /// the previous call to this method, so a single caller should poll it.
+    async fn call_stats(&self, call_id: &str) -> EngineResult<Option<RawCallStats>>;
 
     /// Stores options used at the next (re)start.
     fn set_options(&self, options: EngineOptions);

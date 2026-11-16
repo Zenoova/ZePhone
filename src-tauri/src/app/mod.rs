@@ -22,6 +22,8 @@ pub mod events {
     pub const HISTORY_CHANGED: &str = "history:changed";
     pub const AUDIO_ERROR: &str = "audio:error";
     pub const AUDIO_LEVEL: &str = "audio:level";
+    /// One more second of statistics about a call in progress.
+    pub const CALL_STATS: &str = "call:stats";
     pub const RECORDINGS_CHANGED: &str = "recordings:changed";
     /// The settings were saved: every window refreshes its copy.
     pub const SETTINGS_CHANGED: &str = "settings:changed";

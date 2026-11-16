@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use chrono::Utc;
@@ -21,6 +21,7 @@ use super::{
     calls::{CallContext, CallTracker, CallUpdate},
     engine::{AccountSpec, EngineEvent, EngineOptions, EngineState, SipEngine},
     registration,
+    stats::{CallStatsHistory, CallStatsSample},
     types::{
         Account, AccountInput, AccountStatus, AccountView, Call, CallResult, CallState,
         RegistrationState, Settings,
@@ -48,6 +49,8 @@ pub trait UiSink: Send + Sync + 'static {
     fn audio_error(&self, message: &str);
     /// Live level of a call's audio in dBFS (`tx` = our microphone). Frequent: keep it cheap.
     fn audio_level(&self, _call_id: &str, _tx: bool, _db: f32) {}
+    /// One more second of statistics about a call in progress.
+    fn call_stats(&self, _sample: &CallStatsSample) {}
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -102,6 +105,8 @@ struct State {
     hosted: HashMap<String, Hosted>,
     tracker: CallTracker,
     recording: Option<ActiveRecording>,
+    /// Statistics of the calls in progress, by call id. An entry exists while its call is polled.
+    stats: HashMap<String, CallStatsHistory>,
 }
 
 pub type OptionsHook = Arc<dyn Fn(EngineOptions) -> EngineOptions + Send + Sync>;
@@ -117,7 +122,12 @@ pub struct SipManager {
     state: std::sync::Mutex<State>,
     /// Where finished recordings are kept; recording is unavailable until it is set.
     recordings_dir: std::sync::Mutex<Option<PathBuf>>,
+    /// How often the statistics of a call in progress are read.
+    stats_interval: std::sync::Mutex<Duration>,
 }
+
+/// One sample of statistics per second.
+const STATS_INTERVAL: Duration = Duration::from_secs(1);
 
 fn engine_options(s: &Settings) -> EngineOptions {
     EngineOptions {
@@ -162,12 +172,18 @@ impl SipManager {
             sink,
             state: Default::default(),
             recordings_dir: Default::default(),
+            stats_interval: std::sync::Mutex::new(STATS_INTERVAL),
         })
     }
 
     /// Sets the folder of the recordings (created when needed).
     pub fn set_recordings_dir(&self, dir: PathBuf) {
         *self.recordings_dir.lock().unwrap() = Some(dir);
+    }
+
+    /// Changes how often call statistics are read (the tests do not want to wait a second).
+    pub fn set_stats_interval(&self, every: Duration) {
+        *self.stats_interval.lock().unwrap() = every;
     }
 
     /// Adjusts the engine options derived from the settings. Used by the end-to-end tests
@@ -840,6 +856,71 @@ impl SipManager {
         }
     }
 
+    // ----------------------------------------------------------- statistics
+
+    /// The samples of a call in progress, oldest first (empty for a call that is over or unknown).
+    pub fn call_stats_history(&self, call_id: &str) -> Vec<CallStatsSample> {
+        self.state
+            .lock()
+            .unwrap()
+            .stats
+            .get(call_id)
+            .map(CallStatsHistory::samples)
+            .unwrap_or_default()
+    }
+
+    /// Reads the statistics of an established call once per interval until the call is over.
+    fn start_stats_poller(self: &Arc<Self>, call_id: &str) {
+        {
+            let mut s = self.state.lock().unwrap();
+            if s.stats.contains_key(call_id) {
+                return; // already polled (the call was resumed, for instance)
+            }
+            s.stats
+                .insert(call_id.to_owned(), CallStatsHistory::default());
+        }
+        let weak = Arc::downgrade(self);
+        let call_id = call_id.to_owned();
+        let every = *self.stats_interval.lock().unwrap();
+        tokio::spawn(async move {
+            let mut ticker = tokio::time::interval(every);
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            let mut last = Instant::now();
+            loop {
+                ticker.tick().await;
+                let Some(me) = weak.upgrade() else { break };
+                if me.closing.load(std::sync::atomic::Ordering::SeqCst)
+                    || !me.state.lock().unwrap().stats.contains_key(&call_id)
+                {
+                    break; // the call is over (its history was dropped) or the app is quitting
+                }
+                let raw = match me.engine.call_stats(&call_id).await {
+                    Ok(Some(raw)) => raw,
+                    Ok(None) => continue, // no audio stream yet
+                    Err(e) => {
+                        log::debug!("no statistics for call {call_id}: {e}");
+                        continue;
+                    }
+                };
+                let now = Instant::now();
+                let dt = now.duration_since(last).as_secs_f32();
+                last = now;
+                let sample = {
+                    let mut s = me.state.lock().unwrap();
+                    let Some(h) = s.stats.get_mut(&call_id) else {
+                        break; // the call ended while the engine was answering
+                    };
+                    let sample = h
+                        .tracker
+                        .next(&call_id, &raw, dt, Utc::now().timestamp_millis());
+                    h.push(sample.clone());
+                    sample
+                };
+                me.sink.call_stats(&sample);
+            }
+        });
+    }
+
     // ------------------------------------------------------------- settings
 
     pub fn settings(&self) -> AppResult<Settings> {
@@ -908,6 +989,7 @@ impl SipManager {
 
     fn finish(&self, update: CallUpdate) {
         let CallUpdate { call, history, .. } = update;
+        self.state.lock().unwrap().stats.remove(&call.id);
         self.sink.call_update(&call);
         if let Some(h) = history {
             if let Err(e) = self.db.insert_history(&h) {
@@ -1022,6 +1104,7 @@ impl SipManager {
                 self.sink.call_update(&update.call);
                 if event == super::engine::CallEvent::Established {
                     // Baresip holds the other calls when this one becomes active.
+                    self.start_stats_poller(&r.id);
                     let held = self.state.lock().unwrap().tracker.hold_others(&r.id);
                     for c in held {
                         self.sink.call_update(&c);

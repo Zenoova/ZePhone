@@ -22,8 +22,8 @@ use super::{
 use crate::{
     security::redact::redact,
     sip::engine::{
-        AccountSpec, EngineError, EngineEvent, EngineOptions, EngineResult, EngineState, SipEngine,
-        protocol,
+        AccountSpec, EngineError, EngineEvent, EngineOptions, EngineResult, EngineState,
+        RawCallStats, SipEngine, protocol,
     },
 };
 
@@ -129,6 +129,21 @@ fn check_call_id(id: &str) -> EngineResult<()> {
     } else {
         Err(EngineError::Invalid("identifiant d'appel invalide".into()))
     }
+}
+
+/// The answer of `zestats` is one line of JSON; anything the engine printed around it is ignored.
+fn parse_call_stats(data: &str) -> EngineResult<Option<RawCallStats>> {
+    let json = match (data.find('{'), data.rfind('}')) {
+        (Some(start), Some(end)) if start < end => &data[start..=end],
+        _ => {
+            return Err(EngineError::Protocol(
+                "statistiques d'appel illisibles".into(),
+            ));
+        }
+    };
+    let stats: RawCallStats = serde_json::from_str(json)
+        .map_err(|e| EngineError::Protocol(format!("statistiques d'appel illisibles : {e}")))?;
+    Ok(stats.found.then_some(stats))
 }
 
 fn check_no_space(label: &str, v: &str) -> EngineResult<()> {
@@ -339,6 +354,12 @@ impl SipEngine for BaresipEngine {
 
     async fn stop_recording(&self) -> EngineResult<()> {
         self.run("zerec_stop", "").await.map(|_| ())
+    }
+
+    async fn call_stats(&self, call_id: &str) -> EngineResult<Option<RawCallStats>> {
+        check_call_id(call_id)?;
+        let resp = self.run("zestats", call_id).await?;
+        parse_call_stats(&resp.data)
     }
 
     async fn set_audio_devices(
@@ -595,6 +616,19 @@ mod tests {
         assert!(!is_call_id("abc def"));
         assert!(!is_call_id("abc\nquit"));
         assert!(!is_call_id(&"a".repeat(65)));
+    }
+
+    #[test]
+    fn call_stats_are_read_from_the_engine_answer() {
+        let answer = "\n{\"found\":true,\"codec\":\"PCMA\",\"rtp\":{\"rxPackets\":7}}\n";
+        let stats = parse_call_stats(answer).unwrap().unwrap();
+        assert_eq!(stats.codec, "PCMA");
+        assert_eq!(stats.rtp.rx_packets, 7);
+        // No audio stream (yet): nothing to report.
+        assert_eq!(parse_call_stats("{\"found\":false}").unwrap(), None);
+        // Garbage is an error, not a panic or a fake zero.
+        assert!(parse_call_stats("").is_err());
+        assert!(parse_call_stats("{not json}").is_err());
     }
 
     #[tokio::test]

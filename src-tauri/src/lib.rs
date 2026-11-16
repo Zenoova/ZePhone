@@ -267,6 +267,7 @@ pub fn run() {
             commands::list_recordings,
             commands::delete_recording,
             commands::set_audio_gains,
+            commands::get_call_stats,
             commands::get_microphone_permission,
             commands::request_microphone_permission,
             commands::open_microphone_settings,

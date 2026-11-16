@@ -13,6 +13,7 @@ use crate::{
     recording::Recording,
     sip::{
         manager::{EngineInfo, SettingsApplied, Snapshot},
+        stats::CallStatsSample,
         types::{
             AccountInput, AccountView, Call, Contact, ContactInput, HistoryEntry, MAX_GAIN_PERCENT,
             Settings,
@@ -161,6 +162,12 @@ pub fn delete_recording(state: S, id: String) -> AppResult<()> {
 #[tauri::command]
 pub async fn set_audio_gains(state: S<'_>, input: u16, output: u16) -> AppResult<()> {
     state.manager.set_audio_gains(input, output).await
+}
+
+/// The statistics gathered so far about a call in progress (one sample per second, oldest first).
+#[tauri::command]
+pub fn get_call_stats(state: S, call_id: String) -> Vec<CallStatsSample> {
+    state.manager.call_stats_history(&call_id)
 }
 
 // ----------------------------------------------------------------- contacts
