@@ -26,7 +26,7 @@ Pour chaque action, la page montre son nom, sa combinaison, sa portée (« Globa
 | État | Sens |
 |---|---|
 | **Actif** | enregistré auprès du système : le presser, où que vous soyez, lance l'action |
-| **Non activé** | la combinaison est enregistrée dans vos réglages, **mais le système l'a refusée** (le plus souvent : une autre application la possède). Elle ne fait rien. Le motif est affiché. |
+| **Non activé** | la combinaison est enregistrée dans vos réglages, **mais le système l'a refusée** (combinaison invalide ou réservée, ou déjà prise là où le système signale le conflit). Elle ne fait rien. Le motif est affiché. **Sur macOS, le système ne signale pas qu'une autre application utilise déjà la même combinaison** (constaté : un second programme peut enregistrer la même combinaison sans erreur, et la plus récente reçoit l'événement). Un raccourci « Actif » qui ne réagit pas est donc peut-être pris par une autre application : changez-le. |
 | Désactivé | éteint par vous ; la combinaison est gardée |
 | Non attribué | aucune combinaison |
 | En pause | pendant que vous enregistrez une combinaison |
@@ -157,15 +157,29 @@ Boutons créés : *Answer, Decline, Hang up, Mute (toggle), Mute ON, Mute OFF, H
 
 **Les touches Stream Deck n'affichent pas l'état du micro ni de l'appel.** Les actions d'origine de Stream Deck n'ont aucun moyen de lire `ctl status`, et aucun plugin n'est fourni : une icône de micro barré ne saurait pas si le micro est vraiment coupé. Pour ne jamais avoir de doute, utilisez deux touches distinctes **Mute ON** / **Mute OFF** (explicites : les presser plusieurs fois ne change rien de plus) et regardez la fenêtre ou la barre des menus pour l'état réel. Un plugin Stream Deck qui interrogerait `zephone ctl status` toutes les secondes pourrait afficher l'état confirmé ; il n'est pas écrit.
 
-## 6. Ce qui est vérifié
+## 6. Ce qui est vérifié, et ce qui ne l'est pas
 
-| Vérifié | Comment |
+### Tests automatiques
+
+| Vérifié | Où |
 |---|---|
-| Sélection de l'appel visé, idempotence des commandes explicites, refus sans effet de bord, pas de double déclenchement de bascules simultanées, validation des commandes | tests automatiques (`control::*`) |
-| Décrocher, refuser, raccrocher, micro, attente, composer, « Ne pas déranger » sur de **vrais appels** (deux moteurs Baresip réels), état confirmé par le moteur, 486 reçu par l'appelant | `tests/control_e2e.rs` |
-| Socket : mode `0600`, requêtes invalides refusées (JSON inconnu, champ en trop, HTTP, UTF-8 invalide, trop long), remplacement d'un socket périmé, pas de vol d'un socket vivant, pas de suppression d'un fichier ordinaire | tests automatiques + test réel |
-| Lecture/écriture/libération des combinaisons, doublons, combinaisons refusées, préférences conservées au redémarrage, pause pendant l'enregistrement, anti-répétition | tests automatiques (`shortcuts::*`) |
-| Page de réglages : capture au clavier, aucune action pendant l'enregistrement, motif du refus, rétablir, supprimer, désactiver | tests du composant |
-| Texte des combinaisons accepté par la couche système | test automatique (`Shortcut::from_str`) |
+| Choix de l'appel visé, idempotence des commandes explicites, aucun effet de bord sans appel compatible, deux bascules simultanées sans lecture périmée, validation des commandes | `control::*` |
+| Décrocher, refuser, raccrocher, micro, attente, composer, « Ne pas déranger » sur de **vrais appels** (deux moteurs Baresip réels), état confirmé par le moteur, 486 reçu par l'appelant, un second appel sortant refusé pendant l'établissement du premier | `tests/control_e2e.rs` |
+| Socket : mode `0600`, requêtes refusées (commande inconnue, champ en trop, HTTP, UTF-8 invalide, trop long), remplacement d'un socket périmé, pas de vol d'un socket vivant, aucun fichier ordinaire supprimé | `control::socket` |
+| Combinaisons : lecture, refus (touche seule, Alt seul, réservées), doublons, libération à la modification/désactivation, conservation au redémarrage, pause pendant l'enregistrement, anti-répétition (touche maintenue, rebond, relâchement perdu) | `shortcuts::*` |
+| Page de réglages : capture au clavier, aucune action pendant l'enregistrement, motif du refus, supprimer, désactiver, rétablir | tests du composant |
+| Les commandes de contrôle ne lisent jamais le Trousseau | test du gestionnaire |
 
-Voir le bilan en fin de livraison pour ce qui a été exécuté **dans le système réel** (raccourci pressé depuis une autre application, fenêtre réduite, conflit avec une autre application, Stream Deck).
+### Dans le système réel (application packagée, macOS, Apple Silicon)
+
+- l'application démarre avec un profil vierge, crée le socket en `srw-------`, et **`zephone ctl status`, `answer`, `hangup`, `mute`, `hold`, `dnd` répondent** avec les bons états et codes (`unavailable` sans appel, `disconnected` tant que le moteur démarre, `ok`/`changed` corrects, répétitions explicites sans effet) ;
+- **un défaut a été trouvé ainsi et corrigé** : la commande `status` lisait le Trousseau (pour savoir si un mot de passe existe) ; quand macOS attendait une réponse à sa fenêtre d'autorisation, la commande ne répondait plus, et l'application, qui lisait aussi le Trousseau sur son fil principal, ne répondait plus non plus (SIGTERM sans effet). Les commandes de contrôle ne touchent plus au Trousseau et ces lectures ne s'exécutent plus sur le fil principal ;
+- les **boutons générés pour Stream Deck**, lancés par le système comme le fait l'action « Open », basculent « Ne pas déranger » dans l'application réelle, dans les deux sens, et **ne lancent jamais ZePhone** quand il est fermé ;
+- à la fermeture, le socket est supprimé, aucun processus ne reste (ZePhone ni moteur).
+
+### Non vérifié
+
+- **Un raccourci pressé depuis une autre application.** Pendant cette session, le Mac était verrouillé : les frappes que je pouvais envoyer allaient à l'écran de connexion, pas aux applications. Le chemin « système → ZePhone → action » n'a donc pas été exercé de bout en bout ; le chemin « événement reçu → action » l'est par les tests. À vérifier en 10 secondes : ouvrez une autre application, pressez ⌥⇧⌘Z (« Ne pas déranger »), regardez la case dans le menu de la barre des menus de ZePhone.
+- Fenêtre réduite, touche maintenue et conflit avec une autre application **dans le système réel** (les trois sont couverts par des tests de la logique, pas par le système).
+- Un **vrai Stream Deck** (matériel et son logiciel) : seul le lancement des applications générées est vérifié.
+- Windows et Linux.
