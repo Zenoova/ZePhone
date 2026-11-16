@@ -711,6 +711,55 @@ async fn every_audio_device_listed_to_the_user_is_accepted_by_baresip() {
 }
 
 #[tokio::test]
+async fn every_device_the_audio_model_lists_is_accepted_and_the_ringtone_device_is_independent() {
+    use zephone_lib::audio::devices::{AudioSystem, SystemAudio};
+    // The identifiers come from CoreAudio; the engine selects by name. Each device's name must be accepted by
+    // the engine for the direction it has, or a device picked in Settings would silently not be used.
+    let snap = SystemAudio.snapshot();
+    println!("{} devices", snap.devices.len());
+    let dir = tempfile::tempdir().unwrap();
+    let engine = engine_or_skip!(&dir.path().join("w"), EngineOptions::default());
+    let mut checked = 0;
+    for d in snap
+        .devices
+        .iter()
+        .filter(|d| d.selectable && !d.duplicate_name)
+    {
+        if d.is_input() {
+            engine
+                .set_audio_devices(Some(&d.name), None)
+                .await
+                .unwrap_or_else(|e| panic!("the engine rejected input {:?}: {e}", d.name));
+            checked += 1;
+        }
+        if d.is_output() {
+            engine
+                .set_audio_devices(None, Some(&d.name))
+                .await
+                .unwrap_or_else(|e| panic!("the engine rejected output {:?}: {e}", d.name));
+            // The ringtone has its own device: `zealert` is accepted, and a later `auplay` (set_audio_devices)
+            // puts it back instead of overwriting it with the call player.
+            engine
+                .set_alert_device(Some(&d.name))
+                .await
+                .unwrap_or_else(|e| {
+                    panic!("the engine rejected ringtone device {:?}: {e}", d.name)
+                });
+            engine
+                .set_audio_devices(None, Some(&d.name))
+                .await
+                .unwrap_or_else(|e| {
+                    panic!("switching the player after choosing a ringer failed: {e}")
+                });
+            checked += 1;
+        }
+    }
+    println!("{checked} device roles accepted by the real engine");
+    assert!(checked > 0, "this machine has audio devices");
+    engine.stop().await;
+}
+
+#[tokio::test]
 async fn hold_and_resume_are_signalled_to_the_remote_party() {
     let tmp = tempfile::tempdir().unwrap();
     let port_b = std::net::UdpSocket::bind("127.0.0.1:0")
