@@ -14,6 +14,7 @@ export const EVENTS = {
   recordingsChanged: "recordings:changed",
   settingsChanged: "settings:changed",
   directoryChanged: "directory:changed",
+  shellFocus: "shell:focus",
 } as const;
 
 export interface TelephonyHandlers {
@@ -30,6 +31,8 @@ export interface TelephonyHandlers {
   onSettingsChanged?: (settings: Settings) => void;
   /** The company directory changed (a synchronisation, a favourite, a group, a source). */
   onDirectoryChanged?: () => void;
+  /** The window was brought forward by a shortcut or the command line, on a page. */
+  onShellFocus?: (target: "dialer" | "search") => void;
 }
 
 /** Subscribes to every backend event; returns a function that removes all listeners. */
@@ -45,6 +48,7 @@ export async function subscribeTelephony(h: TelephonyHandlers): Promise<() => vo
     listen<null>(EVENTS.recordingsChanged, () => h.onRecordingsChanged?.()),
     listen<Settings>(EVENTS.settingsChanged, (e) => h.onSettingsChanged?.(e.payload)),
     listen<null>(EVENTS.directoryChanged, () => h.onDirectoryChanged?.()),
+    listen<"dialer" | "search">(EVENTS.shellFocus, (e) => h.onShellFocus?.(e.payload)),
   ]);
   return () => unlisteners.forEach((u) => u());
 }

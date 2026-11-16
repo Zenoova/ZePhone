@@ -41,6 +41,7 @@ export function useTelephonyBootstrap(): void {
         onRecordingsChanged: () => void useRecordingsStore.getState().load(),
         onSettingsChanged: (s) => useSettingsStore.getState().adopt(s),
         onDirectoryChanged: () => void useDirectoryStore.getState().refreshAll(),
+        onShellFocus: (target) => useUiStore.getState().requestFocus(target),
       });
       if (cancelled) {
         unsubscribe();

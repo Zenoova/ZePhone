@@ -26,6 +26,14 @@ export function DialerPage() {
   const setDialValue = useUiStore((s) => s.setDialValue);
   const setSection = useUiStore((s) => s.setSection);
   const openSettings = useUiStore((s) => s.openSettings);
+  // A shortcut brought the window forward "on the dialer": the digits typed next go to the number, not to
+  // whatever field had the focus.
+  const focusRequest = useUiStore((s) => s.focusRequest);
+  useEffect(() => {
+    if (focusRequest !== "dialer") return;
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    useUiStore.getState().clearFocusRequest();
+  }, [focusRequest]);
   const dialing = useCallsStore((s) => s.dialing);
   const dial = useCallsStore((s) => s.dial);
   const usable = useMemo(() => accounts.filter((a) => a.enabled), [accounts]);

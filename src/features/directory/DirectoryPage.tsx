@@ -125,6 +125,14 @@ export function DirectoryPage() {
   const actions = useDirectoryActions();
 
   const searchRef = useRef<HTMLInputElement>(null);
+  // A shortcut brought the window forward "on the contacts search": the field takes the keyboard.
+  const focusRequest = useUiStore((s) => s.focusRequest);
+  useEffect(() => {
+    if (focusRequest !== "search") return;
+    searchRef.current?.focus();
+    searchRef.current?.select();
+    useUiStore.getState().clearFocusRequest();
+  }, [focusRequest]);
   const listRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
   const [opened, setOpened] = useState<DirectoryEntry | null>(null);
