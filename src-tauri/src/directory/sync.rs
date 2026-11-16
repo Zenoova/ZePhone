@@ -9,6 +9,8 @@ use super::{
     model::{RemoteContact, SyncErrorKind},
     store::SourceRow,
 };
+use std::sync::Arc;
+
 use crate::security::secrets::SecretStore;
 
 /// What a connector read from its source.
@@ -67,7 +69,7 @@ pub trait ConnectorFactory: Send + Sync {
     fn build(
         &self,
         source: &SourceRow,
-        secrets: &dyn SecretStore,
+        secrets: Arc<dyn SecretStore>,
     ) -> Result<Box<dyn Connector>, SyncError>;
 }
 

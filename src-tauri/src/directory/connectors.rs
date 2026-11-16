@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use super::{
     ldap::{LdapConfig, LdapConnector},
+    microsoft::{Endpoints, MicrosoftConfig, MicrosoftConnector},
     model::{SourceKind, SyncErrorKind},
     store::SourceRow,
     sync::{Connector, ConnectorFactory, SyncError, secret_key},
@@ -13,11 +14,21 @@ use crate::{database::Database, security::secrets::SecretStore};
 
 pub struct RealConnectorFactory {
     db: Arc<Database>,
+    microsoft: Endpoints,
 }
 
 impl RealConnectorFactory {
     pub fn new(db: Arc<Database>) -> Self {
-        Self { db }
+        Self {
+            db,
+            microsoft: Endpoints::default(),
+        }
+    }
+
+    /// For tests that stand a stand-in Microsoft service on the loopback. The connector still refuses any
+    /// unencrypted address that is not the loopback.
+    pub fn with_microsoft_endpoints(db: Arc<Database>, microsoft: Endpoints) -> Self {
+        Self { db, microsoft }
     }
 
     /// The additional certificate authority the user configured for the network (PEM), if any.
@@ -43,7 +54,7 @@ impl ConnectorFactory for RealConnectorFactory {
     fn build(
         &self,
         source: &SourceRow,
-        secrets: &dyn SecretStore,
+        secrets: Arc<dyn SecretStore>,
     ) -> Result<Box<dyn Connector>, SyncError> {
         match source.kind {
             SourceKind::Ldap => {
@@ -74,10 +85,24 @@ impl ConnectorFactory for RealConnectorFactory {
                     self.ca_pem()?,
                 )))
             }
-            SourceKind::MicrosoftOrg | SourceKind::MicrosoftPersonal => Err(SyncError::new(
-                SyncErrorKind::Config,
-                "Le connecteur Microsoft n'est pas disponible.",
-            )),
+            SourceKind::MicrosoftOrg | SourceKind::MicrosoftPersonal => {
+                let config: MicrosoftConfig = serde_json::from_value(source.config.clone())
+                    .map_err(|_| {
+                        SyncError::new(
+                            SyncErrorKind::Config,
+                            "La configuration de cette source est illisible : modifiez-la.",
+                        )
+                    })?;
+                let ca = self.ca_pem()?;
+                Ok(Box::new(MicrosoftConnector::new(
+                    source.kind,
+                    config,
+                    self.microsoft.clone(),
+                    secrets,
+                    source.id.clone(),
+                    ca.as_deref(),
+                )?))
+            }
             SourceKind::Local => Err(SyncError::new(
                 SyncErrorKind::Config,
                 "Le carnet d'adresses local n'a rien à synchroniser.",

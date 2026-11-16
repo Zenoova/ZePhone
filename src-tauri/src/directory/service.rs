@@ -425,7 +425,7 @@ impl DirectoryService {
     }
 
     async fn read_and_apply(&self, row: &SourceRow) -> Result<ApplyReport, SyncError> {
-        let connector = self.factory.build(row, self.secrets.as_ref())?;
+        let connector = self.factory.build(row, self.secrets.clone())?;
         let mut fetched = connector.fetch(row.cursor.as_deref(), &|_| {}).await?;
         // Records without a name or without any way to reach the person are of no use in a phone directory.
         fetched.contacts.retain(RemoteContact::is_useful);
@@ -639,7 +639,7 @@ mod tests {
         fn build(
             &self,
             _source: &SourceRow,
-            _secrets: &dyn SecretStore,
+            _secrets: Arc<dyn SecretStore>,
         ) -> Result<Box<dyn Connector>, SyncError> {
             if let Some(e) = self.refuse.lock().unwrap().clone() {
                 return Err(e);

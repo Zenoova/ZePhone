@@ -37,7 +37,7 @@ cpal = "0.18.2"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 sysinfo = { version = "0.40.1", default-features = false, features = ["system"] }
 ldap3 = { version = "0.12.1", default-features = false, features = ["tls-native"] }
-reqwest = { version = "0.13.5", default-features = false, features = ["native-tls", "json", "gzip"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["native-tls", "json", "gzip", "system-proxy"] }
 native-tls = "0.2.18"
 unicode-normalization = "0.1.26"
 sha2 = "0.11.1"

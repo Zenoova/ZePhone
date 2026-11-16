@@ -8,6 +8,7 @@
 pub mod connectors;
 pub mod index;
 pub mod ldap;
+pub mod microsoft;
 pub mod model;
 pub mod normalize;
 pub mod service;
