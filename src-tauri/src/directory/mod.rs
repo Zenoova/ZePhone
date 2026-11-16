@@ -6,6 +6,7 @@
 //! * the connectors (`ldap`, `microsoft`) turn a source into [`model::RemoteContact`]s.
 
 pub mod index;
+pub mod ldap;
 pub mod model;
 pub mod normalize;
 pub mod service;
