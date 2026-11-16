@@ -477,6 +477,12 @@ impl AudioRouter {
         let _turn = self.gate.lock().await;
         let in_call = self.target.call_active();
         let snap = self.system.snapshot();
+        log::info!(
+            "audio: looking at the system ({} devices, default in/out: {:?}/{:?}, call: {in_call})",
+            snap.devices.len(),
+            snap.default_input,
+            snap.default_output
+        );
         let (actions, deadline) = {
             let mut core = self.core.lock().unwrap();
             // Learn identifiers of choices saved by name.
@@ -517,6 +523,11 @@ impl AudioRouter {
                     let from = self.core.lock().unwrap().applied(role).cloned();
                     match self.target.apply(role, &device, mid_call).await {
                         Ok(()) => {
+                            log::info!(
+                                "audio: {role:?} now on {:?}{}",
+                                device.name,
+                                if mid_call { " (in a call)" } else { "" }
+                            );
                             touched_call |= mid_call;
                             let mut core = self.core.lock().unwrap();
                             match (why, from) {
