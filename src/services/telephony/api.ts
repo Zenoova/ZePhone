@@ -18,6 +18,17 @@ import type {
   Snapshot,
 } from "@/types/telephony";
 
+import type {
+  DepartmentCount,
+  DirectoryPage,
+  DirectoryQuery,
+  GroupView,
+  LdapSourceInput,
+  LdapTestResult,
+  MicrosoftSourceInput,
+  SourceView,
+} from "@/types/directory";
+
 import { toAppError } from "./errors";
 
 /** True when running inside the Tauri webview (false in a plain browser, e.g. `vite dev`). */
@@ -81,6 +92,32 @@ export const telephony = {
   listContacts: (query?: string) => call<Contact[]>("list_contacts", { query: query ?? null }),
   saveContact: (input: ContactInput) => call<Contact>("save_contact", { input }),
   deleteContact: (id: string) => call<void>("delete_contact", { id }),
+
+  // company directory
+  directorySearch: (query: DirectoryQuery) => call<DirectoryPage>("directory_search", { query }),
+  directoryDepartments: () => call<DepartmentCount[]>("directory_departments"),
+  directorySources: () => call<SourceView[]>("directory_sources"),
+  /** What to dial for a number as the directory shows it (spaces, brackets and extension marker removed). */
+  directoryDialable: (number: string) => call<string | null>("directory_dialable", { number }),
+  directoryTestLdap: (input: LdapSourceInput) => call<LdapTestResult>("directory_test_ldap", { input }),
+  directorySaveLdap: (input: LdapSourceInput) => call<SourceView>("directory_save_ldap", { input }),
+  /** Signs in with Microsoft in the browser; returns when the sign-in is over. */
+  directoryConnectMicrosoft: (input: MicrosoftSourceInput) =>
+    call<SourceView>("directory_connect_microsoft", { input }),
+  directoryCancelConnect: () => call<void>("directory_cancel_connect"),
+  directorySync: (id: string) => call<void>("directory_sync", { id }),
+  directorySetSource: (id: string, name: string, enabled: boolean, syncIntervalMin: number) =>
+    call<SourceView>("directory_set_source", { id, name, enabled, syncIntervalMin }),
+  directoryDisconnect: (id: string) => call<void>("directory_disconnect", { id }),
+  directoryRemoveSource: (id: string) => call<void>("directory_remove_source", { id }),
+  directoryClearCache: (id: string) => call<void>("directory_clear_cache", { id }),
+  directorySetFavorite: (ids: string[], favorite: boolean) => call<void>("directory_set_favorite", { ids, favorite }),
+  directoryGroups: () => call<GroupView[]>("directory_groups"),
+  directoryCreateGroup: (name: string) => call<GroupView>("directory_create_group", { name }),
+  directoryRenameGroup: (id: string, name: string) => call<void>("directory_rename_group", { id, name }),
+  directoryDeleteGroup: (id: string) => call<void>("directory_delete_group", { id }),
+  directoryGroupAdd: (groupId: string, ids: string[]) => call<void>("directory_group_add", { groupId, ids }),
+  directoryGroupRemove: (groupId: string, ids: string[]) => call<void>("directory_group_remove", { groupId, ids }),
 
   // history
   listHistory: (filter?: HistoryFilter) => call<HistoryEntry[]>("list_history", { filter: filter ?? null }),

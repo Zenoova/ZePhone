@@ -5,6 +5,7 @@ import { pushLevel } from "@/lib/audio-levels";
 import { isTauri, subscribeTelephony, telephony } from "@/services/telephony";
 import { useAccountsStore } from "@/stores/accounts-store";
 import { useCallStatsStore } from "@/stores/call-stats-store";
+import { useDirectoryStore } from "@/stores/directory-store";
 import { isTerminal, useCallsStore } from "@/stores/calls-store";
 import { useEngineStore } from "@/stores/engine-store";
 import { useHistoryStore } from "@/stores/history-store";
@@ -39,6 +40,7 @@ export function useTelephonyBootstrap(): void {
         onCallStats: (sample) => useCallStatsStore.getState().push(sample),
         onRecordingsChanged: () => void useRecordingsStore.getState().load(),
         onSettingsChanged: (s) => useSettingsStore.getState().adopt(s),
+        onDirectoryChanged: () => void useDirectoryStore.getState().refreshAll(),
       });
       if (cancelled) {
         unsubscribe();
@@ -59,6 +61,7 @@ export function useTelephonyBootstrap(): void {
       void useRecordingsStore.getState().load();
       void useEngineStore.getState().loadAppInfo();
       void useSettingsStore.getState().refreshMic();
+      void useDirectoryStore.getState().loadSources();
     })();
 
     return () => {

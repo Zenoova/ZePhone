@@ -1,3 +1,4 @@
+import type { DirectoryEntry, GroupView, SourceView } from "@/types/directory";
 import type { Account, AccountStatus, AccountView, Call, CallStatsSample, HistoryEntry } from "@/types/telephony";
 
 export function makeCall(over: Partial<Call> = {}): Call {
@@ -136,4 +137,54 @@ export function makeRun(
   from = 5,
 ): CallStatsSample[] {
   return Array.from({ length: n }, (_, i) => makeStats({ elapsedSecs: from + i, ...edit(i) }));
+}
+
+export function makeSource(over: Partial<SourceView> = {}): SourceView {
+  return {
+    id: "src1",
+    kind: "ldap",
+    name: "Annuaire de l'entreprise",
+    enabled: true,
+    readOnly: true,
+    state: "idle",
+    contactCount: 120,
+    lastSuccessAt: "2026-03-10T11:00:00Z",
+    lastAttemptAt: "2026-03-10T11:00:00Z",
+    lastError: null,
+    errorKind: null,
+    syncIntervalMin: 360,
+    stale: false,
+    config: {},
+    ...over,
+  };
+}
+
+export function makeEntry(over: Partial<DirectoryEntry> = {}): DirectoryEntry {
+  const id = over.id ?? "src1/uid-1";
+  return {
+    id,
+    displayName: "Élodie Dupont",
+    firstName: "Élodie",
+    lastName: "Dupont",
+    company: "Société Exemple",
+    department: "Comptabilité",
+    title: "Directrice financière",
+    email: "elodie.dupont@example.org",
+    phones: [
+      { kind: "work", number: "+33 1 23 45 67 89" },
+      { kind: "mobile", number: "06 12-34-56-78" },
+      { kind: "extension", number: "4567" },
+    ],
+    sources: [
+      { recordId: id, sourceId: "src1", sourceName: "Annuaire de l'entreprise", kind: "ldap", externalId: "uid-1" },
+    ],
+    favorite: false,
+    groups: [],
+    readOnly: true,
+    ...over,
+  };
+}
+
+export function makeGroup(over: Partial<GroupView> = {}): GroupView {
+  return { id: "g1", name: "Direction", memberCount: 0, ...over };
 }

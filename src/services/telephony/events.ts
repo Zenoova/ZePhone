@@ -13,6 +13,7 @@ export const EVENTS = {
   callStats: "call:stats",
   recordingsChanged: "recordings:changed",
   settingsChanged: "settings:changed",
+  directoryChanged: "directory:changed",
 } as const;
 
 export interface TelephonyHandlers {
@@ -27,6 +28,8 @@ export interface TelephonyHandlers {
   onRecordingsChanged?: () => void;
   /** The settings were saved, here or in another window. */
   onSettingsChanged?: (settings: Settings) => void;
+  /** The company directory changed (a synchronisation, a favourite, a group, a source). */
+  onDirectoryChanged?: () => void;
 }
 
 /** Subscribes to every backend event; returns a function that removes all listeners. */
@@ -41,6 +44,7 @@ export async function subscribeTelephony(h: TelephonyHandlers): Promise<() => vo
     listen<CallStatsSample>(EVENTS.callStats, (e) => h.onCallStats?.(e.payload)),
     listen<null>(EVENTS.recordingsChanged, () => h.onRecordingsChanged?.()),
     listen<Settings>(EVENTS.settingsChanged, (e) => h.onSettingsChanged?.(e.payload)),
+    listen<null>(EVENTS.directoryChanged, () => h.onDirectoryChanged?.()),
   ]);
   return () => unlisteners.forEach((u) => u());
 }
