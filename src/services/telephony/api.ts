@@ -18,6 +18,7 @@ import type {
   Snapshot,
 } from "@/types/telephony";
 
+import type { ShortcutAction, ShortcutsView } from "@/types/shortcuts";
 import type {
   DepartmentCount,
   DirectoryPage,
@@ -129,6 +130,15 @@ export const telephony = {
   listHistory: (filter?: HistoryFilter) => call<HistoryEntry[]>("list_history", { filter: filter ?? null }),
   deleteHistoryEntry: (id: string) => call<void>("delete_history_entry", { id }),
   clearHistory: () => call<void>("clear_history"),
+
+  // keyboard shortcuts
+  shortcutsGet: () => call<ShortcutsView>("shortcuts_get"),
+  shortcutsSet: (action: ShortcutAction, accelerator: string | null, enabled: boolean) =>
+    call<ShortcutsView>("shortcuts_set", { action, accelerator, enabled }),
+  shortcutsSetEnabled: (enabled: boolean) => call<ShortcutsView>("shortcuts_set_enabled", { enabled }),
+  shortcutsReset: (action?: ShortcutAction) => call<ShortcutsView>("shortcuts_reset", { action: action ?? null }),
+  /** Pauses the shortcuts while a combination is recorded, so pressing an existing one runs nothing. */
+  shortcutsCapture: (active: boolean) => call<ShortcutsView>("shortcuts_capture", { active }),
 
   // settings & audio
   getSettings: () => call<Settings>("get_settings"),

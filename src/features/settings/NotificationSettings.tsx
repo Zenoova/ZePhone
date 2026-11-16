@@ -5,9 +5,22 @@ import { SettingRow, SettingsSection } from "./parts";
 
 export function NotificationSettings() {
   const n = useSettingsStore((s) => s.settings.notifications);
+  const g = useSettingsStore((s) => s.settings.general);
   const update = useSettingsStore((s) => s.update);
   return (
     <div className="space-y-6">
+      <SettingsSection title="Disponibilité">
+        <SettingRow
+          label="Ne pas déranger"
+          description="Les appels entrants sont refusés (486 « Occupé ») sans sonner ni notifier. Ils restent dans l'historique, comme manqués. Les appels que vous passez ne sont pas touchés."
+        >
+          <Switch
+            checked={g.doNotDisturb}
+            onCheckedChange={(v) => void update({ general: { doNotDisturb: v } })}
+            aria-label="Ne pas déranger"
+          />
+        </SettingRow>
+      </SettingsSection>
       <SettingsSection
         title="Notifications"
         description="L'appel entrant s'affiche toujours dans l'application, même si la fenêtre était réduite."

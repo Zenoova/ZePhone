@@ -16,6 +16,7 @@ export const DEFAULT_SETTINGS: Settings = {
     showTrayIcon: true,
     translucent: true,
     voiceOrb: DEFAULT_ORB,
+    doNotDisturb: false,
   },
   network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
   recording: { autoRecord: true },

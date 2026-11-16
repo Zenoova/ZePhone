@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn(async () => undefined) }));
+const { invoke } = vi.hoisted(() => ({ invoke: vi.fn(async (..._a: unknown[]) => undefined as unknown) }));
+vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 vi.mock("@yusufceng1z/ding-react", () => ({ toast: { error: vi.fn() } }));
 
 import { DEFAULT_SETTINGS, useSettingsStore } from "@/stores/settings-store";
@@ -22,7 +23,7 @@ describe("SettingsPage", () => {
   it("uses the same tabs as the history page, without the accounts (they have a page of their own)", () => {
     render(<SettingsPage />);
     const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
-    expect(tabs).toEqual(["Comptes SIP", "Annuaire", "Audio", "Réseau", "Notifications", "Général", "À propos"]);
+    expect(tabs).toEqual(["Comptes SIP", "Annuaire", "Audio", "Réseau", "Notifications", "Raccourcis", "Général", "À propos"]);
     expect(screen.getByRole("tab", { name: "Audio" })).toHaveAttribute("data-state", "active");
   });
 
@@ -32,5 +33,18 @@ describe("SettingsPage", () => {
     expect(useUiStore.getState().settingsTab).toBe("notifications");
     fireEvent.click(screen.getByRole("tab", { name: "Notifications" }));
     expect(screen.getByRole("switch", { name: "Sonnerie" })).toBeInTheDocument();
+  });
+
+  it("offers do-not-disturb with the notifications, and saves it as a setting", () => {
+    useUiStore.setState({ settingsTab: "notifications" });
+    invoke.mockClear();
+    render(<SettingsPage />);
+    const sw = screen.getByRole("switch", { name: "Ne pas déranger" });
+    expect(sw).not.toBeChecked();
+    fireEvent.click(sw);
+    const sent = invoke.mock.calls.find((c) => c[0] === "update_settings")?.[1] as {
+      settings: { general: { doNotDisturb: boolean } };
+    };
+    expect(sent.settings.general.doNotDisturb).toBe(true);
   });
 });

@@ -181,6 +181,8 @@ export interface Settings {
     translucent: boolean;
     /** Id of the voice orb of the call screen (`VOICE_ORBS`). */
     voiceOrb: string;
+    /** Incoming calls are declined (486 Busy Here) without ringing or notifying. */
+    doNotDisturb: boolean;
   };
   network: {
     customCaFile: string | null;

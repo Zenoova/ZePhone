@@ -9,6 +9,7 @@ import { DirectorySettings } from "./DirectorySettings";
 import { GeneralSettings } from "./GeneralSettings";
 import { NetworkSettings } from "./NetworkSettings";
 import { NotificationSettings } from "./NotificationSettings";
+import { ShortcutsSettings } from "./ShortcutsSettings";
 
 const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
   { id: "accounts", label: "Comptes SIP" },
@@ -16,6 +17,7 @@ const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
   { id: "audio", label: "Audio" },
   { id: "network", label: "Réseau" },
   { id: "notifications", label: "Notifications" },
+  { id: "shortcuts", label: "Raccourcis" },
   { id: "general", label: "Général" },
   { id: "about", label: "À propos" },
 ];
@@ -45,6 +47,7 @@ export function SettingsPage() {
           {tab === "audio" && <AudioSettings />}
           {tab === "network" && <NetworkSettings />}
           {tab === "notifications" && <NotificationSettings />}
+          {tab === "shortcuts" && <ShortcutsSettings />}
           {tab === "general" && <GeneralSettings />}
           {tab === "about" && <AboutSettings />}
         </div>
