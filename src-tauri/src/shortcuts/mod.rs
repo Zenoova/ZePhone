@@ -406,6 +406,13 @@ impl ShortcutService {
             };
             st.status.insert(b.action, status);
         }
+        let active = st.ids.len();
+        let refused = st
+            .status
+            .values()
+            .filter(|s| matches!(s, BindingStatus::Failed { .. }))
+            .count();
+        log::info!("shortcuts: {active} active, {refused} not activated");
     }
 
     pub fn view(&self) -> ShortcutsView {
