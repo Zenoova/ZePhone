@@ -748,6 +748,67 @@ async fn incoming_call_is_announced_once_and_a_missed_one_is_recorded() {
 }
 
 #[tokio::test]
+async fn do_not_disturb_declines_a_new_call_before_anything_rings_and_records_it_as_missed() {
+    let (r, _) = registered_rig().await;
+    r.mgr.set_do_not_disturb(true).await.unwrap();
+    assert!(r.mgr.do_not_disturb().unwrap());
+    let rf = cref("dnd1", CallDirection::Incoming, "sip:2000@example.com");
+    r.engine.emit(EngineEvent::Call {
+        call: rf.clone(),
+        event: CallEvent::Incoming,
+    });
+    let engine = r.engine.clone();
+    until("declined with 486", move || {
+        engine.cmds().contains(&"hangup dnd1 486".to_owned())
+    })
+    .await;
+    // Nothing was shown to the user: no window, no notification, no ringtone silencing.
+    let seen = r.sink.all();
+    assert!(
+        !seen
+            .iter()
+            .any(|e| matches!(e, Seen::Incoming { .. } | Seen::Call(_))),
+        "the call stayed invisible: {seen:?}"
+    );
+
+    // The engine confirms the end: it is in the history, as missed, without a missed-call notification.
+    r.engine.emit(EngineEvent::Call {
+        call: rf,
+        event: CallEvent::Closed {
+            code: Some(486),
+            reason: "Busy Here".into(),
+        },
+    });
+    let sink = r.sink.clone();
+    until("recorded", move || {
+        sink.all().iter().any(|e| matches!(e, Seen::Missed { .. }))
+    })
+    .await;
+    assert!(
+        r.sink.all().contains(&Seen::Missed { notify: false }),
+        "no notification while do-not-disturb is on"
+    );
+    let h = r.db.list_history(&Default::default()).unwrap();
+    assert_eq!(h.len(), 1);
+    assert_eq!(h[0].result, CallResult::Missed);
+
+    // Off again: the next call rings as usual.
+    r.mgr.set_do_not_disturb(false).await.unwrap();
+    r.engine.emit(EngineEvent::Call {
+        call: cref("next", CallDirection::Incoming, "sip:3000@example.com"),
+        event: CallEvent::Incoming,
+    });
+    let sink = r.sink.clone();
+    until("rings", move || {
+        sink.all()
+            .iter()
+            .any(|e| matches!(e, Seen::Incoming { .. }))
+    })
+    .await;
+    assert!(!r.engine.cmds().contains(&"hangup next 486".to_owned()));
+}
+
+#[tokio::test]
 async fn answering_and_rejecting_incoming_calls() {
     let (r, _) = registered_rig().await;
     let a = cref("a", CallDirection::Incoming, "sip:2000@example.com");

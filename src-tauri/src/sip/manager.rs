@@ -58,6 +58,8 @@ pub trait UiSink: Send + Sync + 'static {
     fn audio_level(&self, _call_id: &str, _tx: bool, _db: f32) {}
     /// One more second of statistics about a call in progress.
     fn call_stats(&self, _sample: &CallStatsSample) {}
+    /// The settings were changed by the core itself (not through the settings page): refresh what shows them.
+    fn settings_changed(&self, _settings: &Settings) {}
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -491,6 +493,39 @@ impl SipManager {
                 log::warn!("cannot connect account {}: {e}", acc.id);
             }
         }
+    }
+
+    // ---------------------------------------------------------------- remote control
+
+    pub fn is_engine_running(&self) -> bool {
+        matches!(self.engine.state(), EngineState::Running)
+    }
+
+    /// Accounts the engine is hosting: the ones a call can be placed with.
+    pub fn connected_account_ids(&self) -> Vec<String> {
+        self.state
+            .lock()
+            .unwrap()
+            .hosted
+            .values()
+            .map(|h| h.account_id.clone())
+            .collect()
+    }
+
+    pub fn do_not_disturb(&self) -> AppResult<bool> {
+        Ok(self.db.get_settings()?.general.do_not_disturb)
+    }
+
+    /// Turns "do not disturb" on or off and tells the interface. Calls that already ring are left alone.
+    pub async fn set_do_not_disturb(&self, on: bool) -> AppResult<()> {
+        let mut settings = self.db.get_settings()?;
+        if settings.general.do_not_disturb == on {
+            return Ok(());
+        }
+        settings.general.do_not_disturb = on;
+        let applied = self.update_settings(settings).await?;
+        self.sink.settings_changed(&applied.settings);
+        Ok(())
     }
 
     // ---------------------------------------------------------------- calls
@@ -1031,10 +1066,11 @@ impl SipManager {
                 self.sink.history_changed();
             }
             if h.result == CallResult::Missed {
+                // Under "do not disturb" nothing is raised: the call is in the history.
                 let notify = self
                     .db
                     .get_settings()
-                    .map(|s| s.notifications.missed_call)
+                    .map(|s| s.notifications.missed_call && !s.general.do_not_disturb)
                     .unwrap_or(true);
                 self.sink.missed_call(&call, notify);
             }
@@ -1131,6 +1167,15 @@ impl SipManager {
                 if update.history.is_some() {
                     self.end_recording_for(&update).await;
                     self.finish(update);
+                    return;
+                }
+                // "Do not disturb": a new incoming call is declined at once (486 Busy Here), before anything
+                // rings, opens or notifies. It still lands in the history as a missed call.
+                if update.is_new_incoming && self.do_not_disturb().unwrap_or(false) {
+                    log::info!("incoming call declined: do not disturb");
+                    if let Err(e) = self.engine.hangup(&r.id, Some(486)).await {
+                        log::warn!("cannot decline the call under do-not-disturb: {e}");
+                    }
                     return;
                 }
                 self.sink.call_update(&update.call);

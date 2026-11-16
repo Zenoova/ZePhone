@@ -536,6 +536,8 @@ pub struct GeneralSettings {
     /// Voice orb of the call screen: an OrbKit id such as `shdr-32` (the default). The webview checks it
     /// against the orbs it knows; the backend only keeps a well-formed id.
     pub voice_orb: String,
+    /// "Do not disturb": incoming calls are declined (486 Busy Here) without ringing or notifying.
+    pub do_not_disturb: bool,
 }
 
 impl Default for GeneralSettings {
@@ -548,6 +550,7 @@ impl Default for GeneralSettings {
             show_tray_icon: true,
             translucent: true,
             voice_orb: "shdr-32".into(),
+            do_not_disturb: false,
         }
     }
 }
