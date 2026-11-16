@@ -5,6 +5,7 @@
 //! device names Baresip matches against.
 
 pub mod devices;
+pub mod diagnostics;
 pub mod permissions;
 pub mod router;
 pub mod routing;

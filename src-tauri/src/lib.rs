@@ -5,6 +5,7 @@ pub mod control;
 pub mod database;
 pub mod directory;
 pub mod error;
+pub mod headset;
 pub mod recording;
 pub mod security;
 pub mod shortcuts;
@@ -121,6 +122,34 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let controller = Controller::new(manager.clone(), Arc::new(TauriShell::new(handle.clone())));
     let shortcuts = ShortcutService::new(db.clone(), Arc::new(TauriHotkeys::new(handle.clone())));
     shortcuts.start();
+    // The headset buttons: the interpreter's actions go through the same controller as everything else.
+    let headset = {
+        let router = Arc::downgrade(&audio_router);
+        let events = handle.clone();
+        let service = headset::service::HeadsetService::new(
+            settings.audio.headset.clone(),
+            manager.clone(),
+            controller.clone(),
+            Arc::new(move || {
+                router
+                    .upgrade()
+                    .map(|r| {
+                        r.state()
+                            .roles
+                            .iter()
+                            .filter(|x| x.role != audio::routing::Role::Ringer)
+                            .filter_map(|x| x.in_use.as_ref().map(|d| d.name.clone()))
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            }),
+            Arc::new(move |st| {
+                use tauri::Emitter;
+                let _ = events.emit(app::events::HEADSET_STATE, st);
+            }),
+        );
+        headset::runtime::HeadsetRuntime::new(service)
+    };
     app.manage(AppState {
         manager: manager.clone(),
         directory,
@@ -128,11 +157,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         controller: controller.clone(),
         shortcuts,
         audio: audio_router.clone(),
+        headset: headset.clone(),
+        meter: std::sync::Mutex::new(None),
         control_server: std::sync::Mutex::new(None),
         shutting_down: AtomicBool::new(false),
     });
     start_control_socket(handle.clone(), controller);
     audio_router.start();
+    headset.apply(settings.audio.headset.clone());
 
     tray::setup(&handle, settings.general.show_tray_icon)?;
     app::window::apply_appearance(&handle, &settings.general);
@@ -389,6 +421,9 @@ pub fn run() {
             commands::directory::directory_group_remove,
             commands::audio_state,
             commands::audio_choose,
+            commands::headset_state,
+            commands::audio_test,
+            commands::audio_meter,
             commands::shortcuts_get,
             commands::shortcuts_set,
             commands::shortcuts_set_enabled,

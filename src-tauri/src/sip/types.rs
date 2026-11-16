@@ -467,6 +467,8 @@ pub struct AudioSettings {
     pub output_gain: u16,
     /// Which device each role uses (microphone, conversation output, ringer) and what happens when one goes away.
     pub routing: crate::audio::routing::Routing,
+    /// The headset's physical buttons.
+    pub headset: crate::headset::HeadsetSettings,
 }
 
 impl Default for AudioSettings {
@@ -477,6 +479,7 @@ impl Default for AudioSettings {
             input_gain: 100,
             output_gain: 100,
             routing: Default::default(),
+            headset: Default::default(),
         }
     }
 }

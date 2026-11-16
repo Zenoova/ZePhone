@@ -42,6 +42,10 @@ pub mod events {
     pub const SHELL_FOCUS: &str = "shell:focus";
     /// The audio devices, what each role uses, or a notice about them changed.
     pub const AUDIO_STATE: &str = "audio:state";
+    /// The headsets detected, whether their buttons are being read, and what the last events became.
+    pub const HEADSET_STATE: &str = "headset:state";
+    /// One reading of the microphone level test, in dBFS.
+    pub const AUDIO_TEST_LEVEL: &str = "audio:test-level";
 }
 
 pub struct AppState {
@@ -53,6 +57,10 @@ pub struct AppState {
     pub shortcuts: Arc<ShortcutService>,
     /// Keeps the engine's audio devices in step with the system's.
     pub audio: Arc<crate::audio::router::AudioRouter>,
+    /// The headset's buttons: read from the hardware, interpreted, handed to the controller.
+    pub headset: Arc<crate::headset::runtime::HeadsetRuntime>,
+    /// The microphone level test, while it runs.
+    pub meter: std::sync::Mutex<Option<crate::audio::diagnostics::Meter>>,
     /// The local control socket (`zephone ctl`), when it could be opened.
     pub control_server: std::sync::Mutex<Option<socket::Server>>,
     pub shutting_down: AtomicBool,

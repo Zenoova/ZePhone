@@ -4,7 +4,7 @@
 pub mod directory;
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::{
@@ -359,6 +359,117 @@ pub async fn audio_choose(
             .await;
     }
     Ok(())
+}
+
+#[derive(serde::Deserialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub enum AudioTest {
+    /// A short tone on the device the conversation would use.
+    Speaker,
+    /// The incoming-call ringtone on the device the ringer would use.
+    Ringtone,
+}
+
+/// A call (or a ringing call) would compete with a test for the device, and a test must never disturb it.
+fn refuse_during_call(state: &AppState) -> AppResult<()> {
+    if crate::audio::router::Target::call_active(state.manager.as_ref()) {
+        return Err(AppError::validation(
+            "Un appel est en cours : le test pourrait le perturber. Refaites-le après l'appel.",
+        ));
+    }
+    Ok(())
+}
+
+/// Plays a test sound on the chosen output. The sound goes straight to the device, never into a call, and is
+/// only ever started by this command (the user pressing a button).
+#[tauri::command]
+pub async fn audio_test(app: AppHandle, state: S<'_>, kind: AudioTest) -> AppResult<()> {
+    use crate::audio::{diagnostics, routing::Role};
+    refuse_during_call(&state)?;
+    let role = if matches!(kind, AudioTest::Speaker) {
+        Role::Speaker
+    } else {
+        Role::Ringer
+    };
+    let device = state
+        .audio
+        .state()
+        .roles
+        .into_iter()
+        .find(|r| r.role == role)
+        .and_then(|r| r.resolution.used)
+        .ok_or_else(|| AppError::validation("Aucun périphérique de sortie n'est disponible"))?;
+    let samples = match kind {
+        AudioTest::Speaker => diagnostics::tone(48_000, 0.8),
+        AudioTest::Ringtone => {
+            let path = app
+                .path()
+                .resource_dir()
+                .map_err(|e| AppError::Other(e.to_string()))?
+                .join("engine/sounds/ring.wav");
+            let bytes = std::fs::read(&path)
+                .map_err(|e| AppError::Other(format!("Sonnerie introuvable : {e}")))?;
+            diagnostics::decode_wav(&bytes).map_err(AppError::Other)?
+        }
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        diagnostics::play(
+            &device.name,
+            samples,
+            1.0,
+            std::time::Duration::from_secs(8),
+        )
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?
+    .map_err(AppError::Other)
+}
+
+/// Starts or stops the live microphone level. Needs the microphone permission; refused during a call.
+#[tauri::command]
+pub async fn audio_meter(app: AppHandle, state: S<'_>, on: bool) -> AppResult<()> {
+    use crate::audio::{diagnostics::Meter, routing::Role};
+    if !on {
+        *state.meter.lock().unwrap() = None;
+        return Ok(());
+    }
+    refuse_during_call(&state)?;
+    if audio::permissions::status() != MicPermission::Authorized {
+        return Err(AppError::validation(
+            "L'accès au microphone n'est pas autorisé : autorisez ZePhone dans Réglages Système › Confidentialité › Microphone.",
+        ));
+    }
+    let device = state
+        .audio
+        .state()
+        .roles
+        .into_iter()
+        .find(|r| r.role == Role::Microphone)
+        .and_then(|r| r.resolution.used)
+        .ok_or_else(|| AppError::validation("Aucun microphone n'est disponible"))?;
+    // Replace any running meter first (its thread ends when dropped).
+    *state.meter.lock().unwrap() = None;
+    let events = app.clone();
+    let name = device.name.clone();
+    let meter = tauri::async_runtime::spawn_blocking(move || {
+        Meter::start(
+            &name,
+            std::sync::Arc::new(move |db| {
+                let _ = events.emit(events::AUDIO_TEST_LEVEL, db);
+            }),
+        )
+    })
+    .await
+    .map_err(|e| AppError::Other(e.to_string()))?
+    .map_err(AppError::Other)?;
+    *state.meter.lock().unwrap() = Some(meter);
+    Ok(())
+}
+
+/// The headsets detected, whether their buttons are read, and the last events with what became of them.
+#[tauri::command]
+pub fn headset_state(state: S) -> crate::headset::service::HeadsetState {
+    state.headset.service.state()
 }
 
 // -------------------------------------------------------------- shortcuts
