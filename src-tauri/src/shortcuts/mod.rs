@@ -394,9 +394,12 @@ impl ShortcutService {
                                 taken.push((acc, b.action));
                                 BindingStatus::Active
                             }
-                            Err(raw) => BindingStatus::Failed {
-                                message: explain_refusal(&raw),
-                            },
+                            Err(raw) => {
+                                log::warn!("shortcut {:?} not registered: {raw}", b.action);
+                                BindingStatus::Failed {
+                                    message: explain_refusal(&raw),
+                                }
+                            }
                         },
                     },
                 },

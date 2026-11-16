@@ -315,6 +315,13 @@ impl SipManager {
 
     // ------------------------------------------------------------- accounts
 
+    /// The accounts as stored, without asking the secure storage whether a password exists. The remote control
+    /// uses this one: reading the keychain can wait for the user to answer a system prompt, and a shortcut or a
+    /// command must never wait for that.
+    pub fn accounts_without_secrets(&self) -> AppResult<Vec<crate::sip::types::Account>> {
+        self.db.list_accounts()
+    }
+
     pub fn list_accounts(&self) -> AppResult<Vec<AccountView>> {
         self.db
             .list_accounts()?

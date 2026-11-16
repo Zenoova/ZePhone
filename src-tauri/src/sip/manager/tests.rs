@@ -375,6 +375,41 @@ async fn registered_rig() -> (Rig, String) {
 
 // ------------------------------------------------------------------ tests
 
+/// A secure storage that must not be asked anything: asking can wait for the user to answer a system prompt.
+struct ForbiddenStore;
+impl crate::security::secrets::SecretStore for ForbiddenStore {
+    fn set(&self, _: &str, _: &secrecy::SecretString) -> AppResult<()> {
+        panic!("the secure storage must not be written")
+    }
+    fn get(&self, _: &str) -> AppResult<Option<secrecy::SecretString>> {
+        panic!("the secure storage must not be read")
+    }
+    fn delete(&self, _: &str) -> AppResult<()> {
+        panic!("the secure storage must not be touched")
+    }
+}
+
+#[tokio::test]
+async fn the_remote_control_reads_accounts_without_asking_the_secure_storage() {
+    use crate::control::controller::Telephony;
+    let (r, id) = registered_rig().await;
+    let db = r.db.clone();
+    // The same database, but a secure storage that fails the test if it is asked anything.
+    let mgr = SipManager::new(
+        r.engine.clone(),
+        db,
+        Arc::new(ForbiddenStore),
+        r.sink.clone(),
+    );
+    let status = Telephony::status(mgr.as_ref()).expect("status without the keychain");
+    assert_eq!(status.accounts.len(), 1);
+    assert_eq!(status.accounts[0].id, id);
+    assert!(
+        !status.accounts[0].connected,
+        "not hosted by this second manager"
+    );
+}
+
 #[tokio::test]
 async fn password_goes_to_the_secret_store_never_to_the_database() {
     let r = rig().await;

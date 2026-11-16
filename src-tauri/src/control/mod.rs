@@ -29,13 +29,13 @@ impl Telephony for SipManager {
     fn status(&self) -> AppResult<AppStatus> {
         let connected = self.connected_account_ids();
         let accounts = self
-            .list_accounts()?
+            .accounts_without_secrets()?
             .into_iter()
-            .map(|v| AccountBrief {
-                connected: connected.contains(&v.account.id),
-                id: v.account.id,
-                label: v.account.label,
-                is_default: v.account.is_default,
+            .map(|a| AccountBrief {
+                connected: connected.contains(&a.id),
+                id: a.id,
+                label: a.label,
+                is_default: a.is_default,
             })
             .collect();
         Ok(AppStatus {

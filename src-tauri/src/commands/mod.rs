@@ -28,9 +28,13 @@ type S<'a> = State<'a, AppState>;
 
 // -------------------------------------------------------------------- state
 
+/// Reading the accounts asks the system keychain whether a password exists, which can wait for the user to answer
+/// a system prompt. Neither this nor `list_accounts` may run on the main thread: it also serves the keyboard
+/// shortcuts and the window, which would freeze with it.
 #[tauri::command]
-pub fn get_snapshot(state: S) -> AppResult<Snapshot> {
-    state.manager.snapshot()
+pub async fn get_snapshot(state: S<'_>) -> AppResult<Snapshot> {
+    let manager = state.manager.clone();
+    off_main(move || manager.snapshot()).await
 }
 
 #[tauri::command]
@@ -46,8 +50,18 @@ pub fn get_engine_log(state: S, lines: Option<usize>) -> Vec<String> {
 // ----------------------------------------------------------------- accounts
 
 #[tauri::command]
-pub fn list_accounts(state: S) -> AppResult<Vec<AccountView>> {
-    state.manager.list_accounts()
+pub async fn list_accounts(state: S<'_>) -> AppResult<Vec<AccountView>> {
+    let manager = state.manager.clone();
+    off_main(move || manager.list_accounts()).await
+}
+
+/// Runs something that may block (the keychain) on a worker thread.
+async fn off_main<T: Send + 'static>(
+    f: impl FnOnce() -> AppResult<T> + Send + 'static,
+) -> AppResult<T> {
+    tauri::async_runtime::spawn_blocking(f)
+        .await
+        .map_err(|e| AppError::Other(e.to_string()))?
 }
 
 #[tauri::command]
