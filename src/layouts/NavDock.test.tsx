@@ -34,11 +34,11 @@ describe("NavDock", () => {
       .map((b) => b.getAttribute("aria-label"));
     expect(names).toEqual([
       "Choisir l'orbe vocal",
+      "Comptes SIP",
       "Clavier",
       "Contacts",
       "Historique",
       "Enregistrements",
-      "Comptes",
       "Paramètres",
     ]);
   });

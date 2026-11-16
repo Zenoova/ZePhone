@@ -1,4 +1,5 @@
 import { OrbPicker } from "@/components/OrbPicker";
+import { AccountsDockItem } from "@/features/accounts/AccountsPopover";
 import { Dock, DockBadge, DockIcon, DockItem, DockLabel, DockSeparator } from "@/components/ui/dock";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { VoiceOrb } from "@/components/VoiceOrb";
@@ -49,6 +50,7 @@ export function NavDock() {
         <PopoverAnchor asChild>
           <Dock className="pointer-events-auto">
             <OrbItem />
+            <AccountsDockItem />
             <DockSeparator />
             {NAV_ITEMS.map(({ id, label, icon: Icon, shortcut }) => {
               const missed = id === "history" ? unseenMissed : 0;
