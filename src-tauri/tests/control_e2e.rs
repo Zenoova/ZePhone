@@ -207,7 +207,7 @@ fn calls_of(w: &World) -> Vec<Call> {
 
 #[tokio::test]
 async fn real_calls_driven_only_through_the_controller() {
-    let mut w = world_or_skip!();
+    let w = world_or_skip!();
     let port_a = w.port_a;
 
     // Nothing to act on: nothing happens, and nothing breaks.
@@ -428,7 +428,8 @@ async fn real_outgoing_call_declined_and_do_not_disturb() {
         announced,
         "nothing rang on A"
     );
-    assert!(calls_of(&w).is_empty());
+    // B hears the 486 a moment before A's engine reports the end of that call.
+    until("the declined call is gone", 5, || calls_of(&w).is_empty()).await;
     until("recorded as missed", 10, || {
         w.db.list_history(&Default::default())
             .is_ok_and(|h| h.iter().any(|e| e.result == CallResult::Missed))
