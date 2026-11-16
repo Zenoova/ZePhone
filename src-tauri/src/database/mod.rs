@@ -97,6 +97,55 @@ const MIGRATIONS: &[&str] = &[
     r#"
     UPDATE settings SET value = json_remove(value, '$.recording') WHERE key = 'app';
     "#,
+    // v4: the company directory. Sources (LDAP, Microsoft 365) and what they last gave us (the cache), kept apart
+    // from the personal favourites and groups, which point at contacts by their stable id and so survive every
+    // synchronisation. No foreign key from favourites/members to the cache: a contact can leave the cache (the
+    // source is disconnected) and come back with the same id.
+    r#"
+    CREATE TABLE dir_sources (
+        id                TEXT PRIMARY KEY,
+        kind              TEXT NOT NULL,
+        name              TEXT NOT NULL,
+        enabled           INTEGER NOT NULL DEFAULT 1,
+        config            TEXT NOT NULL DEFAULT '{}',
+        sync_interval_min INTEGER NOT NULL DEFAULT 360,
+        cursor            TEXT,
+        last_success_at   TEXT,
+        last_attempt_at   TEXT,
+        last_error        TEXT,
+        error_kind        TEXT,
+        created_at        TEXT NOT NULL
+    );
+
+    CREATE TABLE dir_contacts (
+        id          TEXT PRIMARY KEY,
+        source_id   TEXT NOT NULL REFERENCES dir_sources(id) ON DELETE CASCADE,
+        external_id TEXT NOT NULL,
+        data        TEXT NOT NULL,
+        updated_at  TEXT NOT NULL,
+        UNIQUE (source_id, external_id)
+    );
+    CREATE INDEX idx_dir_contacts_source ON dir_contacts (source_id);
+
+    CREATE TABLE dir_groups (
+        id         TEXT PRIMARY KEY,
+        name       TEXT NOT NULL COLLATE NOCASE UNIQUE,
+        created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE dir_group_members (
+        group_id   TEXT NOT NULL REFERENCES dir_groups(id) ON DELETE CASCADE,
+        contact_id TEXT NOT NULL,
+        added_at   TEXT NOT NULL,
+        PRIMARY KEY (group_id, contact_id)
+    );
+    CREATE INDEX idx_dir_members_contact ON dir_group_members (contact_id);
+
+    CREATE TABLE dir_favorites (
+        contact_id TEXT PRIMARY KEY,
+        added_at   TEXT NOT NULL
+    );
+    "#,
 ];
 
 impl Database {
