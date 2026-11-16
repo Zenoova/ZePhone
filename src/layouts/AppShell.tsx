@@ -12,7 +12,6 @@ import { type Section, useUiStore } from "@/stores/ui-store";
 import { EngineBanner } from "./EngineBanner";
 import { NAV_ITEMS } from "./nav";
 import { NavDock } from "./NavDock";
-import { StatusBar } from "./StatusBar";
 
 const PAGES: Record<Section, () => React.JSX.Element> = {
   dialer: HomePage,
@@ -47,19 +46,16 @@ export function AppShell() {
 
   return (
     <>
-      <div className="flex h-full flex-col">
-        {/* The dock floats over the bottom of the page: what scrolls shows through its glass. */}
-        <div className="relative min-h-0 flex-1">
-          <main className="flex h-full min-h-0 min-w-0 flex-col">
-            <EngineBanner />
-            <ActiveCallBar />
-            <div className="min-h-0 flex-1 overflow-auto" key={section}>
-              <Page />
-            </div>
-          </main>
-          <NavDock />
-        </div>
-        <StatusBar />
+      {/* The dock floats over the bottom of the page: what scrolls shows through its glass. */}
+      <div className="relative h-full">
+        <main className="flex h-full min-h-0 min-w-0 flex-col">
+          <EngineBanner />
+          <ActiveCallBar />
+          <div className="min-h-0 flex-1 overflow-auto" key={section}>
+            <Page />
+          </div>
+        </main>
+        <NavDock />
       </div>
       <Toaster />
     </>
