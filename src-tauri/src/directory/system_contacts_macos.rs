@@ -42,10 +42,12 @@ fn status() -> Access {
 /// Without the usage text in the bundle's `Info.plist`, asking for permission terminates the process. A binary run
 /// outside its bundle (a test, `cargo run`) has none: it must not ask.
 fn can_ask() -> bool {
+    has_usage_description(&NSBundle::mainBundle())
+}
+
+fn has_usage_description(bundle: &NSBundle) -> bool {
     let key = NSString::from_str("NSContactsUsageDescription");
-    NSBundle::mainBundle()
-        .objectForInfoDictionaryKey(&key)
-        .is_some()
+    bundle.objectForInfoDictionaryKey(&key).is_some()
 }
 
 /// What a contact is, read from the properties that were fetched.
@@ -192,13 +194,38 @@ mod tests {
         ));
     }
 
-    #[tokio::test]
-    async fn a_program_run_outside_its_bundle_never_pops_the_question_up() {
-        // The test binary has no Info.plist, so no NSContactsUsageDescription: asking would kill the process.
-        assert!(!can_ask());
-        if MacContacts.access() == Access::NotDetermined {
-            assert_eq!(MacContacts.request_access().await, Access::Unsupported);
-        }
+    /// A bundle on disk: `Contents/Info.plist` with an identifier, and the usage text when asked.
+    fn bundle(dir: &std::path::Path, with_usage_text: bool) -> Retained<NSBundle> {
+        let contents = dir.join("T.bundle/Contents");
+        std::fs::create_dir_all(&contents).unwrap();
+        let usage = if with_usage_text {
+            "<key>NSContactsUsageDescription</key><string>test</string>"
+        } else {
+            ""
+        };
+        std::fs::write(
+            contents.join("Info.plist"),
+            format!(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?><plist version=\"1.0\"><dict>\
+                 <key>CFBundleIdentifier</key><string>app.zephone.test</string>{usage}</dict></plist>"
+            ),
+        )
+        .unwrap();
+        let path = NSString::from_str(dir.join("T.bundle").to_str().unwrap());
+        NSBundle::bundleWithPath(&path).expect("a valid bundle")
+    }
+
+    #[test]
+    fn without_the_usage_text_the_system_would_end_the_process_so_it_is_never_asked() {
+        // Asking for permission from a bundle without `NSContactsUsageDescription` terminates the process.
+        let dir = tempfile::tempdir().unwrap();
+        assert!(!has_usage_description(&bundle(dir.path(), false)));
+    }
+
+    #[test]
+    fn with_the_usage_text_it_may_ask() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(has_usage_description(&bundle(dir.path(), true)));
     }
 
     /// Reads the real address book of the person running the test, and prints how many cards there are — never
