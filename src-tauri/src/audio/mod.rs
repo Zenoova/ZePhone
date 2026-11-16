@@ -6,6 +6,7 @@
 
 pub mod devices;
 pub mod permissions;
+pub mod router;
 pub mod routing;
 
 use cpal::traits::{DeviceTrait, HostTrait};
