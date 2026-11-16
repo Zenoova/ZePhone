@@ -16,6 +16,12 @@ use secrecy::SecretString;
 use support::*;
 use zephone_lib::{
     database::{Database, HistoryFilter},
+    directory::{
+        model::{PhoneEntry, PhoneKind, RemoteContact, SourceKind},
+        service::{DirectoryEvents, DirectoryService},
+        store::SourceRow,
+        sync::{Connector, ConnectorFactory, Fetched, SyncError},
+    },
     security::secrets::{MemoryStore, SecretStore},
     sip::{
         engine::{
@@ -547,4 +553,221 @@ async fn full_call_cycle_through_the_manager_with_audio_and_history() {
 
     a.mgr.shutdown().await;
     b.stop().await;
+}
+
+// ------------------------------------------------------------ callers named by the company directory
+
+/// A source that hands over the people the test sets; the directory around it is the real one.
+struct People(Mutex<Vec<RemoteContact>>);
+
+struct StubSource(Arc<People>);
+
+#[async_trait::async_trait]
+impl Connector for StubSource {
+    async fn fetch(
+        &self,
+        _cursor: Option<&str>,
+        _progress: &(dyn Fn(usize) + Send + Sync),
+    ) -> Result<Fetched, SyncError> {
+        Ok(Fetched {
+            contacts: self.0.0.lock().unwrap().clone(),
+            complete: true,
+            ..Default::default()
+        })
+    }
+}
+
+struct StubFactory(Arc<People>);
+
+impl ConnectorFactory for StubFactory {
+    fn build(
+        &self,
+        _source: &SourceRow,
+        _secrets: Arc<dyn SecretStore>,
+    ) -> Result<Box<dyn Connector>, SyncError> {
+        Ok(Box::new(StubSource(self.0.clone())))
+    }
+}
+
+struct Quiet;
+impl DirectoryEvents for Quiet {}
+
+fn colleague(id: &str, name: &str, sip: &str) -> RemoteContact {
+    RemoteContact {
+        external_id: id.into(),
+        display_name: name.into(),
+        phones: vec![PhoneEntry::new(PhoneKind::Sip, sip)],
+        ..Default::default()
+    }
+}
+
+/// Real calls between two real Baresip engines, with the real manager, SQLite and directory: the caller the
+/// address book does not know is named by the directory — and only when that is certain.
+#[tokio::test]
+async fn real_calls_are_named_by_the_company_directory_only_when_it_is_certain() {
+    let tmp = tempfile::tempdir().unwrap();
+    let a_rx = tmp.path().join("a_rx.wav");
+    let free = || {
+        std::net::UdpSocket::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port()
+    };
+    let (port_a, port_b) = (free(), free());
+    let a = rig_or_skip!(Some(port_a), Some(("440", a_rx)));
+    let Some(modules) = test_modules_dir() else {
+        return;
+    };
+    let mut b_paths = sidecar_paths(tmp.path().join("b")).unwrap();
+    let bm = tmp.path().join("bmods");
+    std::fs::create_dir_all(&bm).unwrap();
+    for e in std::fs::read_dir(&b_paths.modules_dir).unwrap() {
+        let p = e.unwrap().path();
+        std::os::unix::fs::symlink(&p, bm.join(p.file_name().unwrap())).unwrap();
+    }
+    for m in ["ausine.so", "aufile.so"] {
+        std::os::unix::fs::symlink(modules.join(m), bm.join(m)).unwrap();
+    }
+    b_paths.modules_dir = bm;
+    let b = BaresipEngine::new(b_paths);
+    b.set_options(zephone_lib::sip::engine::EngineOptions {
+        local_sip_port: Some(port_b),
+        net_interface: Some("127.0.0.1".into()),
+        audio_override: Some(AudioOverride {
+            modules: vec!["ausine".into(), "aufile".into()],
+            source: "ausine,880".into(),
+            player: format!("aufile,{}", tmp.path().join("b_rx.wav").display()),
+        }),
+        ..Default::default()
+    });
+    b.start().await.unwrap();
+    b.add_account(&AccountSpec {
+        aor: "sip:bob@127.0.0.1".into(),
+        username: "bob".into(),
+        domain: "127.0.0.1".into(),
+        auth_username: None,
+        password: SecretString::from("x".to_string()),
+        display_name: Some("Bob Remote".into()), // what the caller says of itself
+        transport: Transport::Udp,
+        next_hop_host: "127.0.0.1".into(),
+        next_hop_port: port_a,
+        register_interval: 0,
+        media_encryption: MediaEncryption::None,
+    })
+    .await
+    .unwrap();
+    let acc = a
+        .mgr
+        .save_account(input(
+            "alice",
+            "pw",
+            port_b,
+            0,
+            Some(format!("127.0.0.1:{port_b}")),
+        ))
+        .await
+        .unwrap();
+    until("account hosted", 10, || {
+        last_status(&a.sink).is_some_and(|s| s.account_id == acc.account.id)
+    })
+    .await;
+
+    // The company directory, on the same database: one person has Bob's SIP address.
+    let people = Arc::new(People(Mutex::new(vec![colleague(
+        "u1",
+        "Robert Dupont (annuaire)",
+        "sip:bob@127.0.0.1",
+    )])));
+    let directory = DirectoryService::new(
+        a.db.clone(),
+        Arc::new(MemoryStore::default()),
+        Arc::new(Quiet),
+        Arc::new(StubFactory(people.clone())),
+    );
+    let source = directory
+        .add_source(
+            SourceKind::Ldap,
+            "Annuaire",
+            &serde_json::json!({}),
+            60,
+            None,
+        )
+        .unwrap();
+    directory.sync_now(&source, true).await.unwrap();
+    a.mgr.set_caller_lookup(directory.clone());
+
+    let call_from_bob = |n: usize| {
+        let (b, a) = (&b, &a);
+        async move {
+            let out = b
+                .dial(
+                    "sip:bob@127.0.0.1",
+                    &format!("sip:alice@127.0.0.1:{port_a}"),
+                )
+                .await
+                .expect("B calls A");
+            until("A announces the incoming call", 10, || {
+                a.sink.incoming.lock().unwrap().len() == n
+            })
+            .await;
+            (out, a.sink.incoming.lock().unwrap()[n - 1].0.clone())
+        }
+    };
+
+    // ---- 1. The directory knows the number: the ring screen shows its name, not what the caller sent
+    let (out, inc) = call_from_bob(1).await;
+    assert_eq!(inc.remote_number, "bob");
+    assert_eq!(inc.remote_name.as_deref(), Some("Robert Dupont (annuaire)"));
+    a.mgr.answer(&inc.id).await.unwrap();
+    until("answered", 10, || {
+        a.mgr
+            .calls()
+            .first()
+            .is_some_and(|c| c.state == CallState::Connected)
+    })
+    .await;
+    assert_eq!(
+        a.mgr.calls()[0].remote_name.as_deref(),
+        Some("Robert Dupont (annuaire)")
+    );
+    b.hangup(&out, None).await.unwrap();
+    until("history", 10, || {
+        a.db.list_history(&HistoryFilter::default()).unwrap().len() == 1
+    })
+    .await;
+    // the history keeps what the caller said of itself, never the directory's name
+    let h = a.db.list_history(&HistoryFilter::default()).unwrap();
+    assert_eq!(h[0].contact_name.as_deref(), Some("Bob Remote"));
+    assert!(
+        !serde_json::to_string(&h).unwrap().contains("Robert Dupont"),
+        "the directory's name must not be written to the history"
+    );
+
+    // ---- 2. Two people have that address: nobody is guessed, the caller keeps its own name
+    people.0.lock().unwrap().push(colleague(
+        "u2",
+        "Roberta Dupont (annuaire)",
+        "sip:bob@127.0.0.1",
+    ));
+    directory.sync_now(&source, true).await.unwrap();
+    let (out, inc) = call_from_bob(2).await;
+    assert_eq!(inc.remote_name.as_deref(), Some("Bob Remote"));
+    b.hangup(&out, None).await.unwrap();
+
+    // ---- 3. The user's own address book beats the directory
+    people.0.lock().unwrap().truncate(1);
+    directory.sync_now(&source, true).await.unwrap();
+    a.db.save_contact(&zephone_lib::sip::types::ContactInput {
+        id: None,
+        first_name: "Bobby".into(),
+        last_name: "Perso".into(),
+        company: None,
+        number: "bob".into(),
+    })
+    .unwrap();
+    tokio::time::sleep(Duration::from_millis(600)).await; // let the previous call finish
+    let (out, inc) = call_from_bob(3).await;
+    assert_eq!(inc.remote_name.as_deref(), Some("Bobby Perso"));
+    b.hangup(&out, None).await.unwrap();
 }
