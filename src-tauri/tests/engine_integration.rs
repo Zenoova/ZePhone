@@ -788,6 +788,9 @@ async fn hold_and_resume_are_signalled_to_the_remote_party() {
         .is_some(),
         "B was not told about the hold"
     );
+    // B reports the hold as soon as the re-INVITE reaches it: let that exchange finish (200 OK, ACK) before the next
+    // re-INVITE, which Baresip refuses while one is still pending.
+    tokio::time::sleep(Duration::from_millis(500)).await;
     a.resume(&call_a).await.expect("resume");
     assert!(
         wait_for(&mut eb, 8, |e| matches!(
@@ -799,7 +802,8 @@ async fn hold_and_resume_are_signalled_to_the_remote_party() {
         ))
         .await
         .is_some(),
-        "B was not told about the resume"
+        "B was not told about the resume; A's engine said: {:#?}",
+        a.log_tail(25)
     );
     a.hangup(&call_a, None).await.unwrap();
     assert!(
