@@ -196,19 +196,25 @@ l'accorder ; sans elle, l'audio du casque marche mais pas ses boutons.
 `tests/engine_integration.rs` : tous les périphériques que CoreAudio liste sur cette machine sont acceptés par le
 vrai moteur, y compris la commande `zealert` (sonnerie) et un changement de sortie qui ne l'écrase pas.
 
-### Dans le système réel (application packagée)
+### Dans le système réel (application packagée, macOS 26, MacBook Pro Apple Silicon, périphériques intégrés)
 
-Voir le bilan de livraison. Résumé : lecture CoreAudio réelle (liste, types, valeurs par défaut) ; démarrage et arrêt
-propres de la lecture HID réelle ; détection d'un périphérique qui apparaît puis disparaît **sur le CoreAudio réel**
-(périphérique agrégé temporaire) avec une seule évaluation par rafale.
+- **CoreAudio réel** : liste de 3 périphériques (micro et haut-parleurs intégrés, un micro virtuel), type de
+  connexion, valeurs par défaut du système ; tous acceptés par le vrai moteur ;
+- **un périphérique qui apparaît puis disparaît sur le système réel** : un périphérique agrégé temporaire est créé
+  puis détruit (changement réel de la liste, sans toucher à aucun réglage ni périphérique par défaut) ; l'application
+  packagée le voit apparaître (3 → 4 périphériques) puis disparaître (4 → 3), **une évaluation par rafale** ;
+- **lecture HID réelle** : démarre et s'arrête proprement ; aucun périphérique Téléphonie n'est branché ici, donc
+  aucune détection de bouton n'a été exercée ;
+- l'application packagée démarre, le moteur démarre sur les périphériques que le choix donne, les commandes de contrôle
+  répondent.
 
 ## 9. Les dix situations à risque
 
 | # | Situation | État |
 |---|---|---|
-| 1 | Casque branché avant / après le lancement | logique et liste réelle testées ; **pas avec un casque** |
+| 1 | Casque branché avant / après le lancement | logique, liste réelle et apparition d'un périphérique après le lancement **sur le système réel** testées ; **pas avec un casque** |
 | 2 | Débranchement et reconnexion pendant un appel | logique + changement de périphérique en appel réel testés (synthétique) ; **pas avec un casque** |
-| 3 | Changement du périphérique par défaut du système | logique testée ; **non essayé** (cela modifierait un réglage système de la machine) |
+| 3 | Changement du périphérique par défaut du système | logique testée, et la notification système est vue sur un vrai changement de liste ; le changement du **défaut** lui-même **n'a pas été essayé** (cela modifierait un réglage système de la machine) |
 | 4 | Micro coupé conservé lors d'un changement | **testé sur appel réel** (silence mesuré) |
 | 5 | Boutons avec l'application en arrière-plan | la lecture HID tourne sur son propre fil, indépendamment de la fenêtre ; **pas de casque pour l'éprouver** |
 | 6 | Aucune double action si l'événement arrive par deux mécanismes | un seul mécanisme actif ; doublons testés |
