@@ -20,7 +20,8 @@ pub fn audio_driver() -> &'static str {
     if cfg!(target_os = "macos") {
         "coreaudio"
     } else if cfg!(target_os = "windows") {
-        "winwave"
+        // Baresip 4.x dropped `winwave`; WASAPI is the Windows audio module.
+        "wasapi"
     } else {
         "alsa"
     }
