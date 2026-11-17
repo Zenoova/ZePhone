@@ -3,7 +3,7 @@
 # ZePhone
 
 Universal SIP desktop softphone — **Tauri 2 + React + Rust + Baresip**.
-macOS first; the architecture is ready for Windows and Linux.
+macOS first; Windows runs too (see [Windows](#windows)); the architecture is ready for Linux.
 
 ZePhone is not a simulator: SIP signalling and audio (RTP/SRTP) are handled by
 [Baresip](https://github.com/baresip/baresip), embedded in the application as a Tauri _sidecar_.
@@ -26,7 +26,8 @@ No PBX is hard-coded: you enter your server, domain, credentials, port and trans
 - [Using ZePhone with your PBX](#using-zephone-with-your-pbx)
 - [Tests](#tests)
 - [Security](#security)
-- [Windows and Linux](#windows-and-linux)
+- [Windows](#windows)
+- [Linux](#linux)
 - [Known limits](#known-limits)
 - [Logo](#logo)
 - [Licenses](#licenses)
@@ -258,23 +259,52 @@ and ad hoc signature valid after mounting.
 - Baresip opens SIP listeners (UDP/TCP) on the local interfaces to receive calls, like any softphone;
   this is inherent to receiving calls (use a firewall or "Local interface" in Network to restrict it).
 
-## Windows and Linux
+## Windows
 
-The Rust code is portable (audio driver, module extension, paths, keychain and watchdog selected by
-`cfg`). What remains is providing the sidecar for each platform:
+ZePhone starts and runs its SIP engine on Windows 10/11 (x64). Tested here: the application starts, Baresip is
+supervised and loads its modules (G.711, Opus, SRTP, VU meter, `zeaudio`, WASAPI) and finds the microphone and the
+speakers. A call with a real PBX has **not** been tried on Windows.
 
-1. **Get/build Baresip** for the target (Windows: MSVC/vcpkg or MSYS2; Linux: `baresip` package or CMake build) with the modules
-   `g711`, `auconv`, `auresamp`, `srtp`, `menu`, `ctrl_tcp`, the platform's audio driver (`winwave`/`wasapi`; `alsa`/`pulse`/`pipewire`) and if possible `g722`, `opus`.
-2. **Name the binary** `src-tauri/binaries/baresip-<triple>` (`x86_64-pc-windows-msvc.exe`, `x86_64-unknown-linux-gnu`…, see `rustc -vV`),
-   copy the modules to `src-tauri/resources/baresip/{modules,sounds,licenses}` and the shared libraries next to the binary
-   (`.dll`) or in `rpath` (`$ORIGIN/../lib/zephone`).
-3. **Audio driver**: adapt `audio_driver()` in `src-tauri/src/sip/engine/baresip/config.rs` if needed (`winwave` is the Windows default).
-4. **Linux**: build dependencies `libwebkit2gtk-4.1-dev`, `libdbus-1-dev`, `libasound2-dev`; the keychain goes through Secret Service.
-5. **Windows**: the anti-orphan watchdog is not implemented (use a `KILL_ON_JOB_CLOSE` _Job Object_); normal
-   cleanup (closing, Ctrl-C) works.
-6. `tauri build` then produces `.msi`/`.exe` (Windows) and `.deb`/`.AppImage` (Linux).
+Requirements: Node 20+, [Rust](https://rustup.rs) (MSVC toolchain), CMake, Git, and the
+[Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++"
+workload. With [Scoop](https://scoop.sh) and winget:
 
-**This part has not been run here** (macOS machine only).
+```powershell
+scoop install rustup-msvc cmake
+rustup default stable
+winget install --id Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+npm install
+npm run tauri dev
+```
+
+There is no ready-made Baresip for Windows, so `npm run sidecar` (run automatically by `tauri dev` / `tauri build`) **builds it
+once** with [`scripts/build-baresip.ps1`](scripts/build-baresip.ps1): OpenSSL and Opus come from vcpkg (cloned into
+`.baresip-build/`), then libre, Baresip and the `zeaudio` module are compiled with CMake. The first run takes several minutes.
+Differences with macOS:
+
+- Baresip is built **statically**: the modules are inside `baresip.exe`. The `modules/*.dll` files in the resources are empty
+  markers telling the application which modules exist.
+- Audio goes through the WASAPI module, which opens devices by **endpoint id** (not by name): ZePhone uses the id as the device
+  identity on Windows.
+- `getopt` (missing from MSVC) is provided by a small header patched in at build time: without it Baresip ignores `-f <config>`.
+- **G.722 is not available** (its module needs spandsp, which vcpkg does not provide); G.711 and Opus are.
+
+Not done on Windows yet: the anti-orphan watchdog (a `KILL_ON_JOB_CLOSE` Job Object — a normal quit or Ctrl-C cleans up), the
+`zephone ctl` command line and its socket, headset buttons, system contacts, and a default CA bundle for SIP over TLS (set a
+custom CA in Settings → Network for a private PBX). `tauri build` produces the `.msi` / `.exe` installers.
+
+## Linux
+
+The Rust code is portable (audio driver, module extension, paths, keychain selected by `cfg`). What remains is providing the sidecar:
+
+1. **Get/build Baresip** (the `baresip` package or a CMake build) with the modules `g711`, `auconv`, `auresamp`, `srtp`, `menu`,
+   `ctrl_tcp`, an audio driver (`alsa`/`pulse`/`pipewire`) and if possible `g722`, `opus`.
+2. **Name the binary** `src-tauri/binaries/baresip-<triple>` (`x86_64-unknown-linux-gnu`…, see `rustc -vV`), copy the modules to
+   `src-tauri/resources/baresip/{modules,sounds,licenses}` and the shared libraries in `rpath` (`$ORIGIN/../lib/zephone`).
+3. Build dependencies: `libwebkit2gtk-4.1-dev`, `libdbus-1-dev`, `libasound2-dev`; the keychain goes through Secret Service.
+4. `tauri build` then produces `.deb` / `.AppImage`.
+
+**This part has not been run here.**
 
 ## Known limits
 
