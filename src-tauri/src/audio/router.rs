@@ -409,7 +409,8 @@ impl AudioRouter {
             core.resolution(r, &snap)
                 .used
                 .filter(|d| d.selectable)
-                .map(|d| d.name)
+                // Windows: the engine (WASAPI) opens a device by its endpoint id, which is the uid there.
+                .map(|d| if cfg!(windows) { d.uid } else { d.name })
         })
     }
 

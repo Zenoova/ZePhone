@@ -443,8 +443,20 @@ mod other {
 
     use super::*;
 
-    /// Without a native source the names are the identities, and nothing is watched.
+    /// Without a native source the names are the identities (except on Windows, see [`key`]), and nothing is
+    /// watched.
     pub struct CpalAudio;
+
+    /// The identity of a device. On Windows Baresip's WASAPI module opens a device by its endpoint id (never by
+    /// its name), so the endpoint id is the identity there and is what the engine is given; the id also tells
+    /// two identical headsets apart. Elsewhere the name is the identity.
+    fn key(d: &cpal::Device) -> Option<String> {
+        if cfg!(windows) {
+            d.id().ok().map(|id| id.id().to_owned())
+        } else {
+            d.description().ok().map(|d| d.name().to_owned())
+        }
+    }
 
     impl AudioSystem for CpalAudio {
         fn snapshot(&self) -> Snapshot {
@@ -453,13 +465,15 @@ mod other {
             let mut devices: Vec<DeviceInfo> = Vec::new();
             for (list, input) in [(host.input_devices(), true), (host.output_devices(), false)] {
                 for d in list.into_iter().flatten() {
-                    let Some(n) = name(&d) else { continue };
-                    match devices.iter_mut().find(|x| x.uid == n) {
+                    let (Some(n), Some(uid)) = (name(&d), key(&d)) else {
+                        continue;
+                    };
+                    match devices.iter_mut().find(|x| x.uid == uid) {
                         Some(x) if input => x.input_channels = 1,
                         Some(x) => x.output_channels = 1,
                         None => devices.push(DeviceInfo {
-                            uid: n.clone(),
-                            selectable: is_selectable(&n),
+                            selectable: is_selectable(&uid),
+                            uid,
                             name: n,
                             transport: Transport::Other,
                             input_channels: input as u32,
@@ -473,9 +487,9 @@ mod other {
                 }
             }
             Snapshot {
-                default_input: host.default_input_device().and_then(|d| name(&d)),
-                default_output: host.default_output_device().and_then(|d| name(&d)),
-                alert_output: host.default_output_device().and_then(|d| name(&d)),
+                default_input: host.default_input_device().and_then(|d| key(&d)),
+                default_output: host.default_output_device().and_then(|d| key(&d)),
+                alert_output: host.default_output_device().and_then(|d| key(&d)),
                 devices,
             }
         }
