@@ -28,7 +28,6 @@
  * Copyright (C) 2026 ZePhone. BSD-3-Clause, like Baresip.
  */
 #include <errno.h>
-#include <pthread.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -38,6 +37,18 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+
+#ifdef WIN32
+/* Windows: the few pthread/POSIX calls this module needs, on top of the Win32 API. */
+#include <windows.h>
+typedef SRWLOCK pthread_mutex_t;
+#define PTHREAD_MUTEX_INITIALIZER SRWLOCK_INIT
+#define pthread_mutex_lock(m) AcquireSRWLockExclusive(m)
+#define pthread_mutex_unlock(m) ReleaseSRWLockExclusive(m)
+typedef HANDLE pthread_t;
+#else
+#include <pthread.h>
+#endif
 
 
 enum {
@@ -63,10 +74,18 @@ enum {
 
 static uint64_t now_us(void)
 {
+#ifdef WIN32
+	LARGE_INTEGER freq, cnt;
+
+	QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&cnt);
+	return (uint64_t)cnt.QuadPart * 1000000u / (uint64_t)freq.QuadPart;
+#else
 	struct timespec ts;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (uint64_t)ts.tv_sec * 1000000u + (uint64_t)ts.tv_nsec / 1000u;
+#endif
 }
 
 
@@ -415,13 +434,19 @@ static void side_drain(struct side *sd, const char *suffix)
 
 static void *writer_main(void *arg)
 {
+#ifndef WIN32
 	struct timespec nap = { 0, WRITER_PERIOD_MS * 1000000L };
+#endif
 	(void)arg;
 
 	while (atomic_load_explicit(&g.thr_run, memory_order_acquire)) {
 		side_drain(&g.tx, "tx");
 		side_drain(&g.rx, "rx");
+#ifdef WIN32
+		Sleep(WRITER_PERIOD_MS);
+#else
 		nanosleep(&nap, NULL);
+#endif
 	}
 
 	/* One last pass for what the audio threads pushed just before the stop. */
@@ -433,6 +458,15 @@ static void *writer_main(void *arg)
 }
 
 
+#ifdef WIN32
+static DWORD WINAPI writer_thread(LPVOID arg)
+{
+	writer_main(arg);
+	return 0;
+}
+#endif
+
+
 /* Main thread. Finishes the recording: when this returns the files are complete. */
 static void rec_stop(void)
 {
@@ -441,7 +475,12 @@ static void rec_stop(void)
 
 	if (g.thr_started) {
 		atomic_store_explicit(&g.thr_run, false, memory_order_release);
+#ifdef WIN32
+		WaitForSingleObject(g.thr, INFINITE);
+		CloseHandle(g.thr);
+#else
 		pthread_join(g.thr, NULL);
+#endif
 		g.thr_started = false;
 	}
 }
@@ -640,7 +679,12 @@ static int cmd_rec_start(struct re_printf *pf, void *arg)
 	side_reset(&g.rx);
 	atomic_store(&g.owner, 0);
 	atomic_store(&g.thr_run, true);
+#ifdef WIN32
+	g.thr = CreateThread(NULL, 0, writer_thread, NULL, 0, NULL);
+	if (!g.thr) {
+#else
 	if (pthread_create(&g.thr, NULL, writer_main, NULL)) {
+#endif
 		atomic_store(&g.thr_run, false);
 		return EIO;
 	}
