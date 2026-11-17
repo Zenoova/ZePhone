@@ -295,7 +295,8 @@ mod tests {
     #[test]
     fn config_binds_control_to_loopback_only() {
         let settings = EngineSettings::default();
-        let exists = |m: &str| m == "opus.so" || m == "vumeter.so";
+        let ext = module_ext();
+        let exists = |m: &str| m == format!("opus.{ext}") || m == format!("vumeter.{ext}");
         let cfg = render_config(&ConfigInput {
             modules_dir: Path::new("/app/modules"),
             sounds_dir: Path::new("/app/sounds"),
@@ -308,15 +309,21 @@ mod tests {
         assert!(cfg.contains("sip_verify_server\tyes"));
         assert!(!cfg.contains("sip_verify_server\tno"));
         assert!(cfg.contains("module_path\t\t/app/modules"));
-        assert!(cfg.contains("g711.so"));
-        assert!(cfg.contains("opus.so"));
-        assert!(!cfg.contains("g722.so"));
-        assert!(cfg.contains("module\t\t\tvumeter.so\n") && cfg.contains("vumeter_stderr\t\tno\n"));
+        assert!(cfg.contains(&format!("g711.{ext}")));
+        assert!(cfg.contains(&format!("opus.{ext}")));
+        assert!(!cfg.contains(&format!("g722.{ext}")));
+        assert!(
+            cfg.contains(&format!("module\t\t\tvumeter.{ext}\n"))
+                && cfg.contains("vumeter_stderr\t\tno\n")
+        );
         // Opus is preferred over G.711 (earlier module = higher priority).
-        assert!(cfg.find("opus.so").unwrap() < cfg.find("g711.so").unwrap());
+        assert!(
+            cfg.find(&format!("opus.{ext}")).unwrap() < cfg.find(&format!("g711.{ext}")).unwrap()
+        );
         // No console / http / accounts modules.
-        for forbidden in ["cons.so", "httpd.so", "stdio.so", "account.so"] {
-            assert!(!cfg.contains(forbidden), "{forbidden} must not be loaded");
+        for forbidden in ["cons", "httpd", "stdio", "account"] {
+            let forbidden = format!("{forbidden}.{ext}");
+            assert!(!cfg.contains(&forbidden), "{forbidden} must not be loaded");
         }
     }
 
