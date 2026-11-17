@@ -84,7 +84,13 @@ fn single_line(s: &str) -> String {
 
 fn path_value(p: &Path) -> String {
     // Config values are single lines.
-    p.to_string_lossy().replace(['\n', '\r'], "")
+    let s = p.to_string_lossy().replace(['\n', '\r'], "");
+    // Windows verbatim paths (`\\?\C:\...`, what Tauri returns for resources) switch off the `/` -> `\`
+    // conversion, and Baresip joins paths with `/`: hand it the plain form.
+    match s.strip_prefix(r"\\?\") {
+        Some(rest) if rest.as_bytes().get(1) == Some(&b':') => rest.to_owned(),
+        _ => s,
+    }
 }
 
 /// Optional modules loaded when present in the module directory.
