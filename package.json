@@ -12,10 +12,10 @@
     "lint": "eslint .",
     "test": "vitest run",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "sidecar": "bash scripts/prepare-baresip.sh",
+    "sidecar": "node scripts/sidecar.mjs prepare",
     "test:pbx": "bash scripts/test-pbx-freeswitch.sh",
     "test:e2e": "cd src-tauri && cargo test --test engine_integration --test manager_e2e -- --test-threads=1",
-    "sidecar:hd": "bash scripts/build-baresip.sh"
+    "sidecar:hd": "node scripts/sidecar.mjs build"
   },
   "dependencies": {
     "@animateicons/react": "^0.13.0",
