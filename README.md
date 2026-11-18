@@ -27,6 +27,7 @@ No PBX is hard-coded: you enter your server, domain, credentials, port and trans
 - [Tests](#tests)
 - [Security](#security)
 - [Windows](#windows)
+- [Android](#android)
 - [Linux](#linux)
 - [Known limits](#known-limits)
 - [Logo](#logo)
@@ -292,6 +293,58 @@ Differences with macOS:
 Not done on Windows yet: the anti-orphan watchdog (a `KILL_ON_JOB_CLOSE` Job Object — a normal quit or Ctrl-C cleans up), the
 `zephone ctl` command line and its socket, headset buttons, system contacts, and a default CA bundle for SIP over TLS (set a
 custom CA in Settings → Network for a private PBX). `tauri build` produces the `.msi` / `.exe` installers.
+
+## Android
+
+ZePhone is also an Android application (Android 9 or later, API 28: the AAudio module of Baresip needs it). It is **the same application**: the same Rust core, the
+same Baresip engine, the same web interface, laid out for a phone (one window, the call screen over the application, a dock that
+fits the screen). Computers are unchanged: everything specific to Android is selected by `cfg(target_os = "android")` /
+`cfg(mobile)` on the Rust side and by `isMobile()` on the web side.
+
+How the engine runs there. Tauri has no sidecar on a phone, and Android only lets an application run what its package carries
+in its native-library folder. So Baresip is built with the NDK as an executable named **`libbaresip.so`**, packaged with the
+native libraries (`useLegacyPackaging`), and the engine starts it from that folder exactly like on a computer, as a child process
+driven through `ctrl_tcp` ([`android.rs`](src-tauri/src/sip/engine/baresip/android.rs)). Like on Windows, Baresip is built
+statically (the modules are inside the executable); audio goes through the **AAudio** module.
+
+Requirements: the desktop ones, the Android SDK + NDK (`sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+"ndk;27.2.12479018"`, with `ANDROID_HOME` set), JDK 17+, CMake, Git, and the Rust Android targets:
+
+```bash
+rustup target add aarch64-linux-android x86_64-linux-android
+npm install
+npm run tauri android build -- --debug --target aarch64 --apk   # or: npm run tauri android dev
+```
+
+`npm run sidecar:android` (run automatically by the build) compiles OpenSSL and Opus with vcpkg, then libre and Baresip, for the
+ABI being built (`--abi arm64-v8a,x86_64` to choose) into `src-tauri/android/jniLibs/` ([`scripts/build-baresip-android.ps1`](scripts/build-baresip-android.ps1),
+PowerShell 7 on macOS/Linux). The first run takes about fifteen minutes. The Gradle project is `src-tauri/gen/android`.
+
+What the Android shell does ([`MainActivity.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/MainActivity.kt),
+[`SipService.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/SipService.kt)):
+
+- asks for the **microphone** (and notification, Bluetooth) permission at launch;
+- runs a **foreground service** (a permanent, low-priority notification) so that Android does not freeze the process: without it
+  the SIP registration lapses a few minutes after the screen goes off;
+- hands the engine the network's **DNS servers** (Android has no `/etc/resolv.conf`; names are resolved through the system,
+  the DNS servers are only used for SRV records, with `8.8.8.8` as a last resort);
+- puts the phone in **communication mode** during a call (earpiece, hardware echo canceller, call volume), with a loudspeaker button.
+
+Differences with the computers: the audio devices, the keyboard shortcuts, the tray icon, "launch at login", the headset buttons,
+the `zephone ctl` command line and the call in a window of its own do not exist (the call screen covers the application until you
+put it away). SIP passwords are kept in a private file of the application (Android encrypts and isolates it), not in a credential
+store. LDAP uses rustls; a custom company CA for LDAP is not supported yet. G.722 is not available (as on Windows).
+
+On Windows, `tauri android build` creates symbolic links: turn on **Developer Mode** (Settings → System → For developers) or run
+it from an elevated terminal.
+
+**Verified** on an Android 15 x86_64 emulator, against a throw-away SIP server: the application starts, the engine runs from the
+native-library folder, the account registers (`REGISTER` → `200 OK`), an outgoing call connects (`INVITE`/`ACK`), AAudio opens its
+streams, the phone switches to communication mode for the call and back after `BYE`, and the loudspeaker button routes the sound.
+**Not verified**: a real phone (and the arm64 build, which compiles but was not run), a real PBX, sound actually heard or captured
+(the emulator's virtual microphone), SIP over TLS. **Not done**: incoming calls only ring while the process is alive (no push
+notification service, so a phone that killed the application does not ring); no full-screen incoming-call notification; Bluetooth
+headsets are not routed explicitly (and their permission is not requested).
 
 ## Linux
 
