@@ -380,10 +380,16 @@ pub fn translate_error(e: &LdapError) -> SyncError {
             ),
             _ => err(SyncErrorKind::Server, "The LDAP server returned an error."),
         },
+        #[cfg(not(target_os = "android"))]
         LdapError::NativeTLS { .. } => err(
             SyncErrorKind::Config,
             "The secure connection failed: the server's certificate is not trusted, or does not match its address. \
              Add your company's certificate authority in Settings → Network.",
+        ),
+        #[cfg(target_os = "android")]
+        LdapError::Rustls { .. } | LdapError::DNSName { .. } => err(
+            SyncErrorKind::Config,
+            "The secure connection failed: the server's certificate is not trusted, or does not match its address.",
         ),
         LdapError::Io { source } => match source.kind() {
             std::io::ErrorKind::ConnectionRefused => err(
@@ -446,10 +452,19 @@ impl LdapConnector {
         self.config
             .validate(self.password.is_some())
             .map_err(|m| SyncError::new(SyncErrorKind::Config, m))?;
+        #[cfg_attr(target_os = "android", allow(unused_mut))]
         let mut settings = LdapConnSettings::new()
             .set_conn_timeout(CONNECT_TIMEOUT)
             .set_starttls(self.config.starttls);
         // Verification stays on. The system's trust store is used; a company CA can be added to it.
+        #[cfg(target_os = "android")]
+        if self.ca_pem.is_some() {
+            return Err(SyncError::new(
+                SyncErrorKind::Config,
+                "A company certificate authority for LDAP is not supported on Android yet.",
+            ));
+        }
+        #[cfg(not(target_os = "android"))]
         if let Some(pem) = &self.ca_pem {
             let cert = native_tls::Certificate::from_pem(pem).map_err(|_| {
                 SyncError::new(

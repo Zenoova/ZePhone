@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "What the notification plugin's page script asks the webview on a phone (whether notifications are allowed). Nothing else is exposed.",
+  "windows": ["main"],
+  "platforms": ["android", "iOS"],
+  "permissions": ["notification:allow-is-permission-granted"]
+}

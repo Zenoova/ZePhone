@@ -11,28 +11,35 @@ pub mod security;
 pub mod shortcuts;
 pub mod sip;
 
+#[cfg(desktop)]
+use crate::app::{MAIN_WINDOW, show_main_window};
+#[cfg(desktop)]
+use crate::control::socket;
+
 use std::{
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
 };
 
-use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
+#[cfg(desktop)]
+use tauri::WindowEvent;
+use tauri::{AppHandle, Manager, RunEvent};
+#[cfg(desktop)]
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_log::{Target, TargetKind};
 
 use crate::{
     app::{
-        AppState, MAIN_WINDOW, directory_events::TauriDirectoryEvents, shell::TauriShell,
-        show_main_window, sink::TauriSink, tray,
+        AppState, directory_events::TauriDirectoryEvents, shell::TauriShell, sink::TauriSink, tray,
     },
-    control::{controller::Controller, socket},
+    control::controller::Controller,
     database::Database,
     directory::{connectors::RealConnectorFactory, service::DirectoryService},
     error::{AppError, AppResult},
-    security::secrets::KeyringStore,
+    security::secrets,
     shortcuts::{ShortcutService, tauri_backend::TauriHotkeys},
     sip::{
         engine::{
@@ -48,13 +55,15 @@ use crate::{
 /// * Production bundle: `ZePhone.app/Contents/MacOS/baresip` (Tauri `externalBin`),
 ///   modules and sounds in `Contents/Resources/engine/`.
 /// * `tauri dev`: Tauri copies the same files next to the debug executable.
+/// * Android: see [`sip::engine::baresip::android`].
 ///
 /// Nothing here depends on Homebrew or on `$PATH`.
+#[cfg(not(target_os = "android"))]
 fn engine_paths(app: &AppHandle, work_dir: PathBuf) -> AppResult<BaresipPaths> {
     let exe_dir = std::env::current_exe()
         .map_err(|e| AppError::Engine(e.to_string()))?
         .parent()
-        .map(Path::to_path_buf)
+        .map(std::path::Path::to_path_buf)
         .ok_or_else(|| AppError::Engine("executable folder not found".into()))?;
     let exe = exe_dir.join(if cfg!(windows) {
         "baresip.exe"
@@ -74,6 +83,16 @@ fn engine_paths(app: &AppHandle, work_dir: PathBuf) -> AppResult<BaresipPaths> {
     })
 }
 
+#[cfg(target_os = "android")]
+fn engine_paths(app: &AppHandle, work_dir: PathBuf) -> AppResult<BaresipPaths> {
+    let data_dir = app
+        .path()
+        .data_dir()
+        .map_err(|e| AppError::Engine(e.to_string()))?;
+    sip::engine::baresip::android::paths(work_dir, &data_dir)
+        .map_err(|e| AppError::Engine(e.to_string()))
+}
+
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let handle = app.handle().clone();
     let data_dir = app.path().app_data_dir()?;
@@ -82,13 +101,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let db = Arc::new(Database::open(&data_dir.join("zephone.db"))?);
     let settings = db.get_settings().unwrap_or_default();
 
+    let secrets = secrets::default_store(&data_dir);
     let paths = engine_paths(&handle, app.path().app_local_data_dir()?.join("engine"))?;
     log::info!("SIP engine executable: {}", paths.exe.display());
     let engine: Arc<dyn SipEngine> = Arc::new(BaresipEngine::new(paths));
     let manager = SipManager::new(
         engine,
         db.clone(),
-        Arc::new(KeyringStore),
+        secrets.clone(),
         Arc::new(TauriSink::new(handle.clone())),
     );
     manager.set_recordings_dir(data_dir.join("recordings"));
@@ -111,7 +131,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     audio_router.prime();
     let directory = DirectoryService::new(
         db.clone(),
-        Arc::new(KeyringStore),
+        secrets.clone(),
         Arc::new(TauriDirectoryEvents::new(handle.clone())),
         Arc::new(RealConnectorFactory::new(db.clone())),
     );
@@ -162,13 +182,18 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         control_server: std::sync::Mutex::new(None),
         shutting_down: AtomicBool::new(false),
     });
+    // `zephone ctl` is a desktop tool: a phone has no terminal to run it from.
+    #[cfg(desktop)]
     start_control_socket(handle.clone(), controller);
+    #[cfg(mobile)]
+    let _ = controller;
     audio_router.start();
     headset.apply(settings.audio.headset.clone());
 
     tray::setup(&handle, settings.general.show_tray_icon)?;
     app::window::apply_appearance(&handle, &settings.general);
 
+    #[cfg(desktop)]
     if settings.general.start_minimized
         && let Some(w) = app.get_webview_window(MAIN_WINDOW)
     {
@@ -179,6 +204,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    #[cfg(not(target_os = "android"))]
     watch_termination_signals(handle.clone());
 
     // Start the engine in the background. A failure is reported through engine/account
@@ -199,6 +225,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 
 /// Opens the private socket `zephone ctl` talks to. Without it the application works the same: only the command
 /// line is unavailable.
+#[cfg(desktop)]
 fn start_control_socket(app: AppHandle, controller: Arc<Controller>) {
     tauri::async_runtime::spawn(async move {
         let path = match socket::socket_path() {
@@ -228,6 +255,7 @@ fn release_system_resources(app: &AppHandle) {
 
 /// SIGTERM / SIGINT / SIGHUP (kill, Ctrl-C in dev, terminal closed) go through the normal
 /// quit path so the SIP engine is stopped and nothing is left behind.
+#[cfg(not(target_os = "android"))]
 fn watch_termination_signals(app: AppHandle) {
     #[cfg(unix)]
     tauri::async_runtime::spawn(async move {
@@ -247,7 +275,7 @@ fn watch_termination_signals(app: AppHandle) {
         log::info!("termination signal received, shutting down");
         app.exit(0);
     });
-    #[cfg(not(unix))]
+    #[cfg(windows)]
     tauri::async_runtime::spawn(async move {
         if tokio::signal::ctrl_c().await.is_ok() {
             app.exit(0);
@@ -255,6 +283,7 @@ fn watch_termination_signals(app: AppHandle) {
     });
 }
 
+#[cfg(desktop)]
 fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
     if window.label() != MAIN_WINDOW {
         return;
@@ -313,28 +342,37 @@ fn on_run_event(app: &AppHandle, event: RunEvent) {
         RunEvent::Reopen {
             has_visible_windows,
             ..
-        } if !has_visible_windows => show_main_window(app),
+        } if !has_visible_windows => crate::app::show_main_window(app),
         _ => {}
+    }
+}
+
+/// Where the log goes: the terminal and a file on a computer; the system log (`adb logcat`) on Android.
+fn log_targets() -> Vec<Target> {
+    #[cfg(target_os = "android")]
+    {
+        vec![Target::new(TargetKind::Stdout)]
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        vec![
+            Target::new(TargetKind::Stdout),
+            Target::new(TargetKind::LogDir {
+                file_name: Some("zephone".into()),
+            }),
+        ]
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // Desktop only: one instance, shortcuts that work in any application, start at login. A phone has none of them.
+    #[cfg(desktop)]
+    let builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             show_main_window(app)
         }))
-        .plugin(
-            tauri_plugin_log::Builder::new()
-                .level(log::LevelFilter::Info)
-                .targets([
-                    Target::new(TargetKind::Stdout),
-                    Target::new(TargetKind::LogDir {
-                        file_name: Some("zephone".into()),
-                    }),
-                ])
-                .build(),
-        )
         .plugin(
             // Keyboard shortcuts that work in any application. What a press means is decided by the controller.
             tauri_plugin_global_shortcut::Builder::new()
@@ -354,11 +392,18 @@ pub fn run() {
                 })
                 .build(),
         )
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             None,
-        ))
+        ));
+    let builder = builder
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Info)
+                .targets(log_targets())
+                .build(),
+        )
+        .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_snapshot,
             commands::restart_engine,
@@ -392,6 +437,7 @@ pub fn run() {
             commands::close_call_window,
             commands::set_call_window_on_top,
             commands::show_main,
+            commands::set_speakerphone,
             commands::list_recordings,
             commands::delete_recording,
             commands::set_audio_gains,
@@ -435,8 +481,10 @@ pub fn run() {
             commands::get_app_info,
             commands::quit_app,
         ])
-        .setup(setup)
-        .on_window_event(on_window_event)
+        .setup(setup);
+    #[cfg(desktop)]
+    let builder = builder.on_window_event(on_window_event);
+    let app = builder
         .build(tauri::generate_context!())
         .expect("error while building the ZePhone application");
 

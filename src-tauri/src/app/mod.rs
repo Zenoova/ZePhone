@@ -1,17 +1,28 @@
 //! Glue between the telephony core and the desktop shell (Tauri): UI events, native
 //! notifications, tray icon, window behaviour.
 
+pub mod call_audio;
+#[cfg(desktop)]
+pub mod call_window;
+#[cfg(mobile)]
+#[path = "call_window_mobile.rs"]
 pub mod call_window;
 pub mod control;
 pub mod directory_events;
 pub mod shell;
 pub mod sink;
+#[cfg(desktop)]
+pub mod tray;
+#[cfg(mobile)]
+#[path = "tray_mobile.rs"]
 pub mod tray;
 pub mod window;
 
 use std::sync::{Arc, atomic::AtomicBool};
 
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
+#[cfg(desktop)]
+use tauri::Manager;
 
 use crate::{
     control::{controller::Controller, socket},
@@ -68,9 +79,13 @@ pub struct AppState {
 
 /// Shows and focuses the main window (un-minimising / un-hiding it).
 pub fn show_main_window(app: &AppHandle) {
+    // A phone has one window, always in front when the user is looking at the application.
+    #[cfg(desktop)]
     if let Some(w) = app.get_webview_window(MAIN_WINDOW) {
         let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_focus();
     }
+    #[cfg(mobile)]
+    let _ = app;
 }

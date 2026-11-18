@@ -20,14 +20,20 @@ pub fn apply_appearance(app: &AppHandle, general: &GeneralSettings) {
 }
 
 fn apply_to(window: &tauri::WebviewWindow, general: &GeneralSettings) {
+    #[cfg(mobile)]
+    let _ = window;
     let theme = match general.theme {
         Theme::System => None,
         Theme::Light => Some(tauri::Theme::Light),
         Theme::Dark => Some(tauri::Theme::Dark),
     };
+    // The system bars of a phone follow the page's own colours: only a desktop window has a theme to set.
+    #[cfg(desktop)]
     if let Err(e) = window.set_theme(theme) {
         log::warn!("cannot set the window theme: {e}");
     }
+    #[cfg(mobile)]
+    let _ = theme;
 
     #[cfg(target_os = "macos")]
     {

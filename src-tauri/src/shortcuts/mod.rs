@@ -8,6 +8,10 @@
 //! application is not allowed to read what is typed, only to be told when its own combinations are pressed.
 
 pub mod accelerator;
+#[cfg(desktop)]
+pub mod tauri_backend;
+#[cfg(mobile)]
+#[path = "tauri_backend_mobile.rs"]
 pub mod tauri_backend;
 
 use std::{

@@ -5,6 +5,7 @@ pub mod directory;
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
+#[cfg(desktop)]
 use tauri_plugin_autostart::ManagerExt;
 
 use crate::{
@@ -158,6 +159,12 @@ pub fn set_call_window_on_top(app: AppHandle, on_top: bool) {
     crate::app::call_window::set_always_on_top(&app, on_top);
 }
 
+/// Loudspeaker or earpiece for the call in progress (a phone only; nothing to do on a computer).
+#[tauri::command]
+pub fn set_speakerphone(on: bool) -> AppResult<()> {
+    crate::app::call_audio::set_speakerphone(on).map_err(AppError::Other)
+}
+
 #[tauri::command]
 pub fn show_main(app: AppHandle) {
     crate::app::show_main_window(&app);
@@ -251,16 +258,20 @@ pub async fn update_settings(
     tray::set_visible(&app, settings.general.show_tray_icon);
     tray::set_do_not_disturb(&app, settings.general.do_not_disturb);
     crate::app::window::apply_appearance(&app, &settings.general);
-    let autostart = app.autolaunch();
-    let enabled = autostart.is_enabled().unwrap_or(false);
-    if settings.general.launch_at_login && !enabled {
-        autostart
-            .enable()
-            .map_err(|e| AppError::Other(format!("Cannot enable automatic start: {e}")))?;
-    } else if !settings.general.launch_at_login && enabled {
-        autostart
-            .disable()
-            .map_err(|e| AppError::Other(format!("Cannot disable automatic start: {e}")))?;
+    // Starting at login is a computer's notion (a phone's applications are started by the system when needed).
+    #[cfg(desktop)]
+    {
+        let autostart = app.autolaunch();
+        let enabled = autostart.is_enabled().unwrap_or(false);
+        if settings.general.launch_at_login && !enabled {
+            autostart
+                .enable()
+                .map_err(|e| AppError::Other(format!("Cannot enable automatic start: {e}")))?;
+        } else if !settings.general.launch_at_login && enabled {
+            autostart
+                .disable()
+                .map_err(|e| AppError::Other(format!("Cannot disable automatic start: {e}")))?;
+        }
     }
     Ok(applied)
 }

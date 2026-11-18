@@ -6,7 +6,7 @@ use std::{
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_notification::NotificationExt;
 
-use super::{call_window, events, tray};
+use super::{call_audio, call_window, events, tray};
 use crate::sip::{
     manager::{EngineInfo, UiSink},
     stats::CallStatsSample,
@@ -20,6 +20,8 @@ pub struct TauriSink {
     /// Calls whose window was already opened: a user who closes the call window during a call is not
     /// pulled back into it by every later update of that call.
     opened: Mutex<HashSet<String>>,
+    /// Calls in progress: a phone is put in "communication" mode while there is at least one.
+    live: Mutex<HashSet<String>>,
 }
 
 impl TauriSink {
@@ -28,6 +30,7 @@ impl TauriSink {
             app,
             states: Mutex::default(),
             opened: Mutex::default(),
+            live: Mutex::default(),
         }
     }
 
@@ -95,6 +98,19 @@ impl UiSink for TauriSink {
         let live = !matches!(call.state, CallState::Ended | CallState::Failed);
         if live && self.opened.lock().unwrap().insert(call.id.clone()) {
             call_window::open(&self.app);
+        }
+        let (was_idle, is_idle) = {
+            let mut calls = self.live.lock().unwrap();
+            let was_idle = calls.is_empty();
+            if live {
+                calls.insert(call.id.clone());
+            } else {
+                calls.remove(&call.id);
+            }
+            (was_idle, calls.is_empty())
+        };
+        if was_idle != is_idle {
+            call_audio::set_in_call(!is_idle);
         }
     }
 
