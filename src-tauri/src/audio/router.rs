@@ -403,6 +403,11 @@ impl AudioRouter {
 
     /// The names the engine must start with: what each role resolves to now.
     pub fn engine_names(&self) -> [Option<String>; 3] {
+        // A phone routes its audio itself (earpiece, speaker, headset, Bluetooth): the engine always uses the
+        // system's default device.
+        if cfg!(target_os = "android") {
+            return [None, None, None];
+        }
         let snap = self.system.snapshot();
         let core = self.core.lock().unwrap();
         Role::ALL.map(|r| {

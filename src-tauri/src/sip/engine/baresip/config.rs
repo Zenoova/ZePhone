@@ -22,6 +22,8 @@ pub fn audio_driver() -> &'static str {
     } else if cfg!(target_os = "windows") {
         // Baresip 4.x dropped `winwave`; WASAPI is the Windows audio module.
         "wasapi"
+    } else if cfg!(target_os = "android") {
+        "aaudio"
     } else {
         "alsa"
     }
@@ -76,6 +78,8 @@ pub struct ConfigInput<'a> {
     pub settings: &'a EngineSettings,
     /// Tells whether a module file exists (optional codecs are loaded only if shipped).
     pub module_exists: &'a dyn Fn(&str) -> bool,
+    /// The DNS servers of the active network (Android only: the other systems have `/etc/resolv.conf`).
+    pub dns_servers: &'a [String],
 }
 
 fn single_line(s: &str) -> String {
@@ -102,6 +106,31 @@ const VUMETER_MODULE: &str = "vumeter";
 /// ZePhone's own audio filter (`scripts/baresip-modules/zeaudio`): incoming/outgoing gain and local call
 /// recording. Loaded after the VU meter, so the meter keeps showing the level before the gain.
 const ZEAUDIO_MODULE: &str = "zeaudio";
+
+/// Android has no `/etc/resolv.conf` and no CA bundle file: Baresip is told where the system's certificates are,
+/// resolves host names through the system (`getaddrinfo`, which follows the network's own DNS and a private DNS)
+/// and gets the DNS servers of the active network for the SRV and NAPTR records only a DNS server can answer,
+/// plus a public fallback in case it knows none.
+fn android_network_lines(dns_servers: &[String]) -> String {
+    let mut c = String::from("sip_capath\t\t/system/etc/security/cacerts\n");
+    c.push_str("dns_getaddrinfo\t\tyes\n");
+    for s in dns_servers {
+        if let Some(addr) = sanitize_dns_server(s) {
+            c.push_str(&format!("dns_server\t\t{addr}\n"));
+        }
+    }
+    c.push_str("dns_fallback\t\t8.8.8.8:53\n");
+    c
+}
+
+/// A DNS server as Baresip wants it (`host:port`), from an IP literal; anything else is dropped.
+fn sanitize_dns_server(v: &str) -> Option<String> {
+    let ip: std::net::IpAddr = v.trim().parse().ok()?;
+    Some(match ip {
+        std::net::IpAddr::V4(a) => format!("{a}:53"),
+        std::net::IpAddr::V6(a) => format!("[{a}]:53"),
+    })
+}
 
 pub fn render_config(input: &ConfigInput<'_>) -> String {
     let ext = module_ext();
@@ -157,6 +186,9 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     }
     if let Some(ca) = ca {
         c.push_str(&format!("sip_cafile\t\t{}\n", path_value(&ca)));
+    }
+    if cfg!(target_os = "android") {
+        c.push_str(&android_network_lines(input.dns_servers));
     }
     c.push_str(&format!(
         "module_path\t\t{}\n",
@@ -303,6 +335,7 @@ mod tests {
             ctrl_port: 45678,
             settings: &settings,
             module_exists: &exists,
+            dns_servers: &[],
         });
         assert!(cfg.contains("ctrl_tcp_listen\t\t127.0.0.1:45678\n"));
         assert!(!cfg.contains("0.0.0.0"));
@@ -328,6 +361,40 @@ mod tests {
     }
 
     #[test]
+    fn android_network_lines_name_the_system_certificates_and_the_dns_servers() {
+        let lines = android_network_lines(&[
+            "192.168.1.1".into(),
+            " 2001:4860:4860::8888 ".into(),
+            "not an address".into(),
+            "1.1.1.1
+module evil"
+                .into(),
+        ]);
+        assert!(lines.contains(
+            "sip_capath		/system/etc/security/cacerts
+"
+        ));
+        assert!(lines.contains(
+            "dns_getaddrinfo		yes
+"
+        ));
+        assert!(lines.contains(
+            "dns_server		192.168.1.1:53
+"
+        ));
+        assert!(lines.contains(
+            "dns_server		[2001:4860:4860::8888]:53
+"
+        ));
+        // Whatever the shell wrote, nothing but addresses reaches the configuration.
+        assert!(!lines.contains("evil") && !lines.contains("not an address"));
+        assert!(lines.ends_with(
+            "dns_fallback		8.8.8.8:53
+"
+        ));
+    }
+
+    #[test]
     fn network_interface_is_sanitised_and_rendered() {
         assert_eq!(sanitize_interface("en0").as_deref(), Some("en0"));
         assert_eq!(
@@ -346,6 +413,7 @@ mod tests {
             ctrl_port: 1,
             settings: &settings,
             module_exists: &|_| false,
+            dns_servers: &[],
         });
         assert!(cfg.contains("net_interface\t\t192.168.1.10\n"));
     }
@@ -375,6 +443,7 @@ mod tests {
             ctrl_port: 1,
             settings: &settings,
             module_exists: &|_| false,
+            dns_servers: &[],
         });
         let d = audio_driver();
         assert!(cfg.contains(&format!("audio_source\t\t{d},USB Mic\n")));

@@ -384,7 +384,12 @@ impl SipEngine for BaresipEngine {
         // The `auplay`/`ausrc` commands only accept real device names (the literal "default"
         // is valid in the config file but not in these commands): resolve "system default"
         // to the name of the current default device.
-        let (default_in, default_out) = crate::audio::default_names();
+        // (On Android the driver only knows the literal "default": the system routes the sound.)
+        let (default_in, default_out) = if cfg!(target_os = "android") {
+            (Some("default".to_owned()), Some("default".to_owned()))
+        } else {
+            crate::audio::default_names()
+        };
         let player = output.map(str::to_owned).or(default_out);
         let source = input.map(str::to_owned).or(default_in);
         for (cmd, dev) in [("auplay", player), ("ausrc", source)] {
@@ -493,6 +498,18 @@ async fn supervise(
     }
 }
 
+/// The DNS servers of the active network: only Android needs to be told (it has no `/etc/resolv.conf`).
+fn os_dns_servers() -> Vec<String> {
+    #[cfg(target_os = "android")]
+    {
+        super::android::dns_servers()
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        Vec::new()
+    }
+}
+
 async fn run_once(
     inner: &Arc<Inner>,
     stop_rx: &mut oneshot::Receiver<()>,
@@ -519,13 +536,22 @@ async fn run_once(
         Err(e) => return Outcome::StartFailed(format!("no local port available: {e}")),
     };
     let modules_dir = paths.modules_dir.clone();
+    // On Android every module is compiled into the engine: there is no folder to look in.
+    #[cfg(not(target_os = "android"))]
     let exists = move |m: &str| modules_dir.join(m).is_file();
+    #[cfg(target_os = "android")]
+    let exists = move |m: &str| {
+        let _ = &modules_dir;
+        super::android::module_exists(m)
+    };
+    let dns_servers = os_dns_servers();
     let cfg = config::render_config(&ConfigInput {
         modules_dir: &paths.modules_dir,
         sounds_dir: &paths.sounds_dir,
         ctrl_port: port,
         settings: &settings,
         module_exists: &exists,
+        dns_servers: &dns_servers,
     });
     if let Err(e) = process::write_private_file(&paths.work_dir.join("config"), &cfg) {
         return Outcome::StartFailed(format!("cannot write the configuration: {e}"));

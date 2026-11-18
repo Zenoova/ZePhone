@@ -5,6 +5,9 @@
 //! binary and its modules are bundled as a Tauri sidecar, and the
 //! [`SipEngine`](super::SipEngine) trait keeps the door open to an FFI engine.
 
+// Compiled everywhere so that its logic is tested on a computer; only Android runs it.
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub mod android;
 pub mod client;
 pub mod config;
 pub mod engine;

@@ -178,7 +178,13 @@ pub fn spawn(
 fn spawn_watchdog(app_pid: u32, engine_pid: u32) {
     const SCRIPT: &str = r#"while kill -0 "$1" 2>/dev/null && kill -0 "$2" 2>/dev/null; do sleep 1; done
 kill -0 "$1" 2>/dev/null || kill -TERM "$2" 2>/dev/null; exit 0"#;
-    let _ = std::process::Command::new("/bin/sh")
+    // Android has no /bin/sh.
+    let shell = if cfg!(target_os = "android") {
+        "/system/bin/sh"
+    } else {
+        "/bin/sh"
+    };
+    let _ = std::process::Command::new(shell)
         .args([
             "-c",
             SCRIPT,
