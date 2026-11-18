@@ -6,6 +6,7 @@ import { Badge } from "@/components/arc/badge/badge";
 import { Button } from "@/components/arc/button/button";
 import { Switch } from "@/components/ui/switch";
 import { VolumeSliders } from "@/components/VolumeSliders";
+import { isMobile } from "@/lib/platform";
 import { telephony } from "@/services/telephony";
 import { useEngineStore } from "@/stores/engine-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -31,23 +32,29 @@ export function AudioSettings() {
 
   const lacking = ["G722", "opus"].filter((c) => !codecs.some((x) => x.toLowerCase() === c.toLowerCase()));
 
+  // A phone routes the sound itself (earpiece, loudspeaker, headset, Bluetooth): no device to pick, no headset
+  // buttons to read, and nothing to diagnose from here.
+  const mobile = isMobile();
+
   return (
     <div className="space-y-6">
-      <AudioDevices />
+      {!mobile && <AudioDevices />}
 
-      <HeadsetButtons />
+      {!mobile && <HeadsetButtons />}
 
-      <SettingsSection
-        title="Diagnostic"
-        description="See the detected devices and those actually used, test the output and the ringtone, watch the microphone level, understand an error."
-      >
-        <div className="flex items-center justify-between gap-4 px-4 py-3.5">
-          <p className="text-muted-foreground text-sm">Nothing starts without your action, and never during a call.</p>
-          <Button variant="secondary" onClick={() => setDiagOpen(true)}>
-            Open the audio diagnostic
-          </Button>
-        </div>
-      </SettingsSection>
+      {!mobile && (
+        <SettingsSection
+          title="Diagnostic"
+          description="See the detected devices and those actually used, test the output and the ringtone, watch the microphone level, understand an error."
+        >
+          <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+            <p className="text-muted-foreground text-sm">Nothing starts without your action, and never during a call.</p>
+            <Button variant="secondary" onClick={() => setDiagOpen(true)}>
+              Open the audio diagnostic
+            </Button>
+          </div>
+        </SettingsSection>
+      )}
 
       <SettingsSection
         title="Volumes"

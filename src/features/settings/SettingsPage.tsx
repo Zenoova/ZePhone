@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Tabs, TabsList, TabsTrigger } from "@/components/arc/tabs/tabs";
+import { isMobile } from "@/lib/platform";
 import { type SettingsTab, useUiStore } from "@/stores/ui-store";
 
 import { AboutSettings } from "./AboutSettings";
@@ -22,6 +23,9 @@ const TABS: ReadonlyArray<{ id: SettingsTab; label: string }> = [
   { id: "about", label: "About" },
 ];
 
+/** What only makes sense with a keyboard and a desktop: a phone has no global shortcuts. */
+const DESKTOP_ONLY: ReadonlySet<SettingsTab> = new Set(["shortcuts"]);
+
 export function SettingsPage() {
   const tab = useUiStore((s) => s.settingsTab);
   const openSettings = useUiStore((s) => s.openSettings);
@@ -32,7 +36,7 @@ export function SettingsPage() {
       <div className="px-6 pb-3">
         <Tabs value={tab} onValueChange={(v) => openSettings(v as SettingsTab)}>
           <TabsList aria-label="Settings categories">
-            {TABS.map(({ id, label }) => (
+            {TABS.filter(({ id }) => !(isMobile() && DESKTOP_ONLY.has(id))).map(({ id, label }) => (
               <TabsTrigger key={id} value={id}>
                 {label}
               </TabsTrigger>

@@ -16,6 +16,9 @@ interface UiState {
   backendUnavailable: boolean;
   /** A page asked to take the keyboard (the window was brought forward on it). The page clears it once it has. */
   focusRequest: FocusTarget | null;
+  /** Phones only: the call screen is put away so the rest of the application can be used during the call. */
+  callHidden: boolean;
+  setCallHidden: (hidden: boolean) => void;
   requestFocus: (target: FocusTarget) => void;
   clearFocusRequest: () => void;
   setSection: (section: Section) => void;
@@ -32,6 +35,8 @@ export const useUiStore = create<UiState>((set) => ({
   dialValue: "",
   backendUnavailable: false,
   focusRequest: null,
+  callHidden: false,
+  setCallHidden: (callHidden) => set({ callHidden }),
   requestFocus: (target) => set({ focusRequest: target, section: target === "search" ? "contacts" : "dialer" }),
   clearFocusRequest: () => set({ focusRequest: null }),
   setSection: (section) => set({ section }),

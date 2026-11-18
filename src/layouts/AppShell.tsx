@@ -1,12 +1,16 @@
 import { useEffect } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 import { Toaster } from "@/components/Toaster";
 import { ActiveCallBar } from "@/features/calls/ActiveCallBar";
+import { CallWindow } from "@/features/calls/CallWindow";
 import { DirectoryPage } from "@/features/directory/DirectoryPage";
 import { HomePage } from "@/features/home/HomePage";
 import { HistoryPage } from "@/features/history/HistoryPage";
 import { RecordingsPage } from "@/features/recordings/RecordingsPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
+import { isMobile } from "@/lib/platform";
+import { isTerminal, sortedCalls, useCallsStore } from "@/stores/calls-store";
 import { type Section, useUiStore } from "@/stores/ui-store";
 
 import { EngineBanner } from "./EngineBanner";
@@ -39,6 +43,32 @@ function useShellBehaviour() {
   }, [setSection]);
 }
 
+/**
+ * A phone has one window: the call screen (the one a computer shows in its own window) covers the application for
+ * as long as there is a call to show, until the user puts it away to use the rest of the application; a new call
+ * brings it back.
+ */
+function MobileCallScreen() {
+  const calls = useCallsStore(useShallow((s) => sortedCalls(s.calls)));
+  const hidden = useUiStore((s) => s.callHidden);
+  const setHidden = useUiStore((s) => s.setCallHidden);
+  const liveIds = calls
+    .filter((c) => !isTerminal(c))
+    .map((c) => c.id)
+    .join();
+
+  useEffect(() => {
+    if (liveIds) setHidden(false);
+  }, [liveIds, setHidden]);
+
+  if (calls.length === 0 || hidden) return null;
+  return (
+    <div className="bg-background fixed inset-0 z-40" data-testid="mobile-call-screen">
+      <CallWindow />
+    </div>
+  );
+}
+
 export function AppShell() {
   const section = useUiStore((s) => s.section);
   const Page = PAGES[section];
@@ -57,6 +87,7 @@ export function AppShell() {
         </main>
         <NavDock />
       </div>
+      {isMobile() && <MobileCallScreen />}
       <Toaster />
     </>
   );

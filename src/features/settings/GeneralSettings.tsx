@@ -1,5 +1,6 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { isMobile } from "@/lib/platform";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { Theme } from "@/types/telephony";
 
@@ -11,6 +12,9 @@ export function GeneralSettings() {
   const g = useSettingsStore((s) => s.settings.general);
   const update = useSettingsStore((s) => s.update);
   const isMac = navigator.userAgent.includes("Mac");
+  // Starting at login, the tray icon and a window to close are a computer's: a phone's system starts and keeps the
+  // application as it needs.
+  const mobile = isMobile();
 
   return (
     <div className="space-y-6">
@@ -46,6 +50,7 @@ export function GeneralSettings() {
         </SettingsSection>
       )}
 
+      {!mobile && (
       <SettingsSection title="Startup and window">
         <SettingRow label="Launch ZePhone at login" description="To receive calls as soon as you sign in">
           <Switch
@@ -80,6 +85,7 @@ export function GeneralSettings() {
           />
         </SettingRow>
       </SettingsSection>
+      )}
     </div>
   );
 }

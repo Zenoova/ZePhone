@@ -468,6 +468,7 @@ export function installMockBackend(): void {
     close_call_window: () => undefined,
     set_call_window_on_top: () => undefined,
     show_main: () => undefined,
+    set_speakerphone: () => undefined,
     send_dtmf: () => undefined,
     transfer_call: () => undefined,
 

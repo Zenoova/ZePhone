@@ -1,5 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 
+import { isMobile } from "@/lib/platform";
+import { useUiStore } from "@/stores/ui-store";
+
 import type {
   AccountInput,
   AccountView,
@@ -45,6 +48,12 @@ async function call<T>(command: string, args?: Record<string, unknown>): Promise
   }
 }
 
+/** A phone has one window: the call screen is shown over the application, or put away. */
+function showCallScreen(shown: boolean): Promise<void> {
+  useUiStore.getState().setCallHidden(!shown);
+  return Promise.resolve();
+}
+
 /**
  * Strongly-typed surface of the Rust backend. The frontend never sees SIP: it
  * sends intents (dial, answer, hold...) and receives state.
@@ -85,11 +94,13 @@ export const telephony = {
   /** The statistics gathered so far about a call in progress (one sample per second, oldest first). */
   getCallStats: (callId: string) => call<CallStatsSample[]>("get_call_stats", { callId }),
   /** Brings the call window up (it is opened by the backend when a call starts). */
-  openCallWindow: () => call<void>("open_call_window"),
-  closeCallWindow: () => call<void>("close_call_window"),
+  openCallWindow: () => (isMobile() ? showCallScreen(true) : call<void>("open_call_window")),
+  closeCallWindow: () => (isMobile() ? Promise.resolve() : call<void>("close_call_window")),
   setCallWindowOnTop: (onTop: boolean) => call<void>("set_call_window_on_top", { onTop }),
-  /** Brings the main window up (from the call window). */
-  showMain: () => call<void>("show_main"),
+  /** Brings the main window up (from the call window). On a phone: puts the call screen away. */
+  showMain: () => (isMobile() ? showCallScreen(false) : call<void>("show_main")),
+  /** Loudspeaker (true) or earpiece (false) for the call in progress. Phones only. */
+  setSpeakerphone: (on: boolean) => call<void>("set_speakerphone", { on }),
 
   // contacts
   listContacts: (query?: string) => call<Contact[]>("list_contacts", { query: query ?? null }),

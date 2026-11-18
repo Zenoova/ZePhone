@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MEDIA_ENCRYPTION_LABEL, TRANSPORT_LABEL } from "@/lib/labels";
+import { isMobile } from "@/lib/platform";
 import { useAccountsStore } from "@/stores/accounts-store";
 
 import { defaultPort, editField, type FormState, toForm, toInput, validateAccount } from "./account-form-model";
@@ -154,7 +155,9 @@ function AccountFormBody({ account, onDone }: { account: AccountView | null; onD
           hint={
             account?.hasPassword
               ? "Saved in the keychain. Leave empty to keep it."
-              : "Stored in the system keychain, never in clear text."
+              : isMobile()
+                ? "Kept in the application's private storage, never in the settings."
+                : "Stored in the system keychain, never in clear text."
           }
         >
           <PasswordInput

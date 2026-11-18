@@ -5,6 +5,7 @@ import { Button } from "@/components/arc/button/button";
 import DropdownMenu from "@/components/arc/dropdown-menu/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/arc/popover/popover";
 import { AppWindow, ChartLine, Copy, Menu, Pin, ScrollText, Info, Volume2 } from "@/components/icons";
+import { isMobile } from "@/lib/platform";
 import { VolumeSliders } from "@/components/VolumeSliders";
 import { telephony } from "@/services/telephony";
 import type { Call } from "@/types/telephony";
@@ -23,6 +24,8 @@ export function CallToolbar({ call }: { call: Call }) {
   const [logOpen, setLogOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [onTop, setOnTop] = useState(false);
+  const [speaker, setSpeaker] = useState(false);
+  const mobile = isMobile();
 
   const copyId = async () => {
     try {
@@ -39,20 +42,42 @@ export function CallToolbar({ call }: { call: Call }) {
     void telephony.setCallWindowOnTop(next);
   };
 
+  const toggleSpeaker = () => {
+    const next = !speaker;
+    setSpeaker(next);
+    void telephony.setSpeakerphone(next).catch(() => setSpeaker(!next));
+  };
+
   return (
     <div className="absolute top-3 right-3 z-20 flex items-center gap-1" data-testid="call-toolbar">
-      <AudioDevicePicker call={call} />
+      {mobile ? (
+        // A phone picks its own microphone: the choice here is the earpiece or the loudspeaker.
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={speaker ? "Use the earpiece" : "Use the loudspeaker"}
+          aria-pressed={speaker}
+          title={speaker ? "Use the earpiece" : "Use the loudspeaker"}
+          onClick={toggleSpeaker}
+        >
+          <Volume2 className="size-4" />
+        </Button>
+      ) : (
+        <AudioDevicePicker call={call} />
+      )}
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" aria-label="Sound volume" title="Sound volume">
-            <Volume2 className="size-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="end" className="w-72">
-          <VolumeSliders />
-        </PopoverContent>
-      </Popover>
+      {!mobile && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="sm" aria-label="Sound volume" title="Sound volume">
+              <Volume2 className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-72">
+            <VolumeSliders />
+          </PopoverContent>
+        </Popover>
+      )}
 
       <DropdownMenu
         label="Options"
@@ -62,13 +87,17 @@ export function CallToolbar({ call }: { call: Call }) {
           </Button>
         }
         items={[
+          ...(mobile
+            ? []
+            : [
+                {
+                  label: onTop ? "Stop keeping on top" : "Keep on top",
+                  icon: <Pin className="size-4" />,
+                  onSelect: toggleOnTop,
+                },
+              ]),
           {
-            label: onTop ? "Stop keeping on top" : "Keep on top",
-            icon: <Pin className="size-4" />,
-            onSelect: toggleOnTop,
-          },
-          {
-            label: "Open ZePhone",
+            label: mobile ? "Back to ZePhone" : "Open ZePhone",
             icon: <AppWindow className="size-4" />,
             onSelect: () => void telephony.showMain(),
           },

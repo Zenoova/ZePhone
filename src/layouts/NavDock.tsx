@@ -3,8 +3,10 @@ import { AccountsDockItem } from "@/features/accounts/AccountsPopover";
 import { Dock, DockBadge, DockIcon, DockItem, DockLabel, DockSeparator } from "@/components/ui/dock";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { VoiceOrb } from "@/components/VoiceOrb";
+import { isMobile } from "@/lib/platform";
 import { isTerminal, useCallsStore } from "@/stores/calls-store";
 import { countUnseenMissed, useHistoryStore } from "@/stores/history-store";
+import { cn } from "@/lib/utils";
 import { useUiStore } from "@/stores/ui-store";
 
 import { NAV_ITEMS } from "./nav";
@@ -39,6 +41,9 @@ export function NavDock() {
   const section = useUiStore((s) => s.section);
   const setSection = useUiStore((s) => s.setSection);
   const unseenMissed = useHistoryStore((s) => countUnseenMissed(s.entries, s.seenAt));
+  // A phone's screen is narrower than seven 48-pixel icons, and has no pointer to magnify them or keyboard to
+  // reach them with ⌘1…⌘5.
+  const mobile = isMobile();
 
   return (
     <Popover>
@@ -48,7 +53,11 @@ export function NavDock() {
       >
         {/* the orb opens its picker, centred on the whole dock */}
         <PopoverAnchor asChild>
-          <Dock className="pointer-events-auto">
+          <Dock
+            className={cn("pointer-events-auto", mobile && "gap-1 px-2")}
+            iconSize={mobile ? 38 : undefined}
+            maxScale={mobile ? 1 : undefined}
+          >
             <OrbItem />
             <AccountsDockItem />
             <DockSeparator />
@@ -66,7 +75,7 @@ export function NavDock() {
                   </DockIcon>
                   {missed > 0 && <DockBadge aria-hidden>{missed > 99 ? "99+" : missed}</DockBadge>}
                   <DockLabel>
-                    {label} <span className="opacity-60">⌘{shortcut}</span>
+                    {label} {!mobile && <span className="opacity-60">⌘{shortcut}</span>}
                   </DockLabel>
                 </DockItem>
               );
