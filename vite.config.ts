@@ -19,8 +19,10 @@ export default defineConfig({
     strictPort: true,
     host: host || false,
     hmr: host ? { protocol: "ws", host, port: 1421 } : undefined,
-    watch: { ignored: ["**/src-tauri/**"] },
+    // The Baresip build tree (sources, vcpkg) is huge and locked while it builds: never watch or scan it.
+    watch: { ignored: ["**/src-tauri/**", "**/.baresip-build/**"] },
   },
+  optimizeDeps: { entries: ["index.html"] },
   build: {
     target: "safari15",
     sourcemap: false,
