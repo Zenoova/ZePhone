@@ -405,7 +405,7 @@ impl AudioRouter {
     pub fn engine_names(&self) -> [Option<String>; 3] {
         // A phone routes its audio itself (earpiece, speaker, headset, Bluetooth): the engine always uses the
         // system's default device.
-        if cfg!(target_os = "android") {
+        if cfg!(any(target_os = "android", target_os = "ios")) {
             return [None, None, None];
         }
         let snap = self.system.snapshot();

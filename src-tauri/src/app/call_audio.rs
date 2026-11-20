@@ -4,6 +4,11 @@
 //! heard. A call must put the system in "communication" mode (the earpiece, the hardware echo canceller, the call
 //! volume) and bring it back to normal afterwards, or the music of the other applications would play through the
 //! earpiece. Nothing to do on a computer.
+//!
+//! iOS has the same split: the engine opens the microphone and the speaker (through Audio Units), and the
+//! application's shared `AVAudioSession` decides where it is heard. A call puts it in the "play and record" category
+//! with the voice-chat mode (the earpiece, the echo canceller, the call volume, Bluetooth headsets) and gives it
+//! back afterwards, so that the music of the other applications can go on.
 
 #[cfg(target_os = "android")]
 mod imp {
@@ -79,7 +84,59 @@ mod imp {
     }
 }
 
-#[cfg(not(target_os = "android"))]
+#[cfg(target_os = "ios")]
+mod imp {
+    use objc2_avf_audio::{
+        AVAudioSession, AVAudioSessionCategoryOptions, AVAudioSessionCategoryPlayAndRecord,
+        AVAudioSessionModeVoiceChat, AVAudioSessionPortOverride,
+        AVAudioSessionSetActiveOptions,
+    };
+
+    /// Prepares the session for a call, or gives it back.
+    pub fn set_in_call(in_call: bool) {
+        // SAFETY: the shared session is a process-wide singleton; the constants are valid NSStrings.
+        let session = unsafe { AVAudioSession::sharedInstance() };
+        if in_call {
+            let (Some(category), Some(mode)) = (unsafe { AVAudioSessionCategoryPlayAndRecord }, unsafe {
+                AVAudioSessionModeVoiceChat
+            }) else {
+                return;
+            };
+            // Bluetooth headsets (hands-free profile) may carry the call; the loudspeaker is chosen by the user.
+            let options = AVAudioSessionCategoryOptions::AllowBluetooth;
+            if let Err(e) = unsafe { session.setCategory_mode_options_error(category, mode, options) } {
+                log::warn!("cannot prepare the audio session of the call: {e}");
+            }
+            if let Err(e) = unsafe { session.setActive_error(true) } {
+                log::warn!("cannot start the audio session of the call: {e}");
+            }
+        } else {
+            let _ = set_speakerphone(false);
+            // Tell the applications we interrupted (music) that they can go on.
+            if let Err(e) = unsafe {
+                session.setActive_withOptions_error(
+                    false,
+                    AVAudioSessionSetActiveOptions::NotifyOthersOnDeactivation,
+                )
+            } {
+                log::warn!("cannot give the audio session back: {e}");
+            }
+        }
+    }
+
+    pub fn set_speakerphone(on: bool) -> Result<(), String> {
+        let port = if on {
+            AVAudioSessionPortOverride::Speaker
+        } else {
+            AVAudioSessionPortOverride::None
+        };
+        // SAFETY: see `set_in_call`.
+        let session = unsafe { AVAudioSession::sharedInstance() };
+        unsafe { session.overrideOutputAudioPort_error(port) }.map_err(|e| e.to_string())
+    }
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod imp {
     pub fn set_in_call(_in_call: bool) {}
 

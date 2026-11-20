@@ -50,15 +50,16 @@ strip = true
 md-5 = "0.11.0"
 tempfile = "3.27.0"
 
-# Computers only: one instance, shortcuts that work in any application, start at login, the OS credential store.
+# Computers only: one instance, shortcuts that work in any application, start at login.
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2.7.0"
 tauri-plugin-single-instance = "2.5.5"
 tauri-plugin-global-shortcut = "2.3"
-keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 
-# TLS: the system's library on a computer, rustls on Android (which has no OpenSSL to link against).
+# The OS credential store (Keychain on macOS and iOS, Credential Manager, Secret Service; Android keeps a private file),
+# and TLS: the system's library on a computer or an iPhone, rustls on Android (which has no OpenSSL to link against).
 [target.'cfg(not(target_os = "android"))'.dependencies]
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 ldap3 = { version = "0.12.1", default-features = false, features = ["tls-native"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["native-tls", "json", "gzip", "system-proxy"] }
 native-tls = "0.2.18"
@@ -70,10 +71,16 @@ ndk-context = "0.1"
 ldap3 = { version = "0.12.1", default-features = false, features = ["tls-rustls-aws-lc-rs"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "gzip"] }
 
-[target.'cfg(target_os = "macos")'.dependencies]
+# Apple systems: the microphone permission (and, on iOS, the audio session of a call).
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 block2 = "0.6.2"
-core-foundation = "0.10.1"
 objc2 = "0.6.5"
 objc2-av-foundation = { version = "0.3.2", default-features = false, features = ["std", "AVCaptureDevice", "AVMediaFormat", "block2"] }
-objc2-contacts = { version = "0.3.2", default-features = false, features = ["std", "block2", "CNContact", "CNContactStore", "CNContactFetchRequest", "CNFetchRequest", "CNLabeledValue", "CNPhoneNumber", "CNInstantMessageAddress"] }
 objc2-foundation = "0.3.2"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2-avf-audio = { version = "0.3.2", default-features = false, features = ["std", "AVAudioSession", "AVAudioSessionTypes", "AVAudioSessionRoute", "bitflags", "block2"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10.1"
+objc2-contacts = { version = "0.3.2", default-features = false, features = ["std", "block2", "CNContact", "CNContactStore", "CNContactFetchRequest", "CNFetchRequest", "CNLabeledValue", "CNPhoneNumber", "CNInstantMessageAddress"] }

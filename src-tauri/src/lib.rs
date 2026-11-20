@@ -56,9 +56,10 @@ use crate::{
 ///   modules and sounds in `Contents/Resources/engine/`.
 /// * `tauri dev`: Tauri copies the same files next to the debug executable.
 /// * Android: see [`sip::engine::baresip::android`].
+/// * iOS: the engine is part of the application, see [`sip::engine::baresip::ios`].
 ///
 /// Nothing here depends on Homebrew or on `$PATH`.
-#[cfg(not(target_os = "android"))]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn engine_paths(app: &AppHandle, work_dir: PathBuf) -> AppResult<BaresipPaths> {
     let exe_dir = std::env::current_exe()
         .map_err(|e| AppError::Engine(e.to_string()))?
@@ -91,6 +92,11 @@ fn engine_paths(app: &AppHandle, work_dir: PathBuf) -> AppResult<BaresipPaths> {
         .map_err(|e| AppError::Engine(e.to_string()))?;
     sip::engine::baresip::android::paths(work_dir, &data_dir)
         .map_err(|e| AppError::Engine(e.to_string()))
+}
+
+#[cfg(target_os = "ios")]
+fn engine_paths(_app: &AppHandle, work_dir: PathBuf) -> AppResult<BaresipPaths> {
+    sip::engine::baresip::ios::paths(work_dir).map_err(|e| AppError::Engine(e.to_string()))
 }
 
 fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -204,7 +210,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    #[cfg(not(target_os = "android"))]
+    #[cfg(desktop)]
     watch_termination_signals(handle.clone());
 
     // Start the engine in the background. A failure is reported through engine/account
@@ -255,7 +261,7 @@ fn release_system_resources(app: &AppHandle) {
 
 /// SIGTERM / SIGINT / SIGHUP (kill, Ctrl-C in dev, terminal closed) go through the normal
 /// quit path so the SIP engine is stopped and nothing is left behind.
-#[cfg(not(target_os = "android"))]
+#[cfg(desktop)]
 fn watch_termination_signals(app: AppHandle) {
     #[cfg(unix)]
     tauri::async_runtime::spawn(async move {
@@ -347,13 +353,14 @@ fn on_run_event(app: &AppHandle, event: RunEvent) {
     }
 }
 
-/// Where the log goes: the terminal and a file on a computer; the system log (`adb logcat`) on Android.
+/// Where the log goes: the terminal and a file on a computer; the system log (`adb logcat`, the Xcode console) on a
+/// phone.
 fn log_targets() -> Vec<Target> {
-    #[cfg(target_os = "android")]
+    #[cfg(mobile)]
     {
         vec![Target::new(TargetKind::Stdout)]
     }
-    #[cfg(not(target_os = "android"))]
+    #[cfg(desktop)]
     {
         vec![
             Target::new(TargetKind::Stdout),

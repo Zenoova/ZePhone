@@ -13,7 +13,7 @@ pub enum MicPermission {
     Authorized,
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "ios"))]
 mod imp {
     use super::MicPermission;
     use block2::RcBlock;
@@ -59,15 +59,25 @@ mod imp {
         status()
     }
 
+    #[cfg(target_os = "macos")]
     pub fn open_settings() -> std::io::Result<()> {
         std::process::Command::new("open")
             .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
             .spawn()
             .map(|_| ())
     }
+
+    /// iOS has no pane to open from a library: the Settings application lists the application's permissions.
+    #[cfg(target_os = "ios")]
+    pub fn open_settings() -> std::io::Result<()> {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::Unsupported,
+            "open the Settings application, then ZePhone, to allow the microphone",
+        ))
+    }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "ios")))]
 mod imp {
     use super::MicPermission;
 
