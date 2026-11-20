@@ -1,7 +1,7 @@
 // Cross-platform entry point of the Baresip scripts (`npm run sidecar`, `npm run sidecar:hd`, `npm run sidecar:android`, `npm run sidecar:ios`).
 //
 //   node scripts/sidecar.mjs prepare [args]   stage the sidecar (macOS: from an installed Baresip,
-//                                             Windows: build it on first use)
+//                                             Windows and Linux: build it on first use)
 //   node scripts/sidecar.mjs build [args]     build Baresip from source with Opus/G.722, then stage it
 //   node scripts/sidecar.mjs android [args]   build Baresip for Android (NDK) into src-tauri/android/jniLibs;
 //                                             `--abi arm64-v8a,x86_64` picks the ABIs (default: the one Tauri is
@@ -50,6 +50,10 @@ if (action === "android") {
   const forced = args.includes("--force") ? ["-Force"] : [];
   command = "powershell.exe";
   commandArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, ...forced];
+} else if (process.platform === "linux") {
+  // On Linux the sidecar is always built from source (there is no Homebrew-like install to copy from).
+  command = "bash";
+  commandArgs = [join(here, "build-baresip-linux.sh"), ...args];
 } else {
   command = "bash";
   commandArgs = [join(here, action === "build" ? "build-baresip.sh" : "prepare-baresip.sh"), ...args];
