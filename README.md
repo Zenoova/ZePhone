@@ -255,7 +255,7 @@ and ad hoc signature valid after mounting.
   authentication; a local process of the same user could connect to it.
 - Strict validation of inputs before anything is sent to the engine (`sip/uri.rs`): spaces, `;`, `"`, `<>` and line breaks are refused.
 - TLS certificate verification **always on** (`sip_verify_server yes`); system CAs, plus an optional PEM file.
-- Strict CSP in the webview; no telemetry.
+- Strict CSP in the webview.
 - Engine lifecycle: graceful stop (hangup → unregister → `quit`), cleanup on ⌘Q, `SIGTERM/INT/HUP`,
   watchdog for `SIGKILL`/crash (macOS/Linux), cleanup of a stale instance at the next start.
 - Baresip opens SIP listeners (UDP/TCP) on the local interfaces to receive calls, like any softphone;
