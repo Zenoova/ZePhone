@@ -173,3 +173,28 @@ fn javascript_stacks_of_both_engines_are_read() {
         (Some("f"), Some(3))
     );
 }
+
+/// Sends one labelled event to the real Sentry project, to check the envelope is accepted:
+/// `ZEPHONE_SENTRY_DSN=... cargo test --lib live_sentry -- --ignored`
+#[tokio::test]
+#[ignore = "talks to the network"]
+async fn live_sentry_accepts_the_envelope() {
+    let dsn = Dsn::parse(&std::env::var("ZEPHONE_SENTRY_DSN").unwrap()).unwrap();
+    let report = Report::new(
+        Origin::Backend,
+        "SelfTest",
+        "ZePhone telemetry self-test (not a real error)",
+        vec![],
+        false,
+    );
+    let ctx = sentry::Context { environment: "self-test", install_id: "self-test" };
+    HttpTransport::new()
+        .post(
+            &dsn.envelope_url(),
+            "application/x-sentry-envelope",
+            &[("x-sentry-auth", dsn.auth_header())],
+            sentry::envelope(&dsn, &report, &ctx),
+        )
+        .await
+        .unwrap();
+}
