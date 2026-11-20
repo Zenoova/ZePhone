@@ -1,0 +1,804 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		09D6B77306C72954A6D95A42 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E2199508428C7CA5A05F2A0 /* AudioToolbox.framework */; };
+		200493D68115F94D2D37F559 /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA34056F5D3482B4034C2EE /* AVFAudio.framework */; };
+		25FED7C1926F86C04AC0B1BD /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0E78649DE648E83E249E98A9 /* QuartzCore.framework */; };
+		36DBDDF3842AD5CE09579BEE /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7A8C63DFCE132576E008A17 /* UIKit.framework */; };
+		555C6DAE7CEFE6EF422729D9 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 39523C4075E520AD692F7B32 /* LaunchScreen.storyboard */; };
+		608D5A66F94D9C50B48E6819 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1CF2D592E929FB3F2F676F3D /* Metal.framework */; };
+		65AAAD53F1F80ECE84EB4088 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FF694A636B6E4541E8AAEDD5 /* AVFoundation.framework */; };
+		6BAB6EF921B9324564921DF4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 914158F2DDB2C1E98747400E /* Assets.xcassets */; };
+		8A67ABBE33977D1B00970AA4 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8AE161DA1689D5C794507C1F /* Security.framework */; };
+		9B5B57E2286BD58D4E7B1C7B /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2CF50F5DEBFF51F0E4A95167 /* libapp.a */; };
+		AAEC9F087ECB1A79B7046F11 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A0C0C651D6F9F91C9C5F66F /* WebKit.framework */; };
+		ACBEDAF0CFF66F1E2C995E78 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2787B9D9C329E7F8A7438853 /* main.mm */; };
+		B729204B7497932425CC82C7 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 4E3E580CEE13295C63FDC9C7 /* assets */; };
+		BB3E78B0AEA5BEA571DCE4A5 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16949BF1D681136E715E0245 /* CoreAudio.framework */; };
+		C0157B9ED6641C9E6D11AC65 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F4392E10DFC0A1CFD66504C3 /* libz.tbd */; };
+		C8FB7532721C7349BBD495ED /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8B83853E0BA282E679CF9B0 /* CoreGraphics.framework */; };
+		D488589C9A61420A2BD5E5F7 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 19021A864936DE97C60F5539 /* CoreFoundation.framework */; };
+		DDB6A9B13496E7256F6BFF37 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 016E07C7AE499D920A1699D3 /* MetalKit.framework */; };
+		E636B9E5FB8E0E0479E57BC9 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2859F242D2B92647CCFD5C21 /* libresolv.tbd */; };
+		F85238395562AE15BC27A32C /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FD4FE1F2620F970217FCD554 /* SystemConfiguration.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		016E07C7AE499D920A1699D3 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		030E935071C956FBF8D53083 /* uri.rs */ = {isa = PBXFileReference; path = uri.rs; sourceTree = "<group>"; };
+		031FBABE2A9438D12E1AB87B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		06D190ACA2793D1D628CC011 /* store.rs */ = {isa = PBXFileReference; path = store.rs; sourceTree = "<group>"; };
+		073C764A215CB27EA44A70B2 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		08A37DE5D523A1EC441D57D5 /* wav.rs */ = {isa = PBXFileReference; path = wav.rs; sourceTree = "<group>"; };
+		0A0C0C651D6F9F91C9C5F66F /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		0E78649DE648E83E249E98A9 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		11A8ED571D8228FCB24FD9CA /* tests.rs */ = {isa = PBXFileReference; path = tests.rs; sourceTree = "<group>"; };
+		120F0A931FC2633C07B475A1 /* socket.rs */ = {isa = PBXFileReference; path = socket.rs; sourceTree = "<group>"; };
+		16417FD920F298F8F9F79989 /* client.rs */ = {isa = PBXFileReference; path = client.rs; sourceTree = "<group>"; };
+		16949BF1D681136E715E0245 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		178E3414CF66FBA39555FE19 /* netstring.rs */ = {isa = PBXFileReference; path = netstring.rs; sourceTree = "<group>"; };
+		19021A864936DE97C60F5539 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		1A26B71F04FAC25FF3508B23 /* hid_macos.rs */ = {isa = PBXFileReference; path = hid_macos.rs; sourceTree = "<group>"; };
+		1CF2D592E929FB3F2F676F3D /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		1E2199508428C7CA5A05F2A0 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		1FB168D483C7B7BD7D2C7DB2 /* manager.rs */ = {isa = PBXFileReference; path = manager.rs; sourceTree = "<group>"; };
+		256F9DDB5EA78251213B43FE /* registration.rs */ = {isa = PBXFileReference; path = registration.rs; sourceTree = "<group>"; };
+		261B7CAAFBE18B3C73B1F7B6 /* ldap.rs */ = {isa = PBXFileReference; path = ldap.rs; sourceTree = "<group>"; };
+		26528B64B89D482897C0B8C5 /* call_audio.rs */ = {isa = PBXFileReference; path = call_audio.rs; sourceTree = "<group>"; };
+		2787B9D9C329E7F8A7438853 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		284AD6CD612ECD716627DD2F /* accounts.rs */ = {isa = PBXFileReference; path = accounts.rs; sourceTree = "<group>"; };
+		2859F242D2B92647CCFD5C21 /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
+		29661048361DDE8B918D5FE4 /* diagnostics.rs */ = {isa = PBXFileReference; path = diagnostics.rs; sourceTree = "<group>"; };
+		2CF50F5DEBFF51F0E4A95167 /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		2DC7E3407CA5E28496E8EF87 /* devices.rs */ = {isa = PBXFileReference; path = devices.rs; sourceTree = "<group>"; };
+		2E44106D5538A42DD202D940 /* settings.rs */ = {isa = PBXFileReference; path = settings.rs; sourceTree = "<group>"; };
+		31558CD4D2C02B3A96594170 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		39523C4075E520AD692F7B32 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		3A2E3551B43383C14081F882 /* protocol.rs */ = {isa = PBXFileReference; path = protocol.rs; sourceTree = "<group>"; };
+		3BC3956F1B65A0B29EA4EF81 /* sync.rs */ = {isa = PBXFileReference; path = sync.rs; sourceTree = "<group>"; };
+		42D3858FE1CAE7AD5FF1AA01 /* process.rs */ = {isa = PBXFileReference; path = process.rs; sourceTree = "<group>"; };
+		486BF564F42079AC44099B9C /* tray_mobile.rs */ = {isa = PBXFileReference; path = tray_mobile.rs; sourceTree = "<group>"; };
+		49A30E9FEB8D69450ED240D7 /* zephone_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = zephone_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E3E580CEE13295C63FDC9C7 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		53D3B515DC25183CE31F499F /* connectors.rs */ = {isa = PBXFileReference; path = connectors.rs; sourceTree = "<group>"; };
+		54C986FB49F692065784FB99 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		595A912645A31779157EBC7C /* calls.rs */ = {isa = PBXFileReference; path = calls.rs; sourceTree = "<group>"; };
+		5BB0DFCE3F0BE9FE637372A4 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		5D7A412754E94F54346A3793 /* call_window_mobile.rs */ = {isa = PBXFileReference; path = call_window_mobile.rs; sourceTree = "<group>"; };
+		5FAADB95A3FF3E5400144664 /* window.rs */ = {isa = PBXFileReference; path = window.rs; sourceTree = "<group>"; };
+		5FFDA2796070A6778DE4AC2D /* permissions.rs */ = {isa = PBXFileReference; path = permissions.rs; sourceTree = "<group>"; };
+		6681F648AAA89C6098E62FDD /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		67D13DEE32EA69A949D8E17F /* cli.rs */ = {isa = PBXFileReference; path = cli.rs; sourceTree = "<group>"; };
+		69DB64A91D41B484E8CEF0E4 /* types.rs */ = {isa = PBXFileReference; path = types.rs; sourceTree = "<group>"; };
+		6B56865A46FBF5648315E5A6 /* model.rs */ = {isa = PBXFileReference; path = model.rs; sourceTree = "<group>"; };
+		6EE874F8F81719468AB37CC8 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		72C492A5E655024F5621C42A /* call_window.rs */ = {isa = PBXFileReference; path = call_window.rs; sourceTree = "<group>"; };
+		758A680F1B64AB380510B104 /* system_contacts.rs */ = {isa = PBXFileReference; path = system_contacts.rs; sourceTree = "<group>"; };
+		7D31FD946BDF5E0FE60A7285 /* select.rs */ = {isa = PBXFileReference; path = select.rs; sourceTree = "<group>"; };
+		7D3853C38C84A01802744517 /* error.rs */ = {isa = PBXFileReference; path = error.rs; sourceTree = "<group>"; };
+		7D64D8322DBA7E9391EF9C1B /* service.rs */ = {isa = PBXFileReference; path = service.rs; sourceTree = "<group>"; };
+		7D77C21C6CF7E6128B5A8B69 /* tray.rs */ = {isa = PBXFileReference; path = tray.rs; sourceTree = "<group>"; };
+		80897EFDA6F14A828F1C1E6E /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		826BD1E40A6DE0DBCC8338A2 /* directory.rs */ = {isa = PBXFileReference; path = directory.rs; sourceTree = "<group>"; };
+		84E8537C323D36542CD06E49 /* sink.rs */ = {isa = PBXFileReference; path = sink.rs; sourceTree = "<group>"; };
+		8954771AADBBD7C959E66D73 /* tests.rs */ = {isa = PBXFileReference; path = tests.rs; sourceTree = "<group>"; };
+		8AE161DA1689D5C794507C1F /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		8D514E99E78296F122A44E71 /* secrets.rs */ = {isa = PBXFileReference; path = secrets.rs; sourceTree = "<group>"; };
+		8EA34056F5D3482B4034C2EE /* AVFAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFAudio.framework; path = System/Library/Frameworks/AVFAudio.framework; sourceTree = SDKROOT; };
+		8EB233DBB1A1BE356ADD9659 /* index.rs */ = {isa = PBXFileReference; path = index.rs; sourceTree = "<group>"; };
+		914158F2DDB2C1E98747400E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		98179E306CFB2B969D8C40B3 /* stats.rs */ = {isa = PBXFileReference; path = stats.rs; sourceTree = "<group>"; };
+		9A8FA88F98FAE867FC96E692 /* service.rs */ = {isa = PBXFileReference; path = service.rs; sourceTree = "<group>"; };
+		9C18663C9C2E9FFAE97CBB82 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		A198DA548AD2265AC1D6EC9E /* control.rs */ = {isa = PBXFileReference; path = control.rs; sourceTree = "<group>"; };
+		A3556D5D2FAC1FE4ED4AA367 /* routing.rs */ = {isa = PBXFileReference; path = routing.rs; sourceTree = "<group>"; };
+		A57820FB5887B41ED986147F /* android.rs */ = {isa = PBXFileReference; path = android.rs; sourceTree = "<group>"; };
+		A5DB924B5C6AD236F68F1D65 /* tauri_backend.rs */ = {isa = PBXFileReference; path = tauri_backend.rs; sourceTree = "<group>"; };
+		A6754573BF8E293C67678169 /* recordings.rs */ = {isa = PBXFileReference; path = recordings.rs; sourceTree = "<group>"; };
+		A70422F65BBF9895D09A695B /* runtime.rs */ = {isa = PBXFileReference; path = runtime.rs; sourceTree = "<group>"; };
+		A90B99EC57A4E3B815585AA4 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		A929605A525EF2AD0E1789A1 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		AC9F2203DCDA80D3BD2FE58C /* tests.rs */ = {isa = PBXFileReference; path = tests.rs; sourceTree = "<group>"; };
+		AFB0DE27811EED75964E0442 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		B38DF28D6DE2C1CA0E808FCF /* controller.rs */ = {isa = PBXFileReference; path = controller.rs; sourceTree = "<group>"; };
+		B422B66045EEA41E76CA106E /* engine.rs */ = {isa = PBXFileReference; path = engine.rs; sourceTree = "<group>"; };
+		B46B182DC2FCD0A2874D7E0E /* contacts.rs */ = {isa = PBXFileReference; path = contacts.rs; sourceTree = "<group>"; };
+		B4B47FDD4F73D27B167E4994 /* normalize.rs */ = {isa = PBXFileReference; path = normalize.rs; sourceTree = "<group>"; };
+		B6FECEFE080C32CD5FDD4258 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		B7D7CB07007E18C68D88168F /* tests.rs */ = {isa = PBXFileReference; path = tests.rs; sourceTree = "<group>"; };
+		BC5C0E658C02BE74AE37439D /* directory_events.rs */ = {isa = PBXFileReference; path = directory_events.rs; sourceTree = "<group>"; };
+		BECE5E3AA4D5BE1DC6E0900C /* diagnostics.rs */ = {isa = PBXFileReference; path = diagnostics.rs; sourceTree = "<group>"; };
+		C779DDE459AEE1D7254EC781 /* system_contacts_macos.rs */ = {isa = PBXFileReference; path = system_contacts_macos.rs; sourceTree = "<group>"; };
+		C8B83853E0BA282E679CF9B0 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		CAB58A49248DBB9BAD969861 /* microsoft.rs */ = {isa = PBXFileReference; path = microsoft.rs; sourceTree = "<group>"; };
+		D14F8E77FB663304223DE4B7 /* config.rs */ = {isa = PBXFileReference; path = config.rs; sourceTree = "<group>"; };
+		D34EB0A581C400BFFC83F212 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		D9CDB15AE48890DBE6A1CF1E /* command.rs */ = {isa = PBXFileReference; path = command.rs; sourceTree = "<group>"; };
+		E2DAE987847D9478E856D69B /* shell.rs */ = {isa = PBXFileReference; path = shell.rs; sourceTree = "<group>"; };
+		E3E86784BB4B06EAB6B2AF76 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		E40FCEB86B3E2DA8A10848EE /* tests.rs */ = {isa = PBXFileReference; path = tests.rs; sourceTree = "<group>"; };
+		E532CF98399B8B3B2FAE7A82 /* zephone_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = zephone_iOS.entitlements; sourceTree = "<group>"; };
+		E6DD3AF506128A3CAA689191 /* tests.rs */ = {isa = PBXFileReference; path = tests.rs; sourceTree = "<group>"; };
+		E7A8C63DFCE132576E008A17 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		F10F043C40E0D914FA183C3A /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		F4392E10DFC0A1CFD66504C3 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		F72441C8DAD93CFBB7F05D57 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		F8AB7497C285E7D11FEB2027 /* redact.rs */ = {isa = PBXFileReference; path = redact.rs; sourceTree = "<group>"; };
+		FAFF2428365CB4D7E8E3AAFF /* tauri_backend_mobile.rs */ = {isa = PBXFileReference; path = tauri_backend_mobile.rs; sourceTree = "<group>"; };
+		FC0FE04A76A56462B43644AE /* history.rs */ = {isa = PBXFileReference; path = history.rs; sourceTree = "<group>"; };
+		FD4FE1F2620F970217FCD554 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		FEC697EE84FF60D62D19A087 /* accelerator.rs */ = {isa = PBXFileReference; path = accelerator.rs; sourceTree = "<group>"; };
+		FEC9ECBC16C6AAD7EE7994F6 /* router.rs */ = {isa = PBXFileReference; path = router.rs; sourceTree = "<group>"; };
+		FF694A636B6E4541E8AAEDD5 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		FF71105171EEC446CDB9A735 /* ios.rs */ = {isa = PBXFileReference; path = ios.rs; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		74A108B9FF7C2D4E375AF6F5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9B5B57E2286BD58D4E7B1C7B /* libapp.a in Frameworks */,
+				C8FB7532721C7349BBD495ED /* CoreGraphics.framework in Frameworks */,
+				09D6B77306C72954A6D95A42 /* AudioToolbox.framework in Frameworks */,
+				BB3E78B0AEA5BEA571DCE4A5 /* CoreAudio.framework in Frameworks */,
+				65AAAD53F1F80ECE84EB4088 /* AVFoundation.framework in Frameworks */,
+				200493D68115F94D2D37F559 /* AVFAudio.framework in Frameworks */,
+				D488589C9A61420A2BD5E5F7 /* CoreFoundation.framework in Frameworks */,
+				F85238395562AE15BC27A32C /* SystemConfiguration.framework in Frameworks */,
+				E636B9E5FB8E0E0479E57BC9 /* libresolv.tbd in Frameworks */,
+				C0157B9ED6641C9E6D11AC65 /* libz.tbd in Frameworks */,
+				608D5A66F94D9C50B48E6819 /* Metal.framework in Frameworks */,
+				DDB6A9B13496E7256F6BFF37 /* MetalKit.framework in Frameworks */,
+				25FED7C1926F86C04AC0B1BD /* QuartzCore.framework in Frameworks */,
+				8A67ABBE33977D1B00970AA4 /* Security.framework in Frameworks */,
+				36DBDDF3842AD5CE09579BEE /* UIKit.framework in Frameworks */,
+				AAEC9F087ECB1A79B7046F11 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		30257E4AF11EE577994BCBF9 /* security */ = {
+			isa = PBXGroup;
+			children = (
+				5BB0DFCE3F0BE9FE637372A4 /* mod.rs */,
+				F8AB7497C285E7D11FEB2027 /* redact.rs */,
+				8D514E99E78296F122A44E71 /* secrets.rs */,
+			);
+			path = security;
+			sourceTree = "<group>";
+		};
+		3438085888FCE85DBA7ADADC /* engine */ = {
+			isa = PBXGroup;
+			children = (
+				54C986FB49F692065784FB99 /* mod.rs */,
+				178E3414CF66FBA39555FE19 /* netstring.rs */,
+				3A2E3551B43383C14081F882 /* protocol.rs */,
+				357BB9778B7B27DC0C6D3282 /* baresip */,
+			);
+			path = engine;
+			sourceTree = "<group>";
+		};
+		357BB9778B7B27DC0C6D3282 /* baresip */ = {
+			isa = PBXGroup;
+			children = (
+				A57820FB5887B41ED986147F /* android.rs */,
+				16417FD920F298F8F9F79989 /* client.rs */,
+				D14F8E77FB663304223DE4B7 /* config.rs */,
+				B422B66045EEA41E76CA106E /* engine.rs */,
+				FF71105171EEC446CDB9A735 /* ios.rs */,
+				A929605A525EF2AD0E1789A1 /* mod.rs */,
+				42D3858FE1CAE7AD5FF1AA01 /* process.rs */,
+			);
+			path = baresip;
+			sourceTree = "<group>";
+		};
+		3DB106D3CAB2F7342489E2E2 /* recording */ = {
+			isa = PBXGroup;
+			children = (
+				073C764A215CB27EA44A70B2 /* mod.rs */,
+				08A37DE5D523A1EC441D57D5 /* wav.rs */,
+			);
+			path = recording;
+			sourceTree = "<group>";
+		};
+		41B4C8F069730967A4342ADA /* shortcuts */ = {
+			isa = PBXGroup;
+			children = (
+				FEC697EE84FF60D62D19A087 /* accelerator.rs */,
+				9C18663C9C2E9FFAE97CBB82 /* mod.rs */,
+				FAFF2428365CB4D7E8E3AAFF /* tauri_backend_mobile.rs */,
+				A5DB924B5C6AD236F68F1D65 /* tauri_backend.rs */,
+				E6DD3AF506128A3CAA689191 /* tests.rs */,
+			);
+			path = shortcuts;
+			sourceTree = "<group>";
+		};
+		44136B11D6E10AD7E83B9709 /* audio */ = {
+			isa = PBXGroup;
+			children = (
+				2DC7E3407CA5E28496E8EF87 /* devices.rs */,
+				29661048361DDE8B918D5FE4 /* diagnostics.rs */,
+				B6FECEFE080C32CD5FDD4258 /* mod.rs */,
+				5FFDA2796070A6778DE4AC2D /* permissions.rs */,
+				FEC9ECBC16C6AAD7EE7994F6 /* router.rs */,
+				A3556D5D2FAC1FE4ED4AA367 /* routing.rs */,
+				469267360182B0A72B2B5A45 /* router */,
+			);
+			path = audio;
+			sourceTree = "<group>";
+		};
+		469267360182B0A72B2B5A45 /* router */ = {
+			isa = PBXGroup;
+			children = (
+				11A8ED571D8228FCB24FD9CA /* tests.rs */,
+			);
+			path = router;
+			sourceTree = "<group>";
+		};
+		6D369E99752BF7AE42ACE792 /* directory */ = {
+			isa = PBXGroup;
+			children = (
+				53D3B515DC25183CE31F499F /* connectors.rs */,
+				8EB233DBB1A1BE356ADD9659 /* index.rs */,
+				261B7CAAFBE18B3C73B1F7B6 /* ldap.rs */,
+				CAB58A49248DBB9BAD969861 /* microsoft.rs */,
+				F10F043C40E0D914FA183C3A /* mod.rs */,
+				6B56865A46FBF5648315E5A6 /* model.rs */,
+				B4B47FDD4F73D27B167E4994 /* normalize.rs */,
+				7D64D8322DBA7E9391EF9C1B /* service.rs */,
+				06D190ACA2793D1D628CC011 /* store.rs */,
+				3BC3956F1B65A0B29EA4EF81 /* sync.rs */,
+				C779DDE459AEE1D7254EC781 /* system_contacts_macos.rs */,
+				758A680F1B64AB380510B104 /* system_contacts.rs */,
+			);
+			path = directory;
+			sourceTree = "<group>";
+		};
+		6F2A23E656D1BEBF103339F9 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				DAC70FAA36009F2289E8C150 /* zephone */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		73367C1B03CFACB8E7FB7A47 /* controller */ = {
+			isa = PBXGroup;
+			children = (
+				B7D7CB07007E18C68D88168F /* tests.rs */,
+			);
+			path = controller;
+			sourceTree = "<group>";
+		};
+		7406B18F9EB712D2946AA11F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1E2199508428C7CA5A05F2A0 /* AudioToolbox.framework */,
+				8EA34056F5D3482B4034C2EE /* AVFAudio.framework */,
+				FF694A636B6E4541E8AAEDD5 /* AVFoundation.framework */,
+				16949BF1D681136E715E0245 /* CoreAudio.framework */,
+				19021A864936DE97C60F5539 /* CoreFoundation.framework */,
+				C8B83853E0BA282E679CF9B0 /* CoreGraphics.framework */,
+				2CF50F5DEBFF51F0E4A95167 /* libapp.a */,
+				2859F242D2B92647CCFD5C21 /* libresolv.tbd */,
+				F4392E10DFC0A1CFD66504C3 /* libz.tbd */,
+				1CF2D592E929FB3F2F676F3D /* Metal.framework */,
+				016E07C7AE499D920A1699D3 /* MetalKit.framework */,
+				0E78649DE648E83E249E98A9 /* QuartzCore.framework */,
+				8AE161DA1689D5C794507C1F /* Security.framework */,
+				FD4FE1F2620F970217FCD554 /* SystemConfiguration.framework */,
+				E7A8C63DFCE132576E008A17 /* UIKit.framework */,
+				0A0C0C651D6F9F91C9C5F66F /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		88884975BE393CA378FE8562 /* app */ = {
+			isa = PBXGroup;
+			children = (
+				26528B64B89D482897C0B8C5 /* call_audio.rs */,
+				5D7A412754E94F54346A3793 /* call_window_mobile.rs */,
+				72C492A5E655024F5621C42A /* call_window.rs */,
+				A198DA548AD2265AC1D6EC9E /* control.rs */,
+				BC5C0E658C02BE74AE37439D /* directory_events.rs */,
+				E3E86784BB4B06EAB6B2AF76 /* mod.rs */,
+				E2DAE987847D9478E856D69B /* shell.rs */,
+				84E8537C323D36542CD06E49 /* sink.rs */,
+				486BF564F42079AC44099B9C /* tray_mobile.rs */,
+				7D77C21C6CF7E6128B5A8B69 /* tray.rs */,
+				5FAADB95A3FF3E5400144664 /* window.rs */,
+			);
+			path = app;
+			sourceTree = "<group>";
+		};
+		88DD69F06FC3D9F0DB799C3C /* database */ = {
+			isa = PBXGroup;
+			children = (
+				284AD6CD612ECD716627DD2F /* accounts.rs */,
+				B46B182DC2FCD0A2874D7E0E /* contacts.rs */,
+				FC0FE04A76A56462B43644AE /* history.rs */,
+				80897EFDA6F14A828F1C1E6E /* mod.rs */,
+				A6754573BF8E293C67678169 /* recordings.rs */,
+				2E44106D5538A42DD202D940 /* settings.rs */,
+			);
+			path = database;
+			sourceTree = "<group>";
+		};
+		8A2BC79933DEABCD77A2A80F /* control */ = {
+			isa = PBXGroup;
+			children = (
+				67D13DEE32EA69A949D8E17F /* cli.rs */,
+				D9CDB15AE48890DBE6A1CF1E /* command.rs */,
+				B38DF28D6DE2C1CA0E808FCF /* controller.rs */,
+				6EE874F8F81719468AB37CC8 /* mod.rs */,
+				7D31FD946BDF5E0FE60A7285 /* select.rs */,
+				120F0A931FC2633C07B475A1 /* socket.rs */,
+				73367C1B03CFACB8E7FB7A47 /* controller */,
+			);
+			path = control;
+			sourceTree = "<group>";
+		};
+		8E35D6EC7B8C4C665C6E6FD3 /* headset */ = {
+			isa = PBXGroup;
+			children = (
+				1A26B71F04FAC25FF3508B23 /* hid_macos.rs */,
+				F72441C8DAD93CFBB7F05D57 /* mod.rs */,
+				A70422F65BBF9895D09A695B /* runtime.rs */,
+				9A8FA88F98FAE867FC96E692 /* service.rs */,
+				AC9F2203DCDA80D3BD2FE58C /* tests.rs */,
+				FE843A3764470769A8A5D842 /* service */,
+			);
+			path = headset;
+			sourceTree = "<group>";
+		};
+		AA063138CA361490AFDC8435 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				7D3853C38C84A01802744517 /* error.rs */,
+				D34EB0A581C400BFFC83F212 /* lib.rs */,
+				6681F648AAA89C6098E62FDD /* main.rs */,
+				88884975BE393CA378FE8562 /* app */,
+				44136B11D6E10AD7E83B9709 /* audio */,
+				C1DA335A4800968CD891C865 /* commands */,
+				8A2BC79933DEABCD77A2A80F /* control */,
+				88DD69F06FC3D9F0DB799C3C /* database */,
+				6D369E99752BF7AE42ACE792 /* directory */,
+				8E35D6EC7B8C4C665C6E6FD3 /* headset */,
+				3DB106D3CAB2F7342489E2E2 /* recording */,
+				30257E4AF11EE577994BCBF9 /* security */,
+				41B4C8F069730967A4342ADA /* shortcuts */,
+				CE4427A4B81E70A0708B9961 /* sip */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		AD0710E95B1AC524B03D2275 /* zephone_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				031FBABE2A9438D12E1AB87B /* Info.plist */,
+				E532CF98399B8B3B2FAE7A82 /* zephone_iOS.entitlements */,
+			);
+			path = zephone_iOS;
+			sourceTree = "<group>";
+		};
+		C1DA335A4800968CD891C865 /* commands */ = {
+			isa = PBXGroup;
+			children = (
+				826BD1E40A6DE0DBCC8338A2 /* directory.rs */,
+				31558CD4D2C02B3A96594170 /* mod.rs */,
+			);
+			path = commands;
+			sourceTree = "<group>";
+		};
+		C62E5516F230256E08076CE9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				49A30E9FEB8D69450ED240D7 /* zephone_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CE4427A4B81E70A0708B9961 /* sip */ = {
+			isa = PBXGroup;
+			children = (
+				595A912645A31779157EBC7C /* calls.rs */,
+				BECE5E3AA4D5BE1DC6E0900C /* diagnostics.rs */,
+				1FB168D483C7B7BD7D2C7DB2 /* manager.rs */,
+				A90B99EC57A4E3B815585AA4 /* mod.rs */,
+				256F9DDB5EA78251213B43FE /* registration.rs */,
+				98179E306CFB2B969D8C40B3 /* stats.rs */,
+				69DB64A91D41B484E8CEF0E4 /* types.rs */,
+				030E935071C956FBF8D53083 /* uri.rs */,
+				3438085888FCE85DBA7ADADC /* engine */,
+				F9B3D634DE2A4C52EF501A47 /* manager */,
+			);
+			path = sip;
+			sourceTree = "<group>";
+		};
+		DAC70FAA36009F2289E8C150 /* zephone */ = {
+			isa = PBXGroup;
+			children = (
+				2787B9D9C329E7F8A7438853 /* main.mm */,
+				F85698B4ED3D730B050FA4D2 /* bindings */,
+			);
+			path = zephone;
+			sourceTree = "<group>";
+		};
+		EF7891BF5C11F954CD04C653 /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		F85698B4ED3D730B050FA4D2 /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				AFB0DE27811EED75964E0442 /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		F9B3D634DE2A4C52EF501A47 /* manager */ = {
+			isa = PBXGroup;
+			children = (
+				8954771AADBBD7C959E66D73 /* tests.rs */,
+			);
+			path = manager;
+			sourceTree = "<group>";
+		};
+		FB1321AEB78D4C2C59DE4B35 = {
+			isa = PBXGroup;
+			children = (
+				4E3E580CEE13295C63FDC9C7 /* assets */,
+				914158F2DDB2C1E98747400E /* Assets.xcassets */,
+				39523C4075E520AD692F7B32 /* LaunchScreen.storyboard */,
+				EF7891BF5C11F954CD04C653 /* Externals */,
+				6F2A23E656D1BEBF103339F9 /* Sources */,
+				AA063138CA361490AFDC8435 /* src */,
+				AD0710E95B1AC524B03D2275 /* zephone_iOS */,
+				7406B18F9EB712D2946AA11F /* Frameworks */,
+				C62E5516F230256E08076CE9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FE843A3764470769A8A5D842 /* service */ = {
+			isa = PBXGroup;
+			children = (
+				E40FCEB86B3E2DA8A10848EE /* tests.rs */,
+			);
+			path = service;
+			sourceTree = "<group>";
+		};
+		"TEMP_74F34D55-AB8E-4E4C-BE68-46BB88927C77" /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+		"TEMP_790A0295-CAF8-4C25-8DDB-87D21BA8A575" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		DCCEF33CADDB8F12A4CC8386 /* zephone_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5B5C827D0155196E12D9F420 /* Build configuration list for PBXNativeTarget "zephone_iOS" */;
+			buildPhases = (
+				EC7DD09A1B861D027BFFE7F0 /* Build Rust Code */,
+				0C0D46F6E18C8122F499597C /* Sources */,
+				5788FFFA78F3BB127A61C1BA /* Resources */,
+				74A108B9FF7C2D4E375AF6F5 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = zephone_iOS;
+			packageProductDependencies = (
+			);
+			productName = zephone_iOS;
+			productReference = 49A30E9FEB8D69450ED240D7 /* zephone_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A304FF58AEA458581FD1742A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = DB532A8739B01D5782C49FC6 /* Build configuration list for PBXProject "zephone" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = FB1321AEB78D4C2C59DE4B35;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C62E5516F230256E08076CE9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DCCEF33CADDB8F12A4CC8386 /* zephone_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5788FFFA78F3BB127A61C1BA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6BAB6EF921B9324564921DF4 /* Assets.xcassets in Resources */,
+				555C6DAE7CEFE6EF422729D9 /* LaunchScreen.storyboard in Resources */,
+				B729204B7497932425CC82C7 /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		EC7DD09A1B861D027BFFE7F0 /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "npm run -- tauri ios xcode-script -v --platform \"${PLATFORM_DISPLAY_NAME:?}\" --sdk-root \"${SDKROOT:?}\" --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration \"${CONFIGURATION:?}\" ${FORCE_COLOR} ${ARCHS:?}\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0C0D46F6E18C8122F499597C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACBEDAF0CFF66F1E2C995E78 /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		926D39399D1CFFB9BCDA008E /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		A871C4A8DD1E9229008F057F /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = zephone_iOS/zephone_iOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = zephone_iOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = app.zephone.softphone;
+				PRODUCT_NAME = "ZePhone";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+		AF6A403D8BF7BF467E53B257 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = zephone_iOS/zephone_iOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = zephone_iOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = app.zephone.softphone;
+				PRODUCT_NAME = "ZePhone";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		B43045A817050507D2DFA4D6 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5B5C827D0155196E12D9F420 /* Build configuration list for PBXNativeTarget "zephone_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF6A403D8BF7BF467E53B257 /* debug */,
+				A871C4A8DD1E9229008F057F /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		DB532A8739B01D5782C49FC6 /* Build configuration list for PBXProject "zephone" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				926D39399D1CFFB9BCDA008E /* debug */,
+				B43045A817050507D2DFA4D6 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A304FF58AEA458581FD1742A /* Project object */;
+}

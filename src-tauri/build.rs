@@ -31,10 +31,13 @@ fn link_ios_engine() {
         "AudioToolbox",
         "CoreAudio",
         "AVFoundation",
+        "AVFAudio",
         "CoreFoundation",
         "SystemConfiguration",
     ] {
         println!("cargo:rustc-link-lib=framework={framework}");
     }
+    // The DNS resolver, and zlib (libre's checksums).
     println!("cargo:rustc-link-lib=resolv");
+    println!("cargo:rustc-link-lib=z");
 }

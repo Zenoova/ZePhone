@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeDevCommand": "npm run sidecar:ios && npm run dev",
+    "beforeBuildCommand": "npm run sidecar:ios && npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "ZePhone"
+      }
+    ]
+  },
+  "bundle": {
+    "externalBin": [],
+    "resources": {},
+    "iOS": {
+      "minimumSystemVersion": "15.0"
+    }
+  }
+}

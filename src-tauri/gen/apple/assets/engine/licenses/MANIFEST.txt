@@ -1,0 +1,10 @@
+baresip v4.13.0
+jpeg-turbo 3.2.0
+libre 4.13.0
+libtiff 4.7.2
+openssl@4 4.1.0
+opus 1.6.1
+spandsp 0.0.6_3
+webp 1.6.0
+xz 5.8.4
+zstd 1.5.7_1
