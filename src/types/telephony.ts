@@ -200,6 +200,12 @@ export interface Settings {
     /** Record every call as soon as it is answered (there is no record button). */
     autoRecord: boolean;
   };
+  /** What ZePhone may report. Both are off until the user chooses; `answered` records that the question was asked. */
+  privacy: {
+    crashReports: boolean;
+    usageStats: boolean;
+    answered: boolean;
+  };
 }
 
 export interface SettingsApplied {

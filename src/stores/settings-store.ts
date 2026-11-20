@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
   recording: { autoRecord: true },
+  privacy: { crashReports: false, usageStats: false, answered: false },
 };
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };
@@ -52,6 +53,7 @@ export function mergeSettings(base: Settings, patch: DeepPartial<Settings>): Set
     general: { ...base.general, ...patch.general },
     network: { ...base.network, ...patch.network },
     recording: { ...base.recording, ...patch.recording },
+    privacy: { ...base.privacy, ...patch.privacy },
   } as Settings;
 }
 

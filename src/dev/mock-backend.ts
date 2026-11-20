@@ -140,6 +140,7 @@ export function installMockBackend(): void {
     },
     network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
     recording: { autoRecord: true },
+    privacy: { crashReports: false, usageStats: false, answered: true },
   };
   const calls = new Map<string, Call>();
   const devices: AudioDevices = {
