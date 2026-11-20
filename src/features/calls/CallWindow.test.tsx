@@ -50,7 +50,7 @@ describe("CallWindow", () => {
     useCallsStore.setState({ calls: { call1: makeCall({ state: "incoming", direction: "incoming" }) } });
     show();
     expect(screen.getByRole("button", { name: /Answer/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Refuser/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Decline/ })).toBeInTheDocument();
   });
 
   it("keeps a call that just ended on screen, then closes itself", async () => {

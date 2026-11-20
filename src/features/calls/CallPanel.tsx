@@ -157,7 +157,7 @@ export function CallPanel({ call }: { call: Call }) {
             className="h-14 flex-1 rounded-2xl dark:bg-destructive dark:hover:bg-destructive/90"
             onClick={() => void reject(call.id)}
           >
-            <PhoneOff className="size-5" aria-hidden /> Refuser
+            <PhoneOff className="size-5" aria-hidden /> Decline
           </Button>
           <Button
             size="lg"

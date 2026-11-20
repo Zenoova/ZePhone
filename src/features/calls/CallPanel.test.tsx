@@ -100,7 +100,7 @@ describe("CallPanel", () => {
     expect(screen.queryByRole("button", { name: "Hang up" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Answer/ }));
     expect(invoke).toHaveBeenLastCalledWith("answer_call", { id: "call1" });
-    fireEvent.click(screen.getByRole("button", { name: /Refuser/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Decline/ }));
     expect(invoke).toHaveBeenLastCalledWith("reject_call", { id: "call1" });
   });
 
