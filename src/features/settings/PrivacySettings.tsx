@@ -7,7 +7,7 @@ import { useSettingsStore } from "@/stores/settings-store";
 
 import { SettingRow, SettingsSection } from "./parts";
 
-/** What the user lets ZePhone report. Both switches start off. */
+/** What ZePhone reports. Both switches start on. */
 export function PrivacySettings() {
   const p = useSettingsStore((s) => s.settings.privacy);
   const update = useSettingsStore((s) => s.update);
@@ -24,7 +24,7 @@ export function PrivacySettings() {
   return (
     <SettingsSection
       title="Diagnostics"
-      description="Off by default. Never includes phone numbers, SIP addresses, names, passwords or anything said in a call."
+      description="On by default. Never includes phone numbers, SIP addresses, names, passwords or anything said in a call."
     >
       <SettingRow
         label="Send crash reports"

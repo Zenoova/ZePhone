@@ -1,8 +1,8 @@
 # Privacy and diagnostics
 
-ZePhone can report two things, **both off until you turn them on** (a question at the first launch, then
-Settings > General > Diagnostics). Nothing is sent before you answer, and answering "no" (or closing the question)
-keeps both off.
+ZePhone reports two things, **both on by default and both optional**. A notice at the first launch tells you so and
+lets you turn each one off; you can change it at any time in Settings > General > Diagnostics. **Nothing is sent
+before that notice has been validated.**
 
 ## Crash reports (Sentry)
 
@@ -13,7 +13,7 @@ When ZePhone crashes or the interface hits an unexpected error:
 - a random identifier of the installation (see below).
 
 A crash ends the application, so its report is written to a small file in the application folder and sent at the next
-start, if crash reports are still allowed. Turning them off deletes what was waiting.
+start, if crash reports are still on. Turning them off deletes what was waiting.
 
 ## Usage statistics (Google Analytics 4)
 
@@ -53,5 +53,7 @@ Diagnostics > Reset** replaces it.
 - A native crash of the SIP engine itself (a segmentation fault in Baresip) is not reported: only errors of ZePhone's
   own code and of its interface are.
 
-For the stores' privacy forms: crash reports and usage statistics are optional, collected only with consent, not
-linked to the user's identity, and not used for advertising or tracking across other applications.
+For the stores' privacy forms: crash reports and usage statistics can be turned off, are not linked to the user's
+identity, and are not used for advertising or tracking across other applications. Note that, for users in the
+European Union, analytics normally need an opt-in consent: with the current default-on choice, this is a decision
+of the publisher to review with a lawyer.

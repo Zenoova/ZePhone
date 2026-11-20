@@ -256,8 +256,8 @@ and ad hoc signature valid after mounting.
 - Strict validation of inputs before anything is sent to the engine (`sip/uri.rs`): spaces, `;`, `"`, `<>` and line breaks are refused.
 - TLS certificate verification **always on** (`sip_verify_server yes`); system CAs, plus an optional PEM file.
 - Strict CSP in the webview.
-- Crash reports (Sentry) and anonymous usage statistics (Google Analytics) exist, but are **off until the user turns
-  them on**, never include numbers, addresses, names or call content, and are sent from the backend only: see
+- Crash reports (Sentry) and anonymous usage statistics (Google Analytics) exist, are **on by default and can be turned
+  off** (nothing is sent before the first-launch notice), never include numbers, addresses, names or call content, and are sent from the backend only: see
   [docs/PRIVACY.md](docs/PRIVACY.md).
 - Engine lifecycle: graceful stop (hangup → unregister → `quit`), cleanup on ⌘Q, `SIGTERM/INT/HUP`,
   watchdog for `SIGKILL`/crash (macOS/Linux), cleanup of a stale instance at the next start.

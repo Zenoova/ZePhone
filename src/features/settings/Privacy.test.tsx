@@ -27,17 +27,17 @@ beforeEach(() => {
 });
 
 describe("DiagnosticsPrompt", () => {
-  it("is asked at the first launch, with both choices off", () => {
+  it("is shown at the first launch, with both on", () => {
     render(<DiagnosticsPrompt />);
     expect(screen.getByText("Help improve ZePhone")).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Send crash reports" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("switch", { name: "Send crash reports" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("switch", { name: "Share anonymous usage statistics" })).toHaveAttribute(
       "aria-checked",
-      "false",
+      "true",
     );
   });
 
-  it("is not asked again once answered, nor before the settings are loaded", () => {
+  it("is not shown again once validated, nor before the settings are loaded", () => {
     useSettingsStore.setState({
       settings: { ...DEFAULT_SETTINGS, privacy: { crashReports: false, usageStats: false, answered: true } },
     });
@@ -49,25 +49,32 @@ describe("DiagnosticsPrompt", () => {
     expect(screen.queryByText("Help improve ZePhone")).toBeNull();
   });
 
-  it("saves only what was switched on", async () => {
+  it("keeps both on when it is just continued", async () => {
     render(<DiagnosticsPrompt />);
-    fireEvent.click(screen.getByRole("switch", { name: "Send crash reports" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(saved()).toEqual([{ crashReports: true, usageStats: false, answered: true }]));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await waitFor(() => expect(saved()).toEqual([{ crashReports: true, usageStats: true, answered: true }]));
   });
 
-  it("counts closing the window as a no", async () => {
+  it("saves what was switched off", async () => {
     render(<DiagnosticsPrompt />);
+    fireEvent.click(screen.getByRole("switch", { name: "Send crash reports" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await waitFor(() => expect(saved()).toEqual([{ crashReports: false, usageStats: true, answered: true }]));
+  });
+
+  it("keeps what the switches show when the window is closed", async () => {
+    render(<DiagnosticsPrompt />);
+    fireEvent.click(screen.getByRole("switch", { name: "Share anonymous usage statistics" }));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
-    await waitFor(() => expect(saved()).toEqual([{ crashReports: false, usageStats: false, answered: true }]));
+    await waitFor(() => expect(saved()).toEqual([{ crashReports: true, usageStats: false, answered: true }]));
   });
 });
 
 describe("PrivacySettings", () => {
-  it("turns each service on by itself and remembers the question was answered", async () => {
+  it("turns each service off by itself", async () => {
     render(<PrivacySettings />);
     fireEvent.click(screen.getByRole("switch", { name: "Share anonymous usage statistics" }));
-    await waitFor(() => expect(saved()).toEqual([{ crashReports: false, usageStats: true, answered: true }]));
+    await waitFor(() => expect(saved()).toEqual([{ crashReports: true, usageStats: false, answered: true }]));
   });
 
   it("resets the anonymous identifier", async () => {

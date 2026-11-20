@@ -41,7 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   network: { customCaFile: null, sipTrace: false, localSipPort: null, netInterface: null },
   recording: { autoRecord: true },
-  privacy: { crashReports: false, usageStats: false, answered: false },
+  privacy: { crashReports: true, usageStats: true, answered: false },
 };
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] };

@@ -5,27 +5,24 @@ import { useSettingsStore } from "@/stores/settings-store";
 import { useState } from "react";
 
 /**
- * Asked once, at the first launch. Both choices are off: closing the window or saving without touching them
- * means no. The answer can be changed in Settings > General.
+ * Shown once, at the first launch, before anything is sent. Both are on unless turned off here; closing the window
+ * keeps what the switches show. It can be changed at any time in Settings > General.
  */
 export function DiagnosticsPrompt() {
   const loaded = useSettingsStore((s) => s.loaded);
   const answered = useSettingsStore((s) => s.settings.privacy.answered);
   const update = useSettingsStore((s) => s.update);
-  const [crashReports, setCrashReports] = useState(false);
-  const [usageStats, setUsageStats] = useState(false);
+  const [crashReports, setCrashReports] = useState(true);
+  const [usageStats, setUsageStats] = useState(true);
 
   const answer = (privacy: { crashReports: boolean; usageStats: boolean }) =>
     void update({ privacy: { ...privacy, answered: true } });
 
   return (
-    <Dialog
-      open={loaded && !answered}
-      onOpenChange={(open) => !open && answer({ crashReports: false, usageStats: false })}
-    >
+    <Dialog open={loaded && !answered} onOpenChange={(open) => !open && answer({ crashReports, usageStats })}>
       <DialogContent
         title="Help improve ZePhone"
-        description="Both options are off. They never include phone numbers, SIP addresses, names, passwords or anything said in a call. You can change this in Settings."
+        description="ZePhone sends crash reports and anonymous usage statistics. They never include phone numbers, SIP addresses, names, passwords or anything said in a call. Turn them off here or later in Settings."
       >
         <div className="space-y-4">
           <label className="flex items-center justify-between gap-4 text-sm">
@@ -50,7 +47,7 @@ export function DiagnosticsPrompt() {
           </label>
           <div className="flex justify-end">
             <Button type="button" onClick={() => answer({ crashReports, usageStats })}>
-              Save
+              Continue
             </Button>
           </div>
         </div>
