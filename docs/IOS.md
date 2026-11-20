@@ -18,7 +18,7 @@ the way it is on a computer or on Android. It is **linked into the application**
   entry point, into **one archive per slice**: `src-tauri/ios/libs/<device|sim>/libzephone_engine.a` (git-ignored). OpenSSL's
   tarball is checked against the SHA-256 the release publishes (or a pinned `OPENSSL_SHA256`). It needs Xcode, CMake and Git; the
   first run takes about four minutes per slice. `npm run sidecar:ios [device|sim|all] [--force]` runs it (and `tauri ios
-  build|dev` runs it for the slice being built).
+build|dev` runs it for the slice being built).
 - [`scripts/ios-engine/zephone_engine.c`](../scripts/ios-engine/zephone_engine.c) is Baresip's `main()` made callable
   (`zephone_engine_run`) and stoppable from another thread (`zephone_engine_stop`), without the command line, the signal handlers
   (the application owns the signals) and the console output (every log line goes to the application's log, where secrets are
