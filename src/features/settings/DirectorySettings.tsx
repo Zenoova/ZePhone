@@ -1,3 +1,4 @@
+import { thisDevice } from "@/lib/platform";
 import { toast } from "@yusufceng1z/ding-react";
 import { useEffect, useState } from "react";
 
@@ -399,12 +400,12 @@ export function DirectorySettings() {
             and your groups stay yours, separate from the synced data.
           </p>
           <p>
-            Contacts are kept in memory on this computer so that the search stays instant and works even if the server
+            Contacts are kept in memory on {thisDevice()} so that the search stays instant and works even if the server
             is unreachable. An outage never erases the directory; a source's cache is cleared when it is disconnected,
             or after 30 days without a successful sync.
           </p>
           <p>
-            Device contacts stay on this computer: ZePhone reads them after your permission, never modifies them, and
+            Device contacts stay on {thisDevice()}: ZePhone reads them after your permission, never modifies them, and
             you can withdraw the permission at any time in the system settings.
           </p>
           <p>Presence (available, online) is not shown: ZePhone does not receive it from these sources.</p>

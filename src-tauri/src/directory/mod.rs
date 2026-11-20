@@ -15,5 +15,5 @@ pub mod service;
 pub mod store;
 pub mod sync;
 pub mod system_contacts;
-#[cfg(target_os = "macos")]
-mod system_contacts_macos;
+#[cfg(any(target_os = "macos", target_os = "ios"))]
+mod system_contacts_apple;

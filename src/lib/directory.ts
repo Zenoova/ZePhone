@@ -1,3 +1,4 @@
+import { thisDevice } from "@/lib/platform";
 import type { DirectoryEntry, PhoneEntry, PhoneKind, SourceKind, SourceView, SyncErrorKind } from "@/types/directory";
 
 export const PHONE_KIND_LABEL: Record<PhoneKind, string> = {
@@ -101,6 +102,6 @@ export function sourceStatus(s: SourceView, now: Date = new Date()): string {
     case "error":
       return s.lastSuccessAt ? `Error · contacts kept (last sync ${relativeTime(s.lastSuccessAt, now)})` : "Error";
     default:
-      return s.kind === "local" ? "Stored on this computer" : `Synced ${relativeTime(s.lastSuccessAt, now)}`;
+      return s.kind === "local" ? `Stored on ${thisDevice()}` : `Synced ${relativeTime(s.lastSuccessAt, now)}`;
   }
 }

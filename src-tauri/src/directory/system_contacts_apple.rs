@@ -1,8 +1,8 @@
-//! The Mac's Contacts, through Apple's Contacts framework.
+//! The Contacts of a Mac, an iPhone or an iPad, through Apple's Contacts framework (the same API on all three).
 //!
 //! Permission: the system asks the user the first time (the text comes from `NSContactsUsageDescription` in
-//! `Info.plist`), and the hardened-runtime bundle carries the `com.apple.security.personal-information.addressbook`
-//! entitlement. Nothing here is ever called without the user having asked to connect the source.
+//! `Info.plist`), and on a Mac the hardened-runtime bundle carries the
+//! `com.apple.security.personal-information.addressbook` entitlement (iOS needs none). Nothing here is ever called without the user having asked to connect the source.
 //!
 //! Only the properties the directory uses are requested (`keysToFetch`): asking a contact for a property that was
 //! not fetched raises an Objective-C exception, so the list below and the getters in [`raw_of`] must stay in step.
@@ -26,7 +26,7 @@ use objc2_foundation::{NSArray, NSBundle, NSError, NSString};
 
 use super::system_contacts::{Access, ContactsProvider, ProviderError, RawContact};
 
-pub struct MacContacts;
+pub struct AppleContacts;
 
 fn status() -> Access {
     // SAFETY: a class method with no preconditions; Apple documents it as thread safe.
@@ -105,7 +105,7 @@ unsafe fn raw_of(c: &CNContact) -> RawContact {
 }
 
 #[async_trait]
-impl ContactsProvider for MacContacts {
+impl ContactsProvider for AppleContacts {
     fn access(&self) -> Access {
         status()
     }
@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn the_permission_state_can_be_read_without_asking_anything() {
-        let a = MacContacts.access();
+        let a = AppleContacts.access();
         assert!(matches!(
             a,
             Access::NotDetermined | Access::Denied | Access::Restricted | Access::Authorized
@@ -234,14 +234,14 @@ mod tests {
     #[test]
     #[ignore = "reads the real address book of whoever runs it"]
     fn reads_the_real_address_book() {
-        if MacContacts.access() != Access::Authorized {
+        if AppleContacts.access() != Access::Authorized {
             eprintln!(
                 "SKIPPED: this program is not allowed to read the contacts ({:?})",
-                MacContacts.access()
+                AppleContacts.access()
             );
             return;
         }
-        let all = MacContacts.read_all().expect("reads the contacts");
+        let all = AppleContacts.read_all().expect("reads the contacts");
         let useful = all
             .iter()
             .filter_map(crate::directory::system_contacts::map_contact)

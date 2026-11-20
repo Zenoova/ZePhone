@@ -71,16 +71,16 @@ ndk-context = "0.1"
 ldap3 = { version = "0.12.1", default-features = false, features = ["tls-rustls-aws-lc-rs"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "gzip"] }
 
-# Apple systems: the microphone permission (and, on iOS, the audio session of a call).
+# Apple systems: the microphone permission, the address book (and, on iOS, the audio session of a call).
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 block2 = "0.6.2"
 objc2 = "0.6.5"
 objc2-av-foundation = { version = "0.3.2", default-features = false, features = ["std", "AVCaptureDevice", "AVMediaFormat", "block2"] }
 objc2-foundation = "0.3.2"
+objc2-contacts = { version = "0.3.2", default-features = false, features = ["std", "block2", "CNContact", "CNContactStore", "CNContactFetchRequest", "CNFetchRequest", "CNLabeledValue", "CNPhoneNumber", "CNInstantMessageAddress"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 objc2-avf-audio = { version = "0.3.2", default-features = false, features = ["std", "AVAudioSession", "AVAudioSessionTypes", "AVAudioSessionRoute", "bitflags", "block2"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10.1"
-objc2-contacts = { version = "0.3.2", default-features = false, features = ["std", "block2", "CNContact", "CNContactStore", "CNContactFetchRequest", "CNFetchRequest", "CNLabeledValue", "CNPhoneNumber", "CNInstantMessageAddress"] }

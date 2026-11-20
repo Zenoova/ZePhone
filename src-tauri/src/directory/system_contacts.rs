@@ -1,4 +1,5 @@
-//! The device's own address book as a read-only source: Contacts on the Mac, later the ones of iOS and Android.
+//! The device's own address book as a read-only source: Contacts on the Mac, on an iPhone or an iPad, and the contacts of an
+//! Android phone.
 //!
 //! It stays on the device — no network, no password, no account. The user is asked for permission by the system the
 //! first time; the permission is the user's to give and to take back (System Settings → Privacy → Contacts). What
@@ -64,25 +65,29 @@ pub trait ContactsProvider: Send + Sync {
     fn read_all(&self) -> Result<Vec<RawContact>, ProviderError>;
 }
 
-/// What this platform can read: the Mac's Contacts today.
+/// What this platform can read: Apple's Contacts on a Mac, an iPhone and an iPad.
 pub fn platform_provider() -> Arc<dyn ContactsProvider> {
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
-        Arc::new(super::system_contacts_macos::MacContacts)
+        Arc::new(super::system_contacts_apple::AppleContacts)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
     {
         Arc::new(Unsupported)
     }
 }
 
 /// Whether the application can read the device's contacts on this platform.
-pub const AVAILABLE: bool = cfg!(target_os = "macos");
+pub const AVAILABLE: bool = cfg!(any(target_os = "macos", target_os = "ios"));
 
 /// The name the source gets: what the user calls that address book on this platform.
-pub const SOURCE_NAME: &str = "Mac contacts";
+pub const SOURCE_NAME: &str = if cfg!(target_os = "macos") {
+    "Mac contacts"
+} else {
+    "Device contacts"
+};
 
-#[cfg_attr(target_os = "macos", allow(dead_code))]
+#[cfg_attr(any(target_os = "macos", target_os = "ios"), allow(dead_code))]
 struct Unsupported;
 
 #[async_trait]

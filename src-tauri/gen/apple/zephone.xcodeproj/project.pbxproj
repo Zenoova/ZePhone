@@ -18,6 +18,7 @@
 		6BAB6EF921B9324564921DF4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 914158F2DDB2C1E98747400E /* Assets.xcassets */; };
 		8A67ABBE33977D1B00970AA4 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8AE161DA1689D5C794507C1F /* Security.framework */; };
 		9B5B57E2286BD58D4E7B1C7B /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2CF50F5DEBFF51F0E4A95167 /* libapp.a */; };
+		A962DEC18488AFF5B1FAAF43 /* Contacts.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E3AF0924C78BCB4CBFB03B0 /* Contacts.framework */; };
 		AAEC9F087ECB1A79B7046F11 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A0C0C651D6F9F91C9C5F66F /* WebKit.framework */; };
 		ACBEDAF0CFF66F1E2C995E78 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2787B9D9C329E7F8A7438853 /* main.mm */; };
 		B729204B7497932425CC82C7 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 4E3E580CEE13295C63FDC9C7 /* assets */; };
@@ -44,6 +45,7 @@
 		16417FD920F298F8F9F79989 /* client.rs */ = {isa = PBXFileReference; path = client.rs; sourceTree = "<group>"; };
 		16949BF1D681136E715E0245 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		178E3414CF66FBA39555FE19 /* netstring.rs */ = {isa = PBXFileReference; path = netstring.rs; sourceTree = "<group>"; };
+		19010F89828AFD1961027D4B /* native_tabbar_ios.rs */ = {isa = PBXFileReference; path = native_tabbar_ios.rs; sourceTree = "<group>"; };
 		19021A864936DE97C60F5539 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		1A26B71F04FAC25FF3508B23 /* hid_macos.rs */ = {isa = PBXFileReference; path = hid_macos.rs; sourceTree = "<group>"; };
 		1CF2D592E929FB3F2F676F3D /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
@@ -66,6 +68,7 @@
 		42D3858FE1CAE7AD5FF1AA01 /* process.rs */ = {isa = PBXFileReference; path = process.rs; sourceTree = "<group>"; };
 		486BF564F42079AC44099B9C /* tray_mobile.rs */ = {isa = PBXFileReference; path = tray_mobile.rs; sourceTree = "<group>"; };
 		49A30E9FEB8D69450ED240D7 /* zephone_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = zephone_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E3AF0924C78BCB4CBFB03B0 /* Contacts.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Contacts.framework; path = System/Library/Frameworks/Contacts.framework; sourceTree = SDKROOT; };
 		4E3E580CEE13295C63FDC9C7 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
 		53D3B515DC25183CE31F499F /* connectors.rs */ = {isa = PBXFileReference; path = connectors.rs; sourceTree = "<group>"; };
 		54C986FB49F692065784FB99 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
@@ -81,6 +84,7 @@
 		6E467938DD0BBE1D420AF21E /* ZePhone.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = ZePhone.icon; sourceTree = "<group>"; };
 		6EE874F8F81719468AB37CC8 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		72C492A5E655024F5621C42A /* call_window.rs */ = {isa = PBXFileReference; path = call_window.rs; sourceTree = "<group>"; };
+		74E44AE59457FB8A5457B91B /* system_contacts_apple.rs */ = {isa = PBXFileReference; path = system_contacts_apple.rs; sourceTree = "<group>"; };
 		758A680F1B64AB380510B104 /* system_contacts.rs */ = {isa = PBXFileReference; path = system_contacts.rs; sourceTree = "<group>"; };
 		7D31FD946BDF5E0FE60A7285 /* select.rs */ = {isa = PBXFileReference; path = select.rs; sourceTree = "<group>"; };
 		7D3853C38C84A01802744517 /* error.rs */ = {isa = PBXFileReference; path = error.rs; sourceTree = "<group>"; };
@@ -100,6 +104,7 @@
 		9C18663C9C2E9FFAE97CBB82 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		A198DA548AD2265AC1D6EC9E /* control.rs */ = {isa = PBXFileReference; path = control.rs; sourceTree = "<group>"; };
 		A3556D5D2FAC1FE4ED4AA367 /* routing.rs */ = {isa = PBXFileReference; path = routing.rs; sourceTree = "<group>"; };
+		A4841B51DDB399C9A152BCE7 /* native_tabbar.rs */ = {isa = PBXFileReference; path = native_tabbar.rs; sourceTree = "<group>"; };
 		A57820FB5887B41ED986147F /* android.rs */ = {isa = PBXFileReference; path = android.rs; sourceTree = "<group>"; };
 		A5DB924B5C6AD236F68F1D65 /* tauri_backend.rs */ = {isa = PBXFileReference; path = tauri_backend.rs; sourceTree = "<group>"; };
 		A6754573BF8E293C67678169 /* recordings.rs */ = {isa = PBXFileReference; path = recordings.rs; sourceTree = "<group>"; };
@@ -116,7 +121,6 @@
 		B7D7CB07007E18C68D88168F /* tests.rs */ = {isa = PBXFileReference; path = tests.rs; sourceTree = "<group>"; };
 		BC5C0E658C02BE74AE37439D /* directory_events.rs */ = {isa = PBXFileReference; path = directory_events.rs; sourceTree = "<group>"; };
 		BECE5E3AA4D5BE1DC6E0900C /* diagnostics.rs */ = {isa = PBXFileReference; path = diagnostics.rs; sourceTree = "<group>"; };
-		C779DDE459AEE1D7254EC781 /* system_contacts_macos.rs */ = {isa = PBXFileReference; path = system_contacts_macos.rs; sourceTree = "<group>"; };
 		C8B83853E0BA282E679CF9B0 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		CAB58A49248DBB9BAD969861 /* microsoft.rs */ = {isa = PBXFileReference; path = microsoft.rs; sourceTree = "<group>"; };
 		D14F8E77FB663304223DE4B7 /* config.rs */ = {isa = PBXFileReference; path = config.rs; sourceTree = "<group>"; };
@@ -153,6 +157,7 @@
 				BB3E78B0AEA5BEA571DCE4A5 /* CoreAudio.framework in Frameworks */,
 				65AAAD53F1F80ECE84EB4088 /* AVFoundation.framework in Frameworks */,
 				200493D68115F94D2D37F559 /* AVFAudio.framework in Frameworks */,
+				A962DEC18488AFF5B1FAAF43 /* Contacts.framework in Frameworks */,
 				D488589C9A61420A2BD5E5F7 /* CoreFoundation.framework in Frameworks */,
 				F85238395562AE15BC27A32C /* SystemConfiguration.framework in Frameworks */,
 				E636B9E5FB8E0E0479E57BC9 /* libresolv.tbd in Frameworks */,
@@ -260,7 +265,7 @@
 				7D64D8322DBA7E9391EF9C1B /* service.rs */,
 				06D190ACA2793D1D628CC011 /* store.rs */,
 				3BC3956F1B65A0B29EA4EF81 /* sync.rs */,
-				C779DDE459AEE1D7254EC781 /* system_contacts_macos.rs */,
+				74E44AE59457FB8A5457B91B /* system_contacts_apple.rs */,
 				758A680F1B64AB380510B104 /* system_contacts.rs */,
 			);
 			path = directory;
@@ -288,6 +293,7 @@
 				1E2199508428C7CA5A05F2A0 /* AudioToolbox.framework */,
 				8EA34056F5D3482B4034C2EE /* AVFAudio.framework */,
 				FF694A636B6E4541E8AAEDD5 /* AVFoundation.framework */,
+				4E3AF0924C78BCB4CBFB03B0 /* Contacts.framework */,
 				16949BF1D681136E715E0245 /* CoreAudio.framework */,
 				19021A864936DE97C60F5539 /* CoreFoundation.framework */,
 				C8B83853E0BA282E679CF9B0 /* CoreGraphics.framework */,
@@ -314,6 +320,8 @@
 				A198DA548AD2265AC1D6EC9E /* control.rs */,
 				BC5C0E658C02BE74AE37439D /* directory_events.rs */,
 				E3E86784BB4B06EAB6B2AF76 /* mod.rs */,
+				19010F89828AFD1961027D4B /* native_tabbar_ios.rs */,
+				A4841B51DDB399C9A152BCE7 /* native_tabbar.rs */,
 				E2DAE987847D9478E856D69B /* shell.rs */,
 				84E8537C323D36542CD06E49 /* sink.rs */,
 				486BF564F42079AC44099B9C /* tray_mobile.rs */,
@@ -494,18 +502,18 @@
 			path = service;
 			sourceTree = "<group>";
 		};
-		"TEMP_2A1948B3-5A61-402E-BC0D-8728B629CBDB" /* arm64 */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = arm64;
-			sourceTree = "<group>";
-		};
-		"TEMP_33A863D7-58A0-4B4E-9489-5B38BF027408" /* x86_64 */ = {
+		"TEMP_9CFC8BC2-94BB-4DAA-BB49-7E32057036AE" /* x86_64 */ = {
 			isa = PBXGroup;
 			children = (
 			);
 			path = x86_64;
+			sourceTree = "<group>";
+		};
+		"TEMP_E2FBE107-C9FB-4B53-9506-E1EAE9BA084E" /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = arm64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

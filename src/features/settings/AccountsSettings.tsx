@@ -1,3 +1,4 @@
+import { thisDevice } from "@/lib/platform";
 import { Plug, PlugZap, Plus, Star, Trash2, UserPlus, Pencil } from "@/components/icons";
 import { useState } from "react";
 
@@ -158,7 +159,7 @@ export function AccountsSettings() {
         title="Delete this account?"
         description={
           deleting
-            ? `The account “${deleting.label}” and its password will be deleted from this computer. The call history is kept.`
+            ? `The account “${deleting.label}” and its password will be deleted from ${thisDevice()}. The call history is kept.`
             : ""
         }
         confirmLabel="Delete"

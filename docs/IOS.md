@@ -82,6 +82,10 @@ A build for a real device needs a development team (`bundle > iOS > developmentT
   screen and the bar floats over it: the page scrolls under the glass, and leaves room for the last lines through a CSS variable the
   shell sets (`--native-tabbar-height`). The dock's two other items moved: the **account** (face, availability, switch, add) is a button at the top right
   of every page, and the **voice orb** is chosen in Settings → General. Other systems keep the page's dock.
+- **Device contacts** are a read-only directory source (Settings → Directory → Add a source → Device contacts), read through
+  the same Contacts framework as on the Mac ([`system_contacts_apple.rs`](../src-tauri/src/directory/system_contacts_apple.rs)),
+  with the text of `NSContactsUsageDescription`. Only names, company, job title, e-mail, numbers and SIP addresses are read.
+  "Open the privacy settings" opens the application's page in Settings.
 - The audio-device settings (microphone/speaker/ringer choice) are replaced by the system's routing, as on Android.
 
 ## Verified
@@ -99,6 +103,9 @@ On the **iOS Simulator** (Xcode 26.0.1, iPhone 17 Pro on iOS 26.1; the iPad Pro 
 - An **incoming call** (FreeSWITCH originate to the account) rings, shows the call screen, is **answered**, negotiates **Opus
   48 kHz**, runs for 33 s with live audio levels and call statistics, and is **hung up**. An outgoing call to a number the PBX
   refuses reports its SIP error (`480`) as a toast and the call ends.
+- Device contacts: the source connects and 8 contacts of the simulator (two of them added from a vCard) appear in the Directory
+  and can be called. The permission was granted to the simulator with `xcrun simctl privacy`, so **the system's own question
+  was not seen**.
 - The tab bar: tapping a tab opens its section; the History badge counts a missed call; the bar disappears behind an incoming
   call and comes back after it; the account button opens its list; on the iPad the bar takes the iPad's own form (icons beside
   their labels) at the bottom.

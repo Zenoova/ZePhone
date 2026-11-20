@@ -32,6 +32,7 @@ fn link_ios_engine() {
         "CoreAudio",
         "AVFoundation",
         "AVFAudio",
+        "Contacts",
         "CoreFoundation",
         "SystemConfiguration",
     ] {

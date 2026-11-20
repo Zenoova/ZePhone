@@ -173,6 +173,11 @@ html[data-native-tabbar] {
 html[data-native-tabbar] body {
   padding-bottom: 0;
 }
+/* The pages scroll inside their own containers: the document itself never moves (a menu opening must not push the page under the status bar). */
+html[data-native-tabbar],
+html[data-native-tabbar] body {
+  overflow: clip;
+}
 
 html[data-preview] {
   background: linear-gradient(135deg, #4f6bff 0%, #b06cff 48%, #ff8fb1 100%);

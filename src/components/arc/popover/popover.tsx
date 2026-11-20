@@ -3,6 +3,7 @@
 import { Popover as PopoverPrimitive } from "radix-ui";
 import { forwardRef } from "react";
 import type { ComponentPropsWithoutRef } from "react";
+import { collisionPadding as edgeMargin } from "@/lib/collision";
 import styles from "./popover.module.css";
 
 export const Popover = PopoverPrimitive.Root;
@@ -28,7 +29,7 @@ export const PopoverContent = forwardRef<
       ref={ref}
       align={align}
       sideOffset={sideOffset}
-      collisionPadding={collisionPadding}
+      collisionPadding={typeof collisionPadding === "number" ? edgeMargin(collisionPadding) : collisionPadding}
       className={[styles.content, className].filter(Boolean).join(" ")}
     />
   </PopoverPrimitive.Portal>;

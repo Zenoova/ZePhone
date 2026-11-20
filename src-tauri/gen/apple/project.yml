@@ -62,6 +62,7 @@ targets:
         CFBundleShortVersionString: 0.1.0
         CFBundleVersion: "0.1.0"
         NSMicrophoneUsageDescription: ZePhone needs the microphone so that the other party can hear you during a call.
+        NSContactsUsageDescription: ZePhone reads your contacts so you can find them in the directory, call them in one tap and see their name when they call you. They stay on this device and are never modified.
         NSLocalNetworkUsageDescription: ZePhone connects to your SIP/PBX server, including on your local network.
         # A call goes on when the application is not in front of the screen.
         UIBackgroundModes:
@@ -92,6 +93,7 @@ targets:
       - sdk: CoreAudio.framework
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
+      - sdk: Contacts.framework
       - sdk: CoreFoundation.framework
       - sdk: SystemConfiguration.framework
       - sdk: libresolv.tbd

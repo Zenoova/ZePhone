@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { Variants } from "motion/react";
 import { Check, ChevronDown, ChevronUp } from "@/components/icons";
 import { motionTokens } from "../lib/motion-tokens";
+import { collisionPadding } from "@/lib/collision";
 import styles from "./select.module.css";
 
 export interface SelectProps extends Omit<ComponentPropsWithoutRef<typeof SelectPrimitive.Root>, "children"> {
@@ -65,7 +66,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           </SelectPrimitive.Icon>
         </SelectPrimitive.Trigger>
         <SelectPrimitive.Portal>
-          <SelectPrimitive.Content className={styles.content} position="popper" sideOffset={4} collisionPadding={12}>
+          <SelectPrimitive.Content className={styles.content} position="popper" sideOffset={4} collisionPadding={collisionPadding(12)}>
             <SelectPrimitive.ScrollUpButton className={styles.scrollButton}>
               <ChevronUp style={{ width: 16, height: 16 }} aria-hidden="true" />
             </SelectPrimitive.ScrollUpButton>

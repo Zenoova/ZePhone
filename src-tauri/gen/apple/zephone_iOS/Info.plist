@@ -20,6 +20,8 @@
 	<string>0.1.0</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSContactsUsageDescription</key>
+	<string>ZePhone reads your contacts so you can find them in the directory, call them in one click and see their name when they call you. They stay on this computer and are never modified.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>ZePhone connects to your SIP/PBX server, including on your local network.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -48,7 +50,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSContactsUsageDescription</key>
-	<string>ZePhone reads your contacts so you can find them in the directory, call them in one click and see their name when they call you. They stay on this computer and are never modified.</string>
+	<key>CFBundleIconName</key>
+	<string>ZePhone</string>
 </dict>
 </plist>

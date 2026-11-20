@@ -13,6 +13,11 @@ export function isIos(): boolean {
   return /iPhone|iPad/i.test(nav.userAgent) || (/Macintosh/i.test(nav.userAgent) && nav.maxTouchPoints > 1);
 }
 
+/** What the user's device is called in a sentence: "this computer" on a computer, "this device" on a phone or a tablet. */
+export function thisDevice(): string {
+  return isMobile() ? "this device" : "this computer";
+}
+
 export function isMobile(): boolean {
   if (typeof window === "undefined") return false;
   const nav = window.navigator;

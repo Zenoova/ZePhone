@@ -332,17 +332,39 @@ pub async fn directory_connect_system_contacts(state: S<'_>) -> AppResult<Source
 
 /// Opens the system's privacy settings on the Contacts page, where the user can allow or take back the access.
 #[tauri::command]
-pub fn directory_open_contacts_privacy_settings() -> AppResult<()> {
+pub fn directory_open_contacts_privacy_settings(app: tauri::AppHandle) -> AppResult<()> {
+    #[cfg(target_os = "ios")]
+    {
+        // The Settings page of this application, where its permissions are (`UIApplicationOpenSettingsURLString`).
+        app.run_on_main_thread(|| {
+            use objc2::{msg_send, rc::Retained, runtime::{AnyClass, AnyObject}};
+            use objc2_foundation::{NSDictionary, NSString, NSURL};
+            let Some(class) = AnyClass::get(c"UIApplication") else {
+                return;
+            };
+            // SAFETY: on the main thread; `openURL:options:completionHandler:` takes a URL, a dictionary and an optional block.
+            unsafe {
+                let shared: Retained<AnyObject> = msg_send![class, sharedApplication];
+                let url = NSURL::URLWithString(&NSString::from_str("app-settings:"));
+                let options = NSDictionary::<NSString, AnyObject>::new();
+                let none: Option<&block2::Block<dyn Fn(objc2::runtime::Bool)>> = None;
+                let _: () = msg_send![&*shared, openURL: url.as_deref(), options: &*options, completionHandler: none];
+            }
+        })
+        .map_err(|e| AppError::Other(e.to_string()))
+    }
     #[cfg(target_os = "macos")]
     {
+        let _ = app;
         std::process::Command::new("open")
             .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Contacts")
             .spawn()
             .map(|_| ())
             .map_err(|e| AppError::Other(e.to_string()))
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
     {
+        let _ = app;
         Err(AppError::validation(
             "The privacy settings cannot be opened from ZePhone on this system",
         ))
