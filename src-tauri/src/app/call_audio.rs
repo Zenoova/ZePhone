@@ -103,6 +103,8 @@ mod imp {
                 return;
             };
             // Bluetooth headsets (hands-free profile) may carry the call; the loudspeaker is chosen by the user.
+            // (`AllowBluetooth` is the name of the option before iOS 26, which calls it `AllowBluetoothHFP`.)
+            #[allow(deprecated)]
             let options = AVAudioSessionCategoryOptions::AllowBluetooth;
             if let Err(e) = unsafe { session.setCategory_mode_options_error(category, mode, options) } {
                 log::warn!("cannot prepare the audio session of the call: {e}");

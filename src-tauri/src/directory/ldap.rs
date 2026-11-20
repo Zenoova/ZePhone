@@ -452,19 +452,21 @@ impl LdapConnector {
         self.config
             .validate(self.password.is_some())
             .map_err(|m| SyncError::new(SyncErrorKind::Config, m))?;
-        #[cfg_attr(target_os = "android", allow(unused_mut))]
+        #[cfg_attr(any(target_os = "android", target_os = "ios"), allow(unused_mut))]
         let mut settings = LdapConnSettings::new()
             .set_conn_timeout(CONNECT_TIMEOUT)
             .set_starttls(self.config.starttls);
         // Verification stays on. The system's trust store is used; a company CA can be added to it.
-        #[cfg(target_os = "android")]
+        // (A phone's TLS library cannot take an extra root certificate here: Android uses rustls, and the
+        // `native-tls` of iOS does not read a PEM certificate.)
+        #[cfg(any(target_os = "android", target_os = "ios"))]
         if self.ca_pem.is_some() {
             return Err(SyncError::new(
                 SyncErrorKind::Config,
-                "A company certificate authority for LDAP is not supported on Android yet.",
+                "A company certificate authority for LDAP is not supported on a phone yet.",
             ));
         }
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         if let Some(pem) = &self.ca_pem {
             let cert = native_tls::Certificate::from_pem(pem).map_err(|_| {
                 SyncError::new(
