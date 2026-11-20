@@ -1,7 +1,7 @@
 import { OrbPicker } from "@/components/OrbPicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { isIos, isMobile } from "@/lib/platform";
+import { hasNativeTabBar, isMobile } from "@/lib/platform";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { Theme } from "@/types/telephony";
 
@@ -36,8 +36,8 @@ export function GeneralSettings() {
         </SettingRow>
       </SettingsSection>
 
-      {/* On a computer or an Android phone the dock's orb opens this choice; an iPhone's tab bar has no room for it. */}
-      {isIos() && (
+      {/* On a computer the dock's orb opens this choice; the system's navigation bar of a phone has no room for it. */}
+      {hasNativeTabBar() && (
         <SettingsSection title="Voice orb">
           <div className="flex justify-center py-2">
             <OrbPicker />

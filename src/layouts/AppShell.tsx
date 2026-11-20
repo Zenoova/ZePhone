@@ -10,7 +10,7 @@ import { HistoryPage } from "@/features/history/HistoryPage";
 import { RecordingsPage } from "@/features/recordings/RecordingsPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { AccountsButton } from "@/features/accounts/AccountsPopover";
-import { isIos, isMobile } from "@/lib/platform";
+import { hasNativeTabBar, isMobile } from "@/lib/platform";
 import { isTerminal, sortedCalls, useCallsStore } from "@/stores/calls-store";
 import { type Section, useUiStore } from "@/stores/ui-store";
 
@@ -79,7 +79,7 @@ export function AppShell() {
   const Page = PAGES[section];
   useShellBehaviour();
   // An iPhone or an iPad navigates with the system's tab bar, and its pages need no room for a floating dock.
-  const ios = isIos();
+  const ios = hasNativeTabBar();
   useEffect(() => {
     if (ios) document.documentElement.dataset.nativeTabbar = "";
   }, [ios]);

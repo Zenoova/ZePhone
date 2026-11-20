@@ -7,7 +7,7 @@ import { type Section, useUiStore } from "@/stores/ui-store";
 
 import { NAV_ITEMS } from "./nav";
 
-/** SF Symbol of each section. */
+/** SF Symbol of each section (Android draws its own icons, by id, in `res/drawable`). */
 const SYMBOLS: Record<Section, string> = {
   dialer: "circle.grid.3x3.fill",
   contacts: "person.2.fill",

@@ -18,6 +18,19 @@ export function thisDevice(): string {
   return isMobile() ? "this device" : "this computer";
 }
 
+/** Whether the application runs on an Android phone or tablet. */
+export function isAndroid(): boolean {
+  return typeof window !== "undefined" && /Android/i.test(window.navigator.userAgent);
+}
+
+/**
+ * Whether the navigation of this device is the system's own bar (UIKit's tab bar on an iPhone and an iPad, Material's
+ * navigation bar on Android), not the page's dock. The shell draws it; the page only describes it and follows it.
+ */
+export function hasNativeTabBar(): boolean {
+  return isIos() || isAndroid();
+}
+
 export function isMobile(): boolean {
   if (typeof window === "undefined") return false;
   const nav = window.navigator;
