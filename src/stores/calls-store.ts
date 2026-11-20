@@ -74,7 +74,10 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     set({ dialing: true });
     try {
       const call = await telephony.dial(target, accountId);
-      get().apply(call);
+      // A server that refuses at once (a busy line, an unknown number) can be heard before the answer to the dial
+      // command comes back: the answer must not bring a call that already ended back to life.
+      const known = get().calls[call.id];
+      if (!known || !isTerminal(known)) get().apply(call);
       return call;
     } catch (e) {
       toast.error(errorMessage(e));

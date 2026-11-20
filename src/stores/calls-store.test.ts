@@ -57,6 +57,18 @@ describe("intents sent to the backend", () => {
     expect(useCallsStore.getState().dialing).toBe(false);
   });
 
+  it("a call that failed before the answer to the dial command came back stays failed", async () => {
+    let answer: (c: unknown) => void = () => {};
+    invoke.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
+    const dialing = useCallsStore.getState().dial("1002", null);
+    useCallsStore.getState().apply(makeCall({ state: "failed", reason: "Busy (486)" }));
+    answer(makeCall({ state: "initializing" }));
+    await dialing;
+    expect(useCallsStore.getState().calls.call1?.state).toBe("failed");
+    vi.advanceTimersByTime(ENDED_LINGER_MS + 1);
+    expect(useCallsStore.getState().calls.call1).toBeUndefined();
+  });
+
   it("dial failure becomes a toast, not an exception", async () => {
     invoke.mockRejectedValueOnce({ kind: "validation", message: "No SIP account is connected" });
     const call = await useCallsStore.getState().dial("1002");
