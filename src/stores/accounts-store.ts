@@ -1,6 +1,7 @@
 import { toast } from "@yusufceng1z/ding-react";
 import { create } from "zustand";
 
+import { track } from "@/lib/diagnostics";
 import { errorMessage, telephony } from "@/services/telephony";
 import type { AccountInput, AccountStatus, AccountView, RegistrationState } from "@/types/telephony";
 
@@ -41,6 +42,8 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
   },
   save: async (input) => {
     const saved = await attempt(() => telephony.saveAccount(input), null);
+    // Counted once, when the account is created: the transport is the only thing said about it.
+    if (saved && !input.id) track("account_added", { transport: input.transport });
     await get().reload();
     return saved;
   },

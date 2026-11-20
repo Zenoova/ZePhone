@@ -2,6 +2,7 @@ import { toast } from "@yusufceng1z/ding-react";
 import { create } from "zustand";
 
 import { clearLevels } from "@/lib/audio-levels";
+import { track } from "@/lib/diagnostics";
 import { playMuteSound } from "@/lib/ui-sounds";
 import { errorMessage, telephony } from "@/services/telephony";
 import type { Call } from "@/types/telephony";
@@ -44,6 +45,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
   hydrate: (calls) => set({ calls: Object.fromEntries(calls.map((c) => [c.id, c])) }),
 
   apply: (call) => {
+    if (call.state === "incoming" && !get().calls[call.id]) track("call_incoming");
     set((s) => ({ calls: { ...s.calls, [call.id]: call } }));
     const terminal = call.state === "ended" || call.state === "failed";
     const pending = timers.get(call.id);
@@ -74,6 +76,7 @@ export const useCallsStore = create<CallsState>((set, get) => ({
     set({ dialing: true });
     try {
       const call = await telephony.dial(target, accountId);
+      track("call_outgoing");
       // A server that refuses at once (a busy line, an unknown number) can be heard before the answer to the dial
       // command comes back: the answer must not bring a call that already ended back to life.
       const known = get().calls[call.id];

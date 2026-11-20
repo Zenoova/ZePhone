@@ -169,6 +169,13 @@ export const telephony = {
   getMicrophonePermission: () => call<MicPermission>("get_microphone_permission"),
   requestMicrophonePermission: () => call<MicPermission>("request_microphone_permission"),
   openMicrophoneSettings: () => call<void>("open_microphone_settings"),
+
+  // diagnostics (crash reports and usage counts; nothing leaves the machine unless the user allowed it)
+  trackEvent: (event: string, params?: Record<string, string>) =>
+    call<void>("telemetry_track", { event, params: params ? Object.entries(params) : undefined }),
+  reportError: (kind: string, message: string, stack?: string) =>
+    call<void>("telemetry_report_error", { kind, message, stack }),
+  resetDiagnosticsId: () => call<void>("telemetry_reset_id"),
 };
 
 export type Telephony = typeof telephony;

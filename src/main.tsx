@@ -4,6 +4,7 @@ import ReactDOM from "react-dom/client";
 
 import App from "@/app/App";
 import CallWindowApp from "@/app/CallWindowApp";
+import { installErrorReporting } from "@/lib/diagnostics";
 import { isCallWindow } from "@/lib/window";
 
 import "./index.css";
@@ -14,6 +15,9 @@ window.addEventListener("contextmenu", (e) => {
   const t = e.target as HTMLElement | null;
   if (!t?.closest("input, textarea, [data-selectable]")) e.preventDefault();
 });
+
+// Uncaught errors go to the backend, which sends them only when the user allowed crash reports.
+installErrorReporting();
 
 document.documentElement.dataset.accent = "blue"; // accent of the Arc UI components
 
