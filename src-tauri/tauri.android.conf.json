@@ -14,7 +14,9 @@
   },
   "bundle": {
     "externalBin": [],
-    "resources": {},
+    "resources": {
+      "icons/mac/Assets.car": null
+    },
     "android": {
       "minSdkVersion": 28
     }
