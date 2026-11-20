@@ -28,6 +28,7 @@ No PBX is hard-coded: you enter your server, domain, credentials, port and trans
 - [Security](#security)
 - [Windows](#windows)
 - [Android](#android)
+- [iPhone and iPad](#iphone-and-ipad)
 - [Linux](#linux)
 - [Known limits](#known-limits)
 - [Logo](#logo)
@@ -345,6 +346,25 @@ streams, the phone switches to communication mode for the call and back after `B
 (the emulator's virtual microphone), SIP over TLS. **Not done**: incoming calls only ring while the process is alive (no push
 notification service, so a phone that killed the application does not ring); no full-screen incoming-call notification; Bluetooth
 headsets are not routed explicitly (and their permission is not requested).
+
+## iPhone and iPad
+
+ZePhone also builds for iOS and iPadOS (15.0 or later): the same application, laid out for a phone. iOS cannot run a child
+process, so Baresip (with libre, OpenSSL, Opus and `zeaudio`) is built as a **static library** for the iPhone and the simulator
+(`npm run sidecar:ios`, [`scripts/build-baresip-ios.sh`](scripts/build-baresip-ios.sh)) and **runs on a thread of the
+application**, still driven through `ctrl_tcp` on `127.0.0.1`. SIP passwords stay in the Keychain, server certificates are always
+verified (the application carries a CA bundle), and audio goes through the `audiounit` module and an `AVAudioSession`.
+
+```bash
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+npm install
+npm run tauri ios build -- --debug --target aarch64-sim --ci   # or: npm run tauri ios dev "iPhone 17 Pro"
+```
+
+Requirements: Xcode, CMake, `xcodegen`, the Rust iOS targets. **Verified** on the iPhone 17 Pro and iPad Pro simulators: the
+application runs, an account registers (Digest) against a throw-away FreeSWITCH, an incoming call is answered with Opus audio.
+**Not verified**: a real device, sound actually heard, TLS. **Not done**: ringing while the application is suspended
+(CallKit/PushKit). The details, and what each of these means, are in [docs/IOS.md](docs/IOS.md).
 
 ## Linux
 

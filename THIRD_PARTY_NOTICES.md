@@ -35,6 +35,13 @@ Notes:
 - Patents: G.711, G.722 and Opus are royalty-free to implement at the time of writing; this is not legal advice.
   Check your own distribution context.
 
+## iOS build
+
+The iOS application links Baresip, libre, OpenSSL and Opus **statically** (`scripts/build-baresip-ios.sh`; no spandsp, so no
+G.722), with the same licences as above. It also carries `src-tauri/ios/cacert.pem`, the bundle of root certificates that macOS
+ships as `/etc/ssl/cert.pem` (derived from the Mozilla CA store, MPL-2.0), used to verify SIP servers, and the two ring tones
+of Baresip (`src-tauri/ios/LICENSE-baresip`).
+
 ## Rust crates
 
 Tauri 2 and its plugins (`notification`, `autostart`, `single-instance`, `log`), `rusqlite` (SQLite is public domain),
