@@ -127,7 +127,7 @@ export function DialerPage() {
 
   if (accounts.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 pb-[6.5rem] text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 pb-[calc(var(--dock-clearance)-0.5rem)] text-center">
         <div className="bg-primary/10 text-primary flex size-14 items-center justify-center rounded-full">
           <UserPlus className="size-7" aria-hidden />
         </div>
@@ -143,7 +143,7 @@ export function DialerPage() {
   }
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-sm flex-col justify-center gap-4 p-5 pb-[6.5rem]">
+    <div className="mx-auto flex h-full w-full max-w-sm flex-col justify-center gap-4 p-5 pb-[calc(var(--dock-clearance)-0.5rem)]">
       {/* The number is written straight on the background: no field, no placeholder. */}
       <div className="relative">
         <div

@@ -75,6 +75,12 @@ A build for a real device needs a development team (`bundle > iOS > developmentT
   [`viewport_ios.rs`](../src-tauri/src/app/viewport_ios.rs) turns off the scroll view's automatic insets (otherwise the page
   stopped 96 points above the bottom of an iPhone 17 Pro). Text fields are 16 px on a touch screen (otherwise iOS zooms in when
   one is focused).
+- **Navigation is the system's own tab bar** (`UITabBar`, [`native_tabbar_ios.rs`](../src-tauri/src/app/native_tabbar_ios.rs)):
+  Liquid Glass when the application is built with the iOS 26 SDK (as it is), the classic bar before. The page describes the five
+  tabs (SF Symbols) and follows the taps through a Tauri event; it keeps the selection, the missed-call badge and the visibility
+  (the bar goes away behind the call screen) in step ([`NativeTabBar.tsx`](../src/layouts/NativeTabBar.tsx)). The webview ends
+  above the bar. The dock's two other items moved: the **account** (face, availability, switch, add) is a button at the top right
+  of every page, and the **voice orb** is chosen in Settings → General. Other systems keep the page's dock.
 - The audio-device settings (microphone/speaker/ringer choice) are replaced by the system's routing, as on Android.
 
 ## Verified
@@ -92,6 +98,9 @@ On the **iOS Simulator** (Xcode 26.0.1, iPhone 17 Pro on iOS 26.1; the iPad Pro 
 - An **incoming call** (FreeSWITCH originate to the account) rings, shows the call screen, is **answered**, negotiates **Opus
   48 kHz**, runs for 33 s with live audio levels and call statistics, and is **hung up**. An outgoing call to a number the PBX
   refuses reports its SIP error (`480`) as a toast and the call ends.
+- The tab bar: tapping a tab opens its section; the History badge counts a missed call; the bar disappears behind an incoming
+  call and comes back after it; the account button opens its list; on the iPad the bar takes the iPad's own form (icons beside
+  their labels) at the bottom.
 - Layout: safe areas on the iPhone (Dynamic Island, home indicator) and the iPad; dialogs; the dock; the keypad (the keys are
   well over 44 pt).
 - The existing suites still pass on the Mac: `npx vitest run` (385 tests), `tsc`, `eslint`, `cargo test --lib` (468 tests) and the
@@ -111,6 +120,9 @@ For these checks the microphone permission was granted to the simulator with `xc
   cancellation, the earpiece, the loudspeaker button, Bluetooth routing and interruptions (a cellular call, Siri) are untested.
 - A call that **starts from the application** and is answered (only the failure path was seen), hold, transfer, DTMF, recording.
 - **SIP over TLS / SRTP**, and the bundled CA store against a real server. **G.722 is not available** (no spandsp).
+- The tab bar **before iOS 26**: the simulator runtimes installed here are iOS 26.0 and 26.1 only. The bar is given the standard
+  appearance explicitly (a page is not a scroll view UIKit knows, so it would otherwise stay transparent), but the classic look
+  was not seen. Also not seen: the Settings → General voice-orb picker, the tab bar in landscape, and VoiceOver on it.
 - Landscape, split view and Stage Manager on the iPad (the webview is re-fitted at every resize, but this was not exercised), the
   dark theme, Dynamic Type, VoiceOver.
 - A long run: battery, memory, the engine's thread over hours.

@@ -44,7 +44,7 @@ export function SettingsPage() {
           </TabsList>
         </Tabs>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-28">
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-(--dock-clearance)">
         <div className="mx-auto max-w-2xl">
           {tab === "accounts" && <AccountsSettings />}
           {tab === "directory" && <DirectorySettings />}

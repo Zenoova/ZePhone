@@ -50,6 +50,83 @@ function AccountRow({ account }: { account: AccountView }) {
   );
 }
 
+/** The short list of accounts, with the button that adds one. */
+function AccountsPanel({ accounts, onAdd }: { accounts: AccountView[]; onAdd: () => void }) {
+  return (
+    <>
+      {accounts.length > 0 ? (
+        <ul className="mb-2 max-h-72 space-y-0.5 overflow-y-auto" aria-label="SIP accounts">
+          {accounts.map((a) => (
+            <AccountRow key={a.id} account={a} />
+          ))}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground px-2 py-3 text-sm">No SIP account yet.</p>
+      )}
+      <Button variant="secondary" className="w-full" onClick={onAdd}>
+        <Plus className="size-4" aria-hidden /> Add a SIP account
+      </Button>
+    </>
+  );
+}
+
+/**
+ * The SIP accounts at the top of the page, where an iPhone or an iPad has no dock for them: the face of the account that
+ * is connected now (or the default one) opens the same short list as the dock's item.
+ */
+export function AccountsButton({ className }: { className?: string }) {
+  const accounts = useAccountsStore((s) => s.accounts);
+  const statuses = useAccountsStore((s) => s.statuses);
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const current = summarizeRegistration(accounts, statuses);
+  const account = current.account;
+
+  return (
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={
+              account ? `SIP accounts: ${account.label}, ${availability(account, current.status)}` : "SIP accounts"
+            }
+            data-testid="account-button"
+            className={cn("flex size-11 items-center justify-center rounded-full", className)}
+          >
+            {account ? (
+              <AccountAvatar
+                seed={`${account.username}@${account.domain}`}
+                size={36}
+                state={account.enabled && current.state !== "none" ? current.state : undefined}
+              />
+            ) : (
+              <UserRound className="size-6" aria-hidden />
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          collisionPadding={8}
+          className="w-80"
+          data-testid="accounts-popover"
+        >
+          <AccountsPanel
+            accounts={accounts}
+            onAdd={() => {
+              setOpen(false);
+              setAdding(true);
+            }}
+          />
+        </PopoverContent>
+      </Popover>
+      <AccountFormDialog open={adding} onOpenChange={setAdding} account={null} />
+    </>
+  );
+}
+
 /**
  * The SIP accounts in the dock: the icon is the face of the account that is connected now (or the default one
  * when none is), and it opens a short list — face, name, availability, a switch — with a button to add one.
@@ -98,25 +175,13 @@ export function AccountsDockItem() {
           className="w-80"
           data-testid="accounts-popover"
         >
-          {accounts.length > 0 ? (
-            <ul className="mb-2 max-h-72 space-y-0.5 overflow-y-auto" aria-label="SIP accounts">
-              {accounts.map((a) => (
-                <AccountRow key={a.id} account={a} />
-              ))}
-            </ul>
-          ) : (
-            <p className="text-muted-foreground px-2 py-3 text-sm">No SIP account yet.</p>
-          )}
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => {
+          <AccountsPanel
+            accounts={accounts}
+            onAdd={() => {
               setOpen(false);
               setAdding(true);
             }}
-          >
-            <Plus className="size-4" aria-hidden /> Add a SIP account
-          </Button>
+          />
         </PopoverContent>
       </Popover>
       <AccountFormDialog open={adding} onOpenChange={setAdding} account={null} />

@@ -16,6 +16,9 @@ pub mod tray;
 #[cfg(mobile)]
 #[path = "tray_mobile.rs"]
 pub mod tray;
+pub mod native_tabbar;
+#[cfg(target_os = "ios")]
+pub mod native_tabbar_ios;
 #[cfg(target_os = "ios")]
 pub mod viewport_ios;
 pub mod window;

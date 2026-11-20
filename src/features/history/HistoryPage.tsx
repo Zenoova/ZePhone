@@ -114,7 +114,7 @@ export function HistoryPage() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto px-3 pb-28">
+      <div className="min-h-0 flex-1 overflow-auto px-3 pb-(--dock-clearance)">
         {loaded && entries.length === 0 ? (
           <EmptyState icon={History} title="No call" description="Your call history will appear here." />
         ) : (

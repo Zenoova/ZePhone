@@ -509,7 +509,7 @@ export function DirectoryPage() {
         )}
       </div>
 
-      <div className="min-h-0 flex-1 px-3 pb-24">
+      <div className="min-h-0 flex-1 px-3 pb-[calc(var(--dock-clearance)-1rem)]">
         {!loaded ? (
           <SkeletonRows />
         ) : total === 0 ? (

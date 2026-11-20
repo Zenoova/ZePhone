@@ -8,7 +8,6 @@
 //! turned off, and the webview is kept as large as the view that holds it.
 
 use objc2::{msg_send, runtime::AnyObject};
-use objc2_foundation::NSRect;
 use tauri::{AppHandle, Manager};
 
 use super::MAIN_WINDOW;
@@ -42,8 +41,9 @@ pub fn fill_screen(app: &AppHandle) {
             if let Some(scroll) = scroll.as_ref() {
                 let _: () = msg_send![scroll, setContentInsetAdjustmentBehavior: NEVER];
             }
-            let bounds: NSRect = msg_send![parent, bounds];
-            let _: () = msg_send![webview, setFrame: bounds];
+            let _ = parent;
+            // The webview fills the screen, less the tab bar when there is one.
+            super::native_tabbar_ios::layout(webview);
             let _: () = msg_send![webview, setAutoresizingMask: FLEXIBLE_WIDTH_AND_HEIGHT];
         }
     });

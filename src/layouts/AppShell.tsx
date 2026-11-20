@@ -9,12 +9,14 @@ import { HomePage } from "@/features/home/HomePage";
 import { HistoryPage } from "@/features/history/HistoryPage";
 import { RecordingsPage } from "@/features/recordings/RecordingsPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
-import { isMobile } from "@/lib/platform";
+import { AccountsButton } from "@/features/accounts/AccountsPopover";
+import { isIos, isMobile } from "@/lib/platform";
 import { isTerminal, sortedCalls, useCallsStore } from "@/stores/calls-store";
 import { type Section, useUiStore } from "@/stores/ui-store";
 
 import { EngineBanner } from "./EngineBanner";
 import { NAV_ITEMS } from "./nav";
+import { NativeTabBar } from "./NativeTabBar";
 import { NavDock } from "./NavDock";
 
 const PAGES: Record<Section, () => React.JSX.Element> = {
@@ -76,6 +78,11 @@ export function AppShell() {
   const section = useUiStore((s) => s.section);
   const Page = PAGES[section];
   useShellBehaviour();
+  // An iPhone or an iPad navigates with the system's tab bar, and its pages need no room for a floating dock.
+  const ios = isIos();
+  useEffect(() => {
+    if (ios) document.documentElement.dataset.nativeTabbar = "";
+  }, [ios]);
 
   return (
     <>
@@ -88,7 +95,14 @@ export function AppShell() {
             <Page />
           </div>
         </main>
-        <NavDock />
+        {ios ? (
+          <>
+            <NativeTabBar />
+            <AccountsButton className="absolute top-1 right-3 z-20" />
+          </>
+        ) : (
+          <NavDock />
+        )}
       </div>
       {isMobile() && <MobileCallScreen />}
       <Toaster />

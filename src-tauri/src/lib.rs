@@ -496,6 +496,10 @@ pub fn run() {
             commands::open_microphone_settings,
             commands::get_app_info,
             commands::quit_app,
+            app::native_tabbar::native_tabbar_install,
+            app::native_tabbar::native_tabbar_select,
+            app::native_tabbar::native_tabbar_badge,
+            app::native_tabbar::native_tabbar_visible,
         ])
         .setup(setup);
     #[cfg(desktop)]

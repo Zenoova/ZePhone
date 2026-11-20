@@ -1,6 +1,7 @@
+import { OrbPicker } from "@/components/OrbPicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { isMobile } from "@/lib/platform";
+import { isIos, isMobile } from "@/lib/platform";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { Theme } from "@/types/telephony";
 
@@ -35,6 +36,15 @@ export function GeneralSettings() {
         </SettingRow>
       </SettingsSection>
 
+      {/* On a computer or an Android phone the dock's orb opens this choice; an iPhone's tab bar has no room for it. */}
+      {isIos() && (
+        <SettingsSection title="Voice orb">
+          <div className="flex justify-center py-2">
+            <OrbPicker />
+          </div>
+        </SettingsSection>
+      )}
+
       {isMac && (
         <SettingsSection title="Window">
           <SettingRow
@@ -51,40 +61,40 @@ export function GeneralSettings() {
       )}
 
       {!mobile && (
-      <SettingsSection title="Startup and window">
-        <SettingRow label="Launch ZePhone at login" description="To receive calls as soon as you sign in">
-          <Switch
-            checked={g.launchAtLogin}
-            onCheckedChange={(v) => void update({ general: { launchAtLogin: v } })}
-            aria-label="Launch at login"
-          />
-        </SettingRow>
-        <SettingRow label="Start minimized" description="Do not show the window at launch">
-          <Switch
-            checked={g.startMinimized}
-            onCheckedChange={(v) => void update({ general: { startMinimized: v } })}
-            aria-label="Start minimized"
-          />
-        </SettingRow>
-        <SettingRow label={isMac ? "Menu bar icon" : "Notification area icon"}>
-          <Switch
-            checked={g.showTrayIcon}
-            onCheckedChange={(v) => void update({ general: { showTrayIcon: v } })}
-            aria-label="Show the menu bar icon"
-          />
-        </SettingRow>
-        <SettingRow
-          label="Keep ZePhone running when the window is closed"
-          description="Incoming calls are still received as long as the application is running and registered. Requires the icon above."
-        >
-          <Switch
-            checked={g.closeToTray && g.showTrayIcon}
-            disabled={!g.showTrayIcon}
-            onCheckedChange={(v) => void update({ general: { closeToTray: v } })}
-            aria-label="Keep running when the window is closed"
-          />
-        </SettingRow>
-      </SettingsSection>
+        <SettingsSection title="Startup and window">
+          <SettingRow label="Launch ZePhone at login" description="To receive calls as soon as you sign in">
+            <Switch
+              checked={g.launchAtLogin}
+              onCheckedChange={(v) => void update({ general: { launchAtLogin: v } })}
+              aria-label="Launch at login"
+            />
+          </SettingRow>
+          <SettingRow label="Start minimized" description="Do not show the window at launch">
+            <Switch
+              checked={g.startMinimized}
+              onCheckedChange={(v) => void update({ general: { startMinimized: v } })}
+              aria-label="Start minimized"
+            />
+          </SettingRow>
+          <SettingRow label={isMac ? "Menu bar icon" : "Notification area icon"}>
+            <Switch
+              checked={g.showTrayIcon}
+              onCheckedChange={(v) => void update({ general: { showTrayIcon: v } })}
+              aria-label="Show the menu bar icon"
+            />
+          </SettingRow>
+          <SettingRow
+            label="Keep ZePhone running when the window is closed"
+            description="Incoming calls are still received as long as the application is running and registered. Requires the icon above."
+          >
+            <Switch
+              checked={g.closeToTray && g.showTrayIcon}
+              disabled={!g.showTrayIcon}
+              onCheckedChange={(v) => void update({ general: { closeToTray: v } })}
+              aria-label="Keep running when the window is closed"
+            />
+          </SettingRow>
+        </SettingsSection>
       )}
     </div>
   );

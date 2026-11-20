@@ -161,6 +161,14 @@
 }
 
 /* Dev-only UI preview (`/?mock`): something colourful behind the glass, standing in for the vibrancy. */
+/* Room the pages leave under their content for the floating dock; the system's tab bar of an iPhone needs none. */
+:root {
+  --dock-clearance: 7rem;
+}
+html[data-native-tabbar] {
+  --dock-clearance: 1rem;
+}
+
 html[data-preview] {
   background: linear-gradient(135deg, #4f6bff 0%, #b06cff 48%, #ff8fb1 100%);
 }

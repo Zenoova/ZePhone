@@ -70,7 +70,7 @@ export function RecordingsPage() {
             : "The calls you record, kept on this Mac"
         }
       />
-      <div className="min-h-0 flex-1 overflow-auto px-6 pb-28">
+      <div className="min-h-0 flex-1 overflow-auto px-6 pb-(--dock-clearance)">
         {loaded && recordings.length === 0 ? (
           <EmptyState
             icon={AudioLines}
