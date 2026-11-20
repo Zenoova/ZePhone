@@ -16,6 +16,8 @@ pub mod tray;
 #[cfg(mobile)]
 #[path = "tray_mobile.rs"]
 pub mod tray;
+#[cfg(target_os = "ios")]
+pub mod viewport_ios;
 pub mod window;
 
 use std::sync::{Arc, atomic::AtomicBool};

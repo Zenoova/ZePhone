@@ -196,6 +196,9 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     audio_router.start();
     headset.apply(settings.audio.headset.clone());
 
+    #[cfg(target_os = "ios")]
+    app::viewport_ios::fill_screen(&handle);
+
     tray::setup(&handle, settings.general.show_tray_icon)?;
     app::window::apply_appearance(&handle, &settings.general);
 
@@ -310,6 +313,12 @@ fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
 
 fn on_run_event(app: &AppHandle, event: RunEvent) {
     match event {
+        // iOS sizes the webview to the safe area again at every layout (rotation, split view): see `viewport_ios`.
+        #[cfg(target_os = "ios")]
+        RunEvent::WindowEvent {
+            event: tauri::WindowEvent::Resized(_) | tauri::WindowEvent::ScaleFactorChanged { .. },
+            ..
+        } => app::viewport_ios::fill_screen(app),
         // Quit (⌘Q, tray, last window closed): hang up, unregister, stop the engine
         // process, *then* exit — so no orphaned Baresip is left behind.
         RunEvent::ExitRequested { api, .. } => {
