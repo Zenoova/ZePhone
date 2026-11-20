@@ -10,9 +10,9 @@
 		09D6B77306C72954A6D95A42 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E2199508428C7CA5A05F2A0 /* AudioToolbox.framework */; };
 		200493D68115F94D2D37F559 /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8EA34056F5D3482B4034C2EE /* AVFAudio.framework */; };
 		25FED7C1926F86C04AC0B1BD /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0E78649DE648E83E249E98A9 /* QuartzCore.framework */; };
-		2EC6B338FD48966F67882906 /* ZePhone.icon in Resources */ = {isa = PBXBuildFile; fileRef = 3D7FE2921AA1A2B982B7F74E /* ZePhone.icon */; };
 		36DBDDF3842AD5CE09579BEE /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7A8C63DFCE132576E008A17 /* UIKit.framework */; };
 		555C6DAE7CEFE6EF422729D9 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 39523C4075E520AD692F7B32 /* LaunchScreen.storyboard */; };
+		56023FAE23488A2E02DADA02 /* ZePhone.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6E467938DD0BBE1D420AF21E /* ZePhone.icon */; };
 		608D5A66F94D9C50B48E6819 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1CF2D592E929FB3F2F676F3D /* Metal.framework */; };
 		65AAAD53F1F80ECE84EB4088 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FF694A636B6E4541E8AAEDD5 /* AVFoundation.framework */; };
 		6BAB6EF921B9324564921DF4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 914158F2DDB2C1E98747400E /* Assets.xcassets */; };
@@ -63,7 +63,6 @@
 		39523C4075E520AD692F7B32 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		3A2E3551B43383C14081F882 /* protocol.rs */ = {isa = PBXFileReference; path = protocol.rs; sourceTree = "<group>"; };
 		3BC3956F1B65A0B29EA4EF81 /* sync.rs */ = {isa = PBXFileReference; path = sync.rs; sourceTree = "<group>"; };
-		3D7FE2921AA1A2B982B7F74E /* ZePhone.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = ZePhone.icon; sourceTree = "<group>"; };
 		42D3858FE1CAE7AD5FF1AA01 /* process.rs */ = {isa = PBXFileReference; path = process.rs; sourceTree = "<group>"; };
 		486BF564F42079AC44099B9C /* tray_mobile.rs */ = {isa = PBXFileReference; path = tray_mobile.rs; sourceTree = "<group>"; };
 		49A30E9FEB8D69450ED240D7 /* zephone_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = zephone_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,6 +78,7 @@
 		67D13DEE32EA69A949D8E17F /* cli.rs */ = {isa = PBXFileReference; path = cli.rs; sourceTree = "<group>"; };
 		69DB64A91D41B484E8CEF0E4 /* types.rs */ = {isa = PBXFileReference; path = types.rs; sourceTree = "<group>"; };
 		6B56865A46FBF5648315E5A6 /* model.rs */ = {isa = PBXFileReference; path = model.rs; sourceTree = "<group>"; };
+		6E467938DD0BBE1D420AF21E /* ZePhone.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = ZePhone.icon; sourceTree = "<group>"; };
 		6EE874F8F81719468AB37CC8 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
 		72C492A5E655024F5621C42A /* call_window.rs */ = {isa = PBXFileReference; path = call_window.rs; sourceTree = "<group>"; };
 		758A680F1B64AB380510B104 /* system_contacts.rs */ = {isa = PBXFileReference; path = system_contacts.rs; sourceTree = "<group>"; };
@@ -445,6 +445,15 @@
 			path = Externals;
 			sourceTree = "<group>";
 		};
+		F46EFA8B883E68AD185D9287 /* icons */ = {
+			isa = PBXGroup;
+			children = (
+				6E467938DD0BBE1D420AF21E /* ZePhone.icon */,
+			);
+			name = icons;
+			path = ../../icons;
+			sourceTree = "<group>";
+		};
 		F85698B4ED3D730B050FA4D2 /* bindings */ = {
 			isa = PBXGroup;
 			children = (
@@ -467,8 +476,8 @@
 				4E3E580CEE13295C63FDC9C7 /* assets */,
 				914158F2DDB2C1E98747400E /* Assets.xcassets */,
 				39523C4075E520AD692F7B32 /* LaunchScreen.storyboard */,
-				3D7FE2921AA1A2B982B7F74E /* ZePhone.icon */,
 				EF7891BF5C11F954CD04C653 /* Externals */,
+				F46EFA8B883E68AD185D9287 /* icons */,
 				6F2A23E656D1BEBF103339F9 /* Sources */,
 				AA063138CA361490AFDC8435 /* src */,
 				AD0710E95B1AC524B03D2275 /* zephone_iOS */,
@@ -485,14 +494,14 @@
 			path = service;
 			sourceTree = "<group>";
 		};
-		"TEMP_6077D08A-4CDD-477F-996B-1CBE9FF9C8F7" /* arm64 */ = {
+		"TEMP_2A1948B3-5A61-402E-BC0D-8728B629CBDB" /* arm64 */ = {
 			isa = PBXGroup;
 			children = (
 			);
 			path = arm64;
 			sourceTree = "<group>";
 		};
-		"TEMP_9C9D9211-55A3-430B-8F81-41946642D471" /* x86_64 */ = {
+		"TEMP_33A863D7-58A0-4B4E-9489-5B38BF027408" /* x86_64 */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -559,7 +568,7 @@
 			files = (
 				6BAB6EF921B9324564921DF4 /* Assets.xcassets in Resources */,
 				555C6DAE7CEFE6EF422729D9 /* LaunchScreen.storyboard in Resources */,
-				2EC6B338FD48966F67882906 /* ZePhone.icon in Resources */,
+				56023FAE23488A2E02DADA02 /* ZePhone.icon in Resources */,
 				B729204B7497932425CC82C7 /* assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
