@@ -165,8 +165,13 @@
 :root {
   --dock-clearance: 7rem;
 }
+/* The tab bar of an iPhone floats over the page (the shell tells its height): the page scrolls under its glass and
+   keeps its last lines clear of it. The bar covers the home indicator itself, so no safe-area padding is added there. */
 html[data-native-tabbar] {
-  --dock-clearance: 1rem;
+  --dock-clearance: calc(var(--native-tabbar-height, 0px) + 1rem);
+}
+html[data-native-tabbar] body {
+  padding-bottom: 0;
 }
 
 html[data-preview] {

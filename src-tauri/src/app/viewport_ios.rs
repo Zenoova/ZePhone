@@ -42,7 +42,7 @@ pub fn fill_screen(app: &AppHandle) {
                 let _: () = msg_send![scroll, setContentInsetAdjustmentBehavior: NEVER];
             }
             let _ = parent;
-            // The webview fills the screen, less the tab bar when there is one.
+            // The webview fills the screen, with the tab bar over its bottom edge.
             super::native_tabbar_ios::layout(webview);
             let _: () = msg_send![webview, setAutoresizingMask: FLEXIBLE_WIDTH_AND_HEIGHT];
         }

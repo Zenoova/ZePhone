@@ -3,6 +3,7 @@
 
 use std::cell::RefCell;
 
+use block2::Block;
 use objc2::{
     AllocAnyThread, define_class, msg_send,
     rc::{Allocated, Retained},
@@ -170,8 +171,9 @@ pub fn visible(app: &AppHandle, visible: bool) {
     });
 }
 
-/// Lays out the bar and the webview: the bar at the bottom of the view, the webview above it (or the whole view when the
-/// bar is hidden or not installed yet). Also called at every resize (`viewport_ios`).
+/// Lays out the bar and the webview: the bar at the bottom of the view, the webview behind it on the whole view (the page
+/// scrolls under the glass; it leaves room for the bar through `--native-tabbar-height`, which is told to the page).
+/// Also called at every resize (`viewport_ios`).
 ///
 /// # Safety
 /// Main thread; `webview` is a live `WKWebView` that has a superview.
@@ -183,7 +185,7 @@ pub(super) unsafe fn layout(webview: &AnyObject) {
             return;
         };
         let bounds: NSRect = msg_send![&*parent, bounds];
-        let mut height = bounds.size.height;
+        let mut bar_height = 0.0;
         STATE.with(|s| {
             let s = s.borrow();
             let Some(bar) = &s.bar else {
@@ -197,10 +199,17 @@ pub(super) unsafe fn layout(webview: &AnyObject) {
                     NSSize::new(bounds.size.width, fit.height),
                 );
                 let _: () = msg_send![&**bar, setFrame: frame];
-                height -= fit.height;
+                bar_height = fit.height;
             }
         });
-        let frame = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(bounds.size.width, height));
+        let frame = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(bounds.size.width, bounds.size.height));
         let _: () = msg_send![webview, setFrame: frame];
+        // The page keeps the bar clear of what it shows (see `--dock-clearance` in index.css). A number only.
+        let script = NSString::from_str(&format!(
+            "document.documentElement.style.setProperty('--native-tabbar-height','{}px')",
+            bar_height.round() as i64
+        ));
+        let none: Option<&Block<dyn Fn(*mut AnyObject, *mut AnyObject)>> = None;
+        let _: () = msg_send![webview, evaluateJavaScript: &*script, completionHandler: none];
     }
 }

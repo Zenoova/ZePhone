@@ -78,8 +78,9 @@ A build for a real device needs a development team (`bundle > iOS > developmentT
 - **Navigation is the system's own tab bar** (`UITabBar`, [`native_tabbar_ios.rs`](../src-tauri/src/app/native_tabbar_ios.rs)):
   Liquid Glass when the application is built with the iOS 26 SDK (as it is), the classic bar before. The page describes the five
   tabs (SF Symbols) and follows the taps through a Tauri event; it keeps the selection, the missed-call badge and the visibility
-  (the bar goes away behind the call screen) in step ([`NativeTabBar.tsx`](../src/layouts/NativeTabBar.tsx)). The webview ends
-  above the bar. The dock's two other items moved: the **account** (face, availability, switch, add) is a button at the top right
+  (the bar goes away behind the call screen) in step ([`NativeTabBar.tsx`](../src/layouts/NativeTabBar.tsx)). The webview covers the whole
+  screen and the bar floats over it: the page scrolls under the glass, and leaves room for the last lines through a CSS variable the
+  shell sets (`--native-tabbar-height`). The dock's two other items moved: the **account** (face, availability, switch, add) is a button at the top right
   of every page, and the **voice orb** is chosen in Settings → General. Other systems keep the page's dock.
 - The audio-device settings (microphone/speaker/ringer choice) are replaced by the system's routing, as on Android.
 
