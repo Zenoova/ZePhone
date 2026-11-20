@@ -182,10 +182,12 @@ pub fn spawn(
 }
 
 impl Embedded {
-    /// Waits for the engine to return; describes how.
+    /// Waits for the engine to return; describes how. Safe to cancel (the supervisor polls it in a `select!`):
+    /// the answer is kept until the engine has really returned.
     pub async fn wait(&mut self) -> String {
-        if let Some(rx) = self.done.take() {
+        if let Some(rx) = self.done.as_mut() {
             self.code = Some(rx.await.unwrap_or(-1));
+            self.done = None;
         }
         match self.code {
             Some(0) => "stopped".into(),
@@ -227,6 +229,23 @@ mod tests {
         assert!(paths.sounds_dir.join("ringback.wav").is_file());
         let ca = std::fs::read_to_string(ca_file(&paths)).unwrap();
         assert!(ca.contains("BEGIN CERTIFICATE"));
+    }
+
+    #[tokio::test]
+    async fn waiting_for_the_engine_can_be_cancelled_without_losing_its_end() {
+        let (tx, rx) = oneshot::channel();
+        let mut engine = Embedded {
+            done: Some(rx),
+            code: None,
+        };
+        // A wait that gives up (like a lost `select!` branch) must not make the next one answer too early.
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(20), engine.wait())
+                .await
+                .is_err()
+        );
+        tx.send(5).unwrap();
+        assert_eq!(engine.wait().await, "stopped with error 5");
     }
 
     #[tokio::test]
