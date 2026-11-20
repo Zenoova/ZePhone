@@ -63,7 +63,10 @@ function MobileCallScreen() {
 
   if (calls.length === 0 || hidden) return null;
   return (
-    <div className="bg-background fixed inset-0 z-40" data-testid="mobile-call-screen">
+    <div
+      className="bg-background fixed inset-0 z-40 pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]"
+      data-testid="mobile-call-screen"
+    >
       <CallWindow />
     </div>
   );

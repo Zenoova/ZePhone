@@ -175,6 +175,10 @@ html[data-preview] {
     height: 100%;
   }
   body {
+    /* A phone has a notch, a status bar and a home indicator: keep the application out of them (0 elsewhere). */
+    box-sizing: border-box;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
     @apply text-foreground font-sans antialiased;
     background-color: var(--app-bg);
     -webkit-font-smoothing: antialiased;
@@ -185,6 +189,19 @@ html[data-preview] {
   textarea,
   [data-selectable] {
     user-select: text;
+  }
+  /* On a touch screen, text fields under 16px make iOS zoom the page in when they are focused. */
+  @media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+      font-size: max(16px, 1em);
+    }
+    button,
+    [role="button"],
+    [role="tab"] {
+      touch-action: manipulation;
+    }
   }
 }
 
