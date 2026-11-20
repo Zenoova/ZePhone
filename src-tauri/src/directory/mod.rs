@@ -15,5 +15,8 @@ pub mod service;
 pub mod store;
 pub mod sync;
 pub mod system_contacts;
+// Compiled everywhere so that its parsing is tested on a computer; only Android runs it.
+#[cfg_attr(not(target_os = "android"), allow(dead_code))]
+pub(crate) mod system_contacts_android;
 #[cfg(any(target_os = "macos", target_os = "ios"))]
 mod system_contacts_apple;

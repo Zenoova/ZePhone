@@ -65,20 +65,24 @@ pub trait ContactsProvider: Send + Sync {
     fn read_all(&self) -> Result<Vec<RawContact>, ProviderError>;
 }
 
-/// What this platform can read: Apple's Contacts on a Mac, an iPhone and an iPad.
+/// What this platform can read: Apple's Contacts on a Mac, an iPhone and an iPad, the phone's contacts on Android.
 pub fn platform_provider() -> Arc<dyn ContactsProvider> {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
         Arc::new(super::system_contacts_apple::AppleContacts)
     }
-    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+    #[cfg(target_os = "android")]
+    {
+        Arc::new(super::system_contacts_android::AndroidContacts)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
     {
         Arc::new(Unsupported)
     }
 }
 
 /// Whether the application can read the device's contacts on this platform.
-pub const AVAILABLE: bool = cfg!(any(target_os = "macos", target_os = "ios"));
+pub const AVAILABLE: bool = cfg!(any(target_os = "macos", target_os = "ios", target_os = "android"));
 
 /// The name the source gets: what the user calls that address book on this platform.
 pub const SOURCE_NAME: &str = if cfg!(target_os = "macos") {
@@ -87,7 +91,7 @@ pub const SOURCE_NAME: &str = if cfg!(target_os = "macos") {
     "Device contacts"
 };
 
-#[cfg_attr(any(target_os = "macos", target_os = "ios"), allow(dead_code))]
+#[cfg_attr(any(target_os = "macos", target_os = "ios", target_os = "android"), allow(dead_code))]
 struct Unsupported;
 
 #[async_trait]

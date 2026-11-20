@@ -362,7 +362,12 @@ pub fn directory_open_contacts_privacy_settings(app: tauri::AppHandle) -> AppRes
             .map(|_| ())
             .map_err(|e| AppError::Other(e.to_string()))
     }
-    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+    #[cfg(target_os = "android")]
+    {
+        let _ = app;
+        crate::directory::system_contacts_android::open_settings().map_err(|e| AppError::Other(e.0))
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
     {
         let _ = app;
         Err(AppError::validation(

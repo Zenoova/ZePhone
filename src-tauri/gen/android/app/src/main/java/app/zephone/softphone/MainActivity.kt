@@ -8,7 +8,11 @@ import android.net.LinkProperties
 import android.net.Network
 import android.os.Build
 import android.os.Bundle
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.view.View
+import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -25,6 +29,8 @@ import java.io.File
  *  - keeps the web page out from under the system bars.
  */
 class MainActivity : TauriActivity() {
+  private val contacts by lazy { ContactsAccess(this) }
+
   private val connectivity by lazy { getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager }
 
   private val permissionRequest =
@@ -37,6 +43,7 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    current = this
     enableEdgeToEdge()
     // Before the Rust side starts the engine (it starts with super.onCreate): the engine reads this file.
     writeDnsServers(connectivity.getLinkProperties(connectivity.activeNetwork))
@@ -59,9 +66,35 @@ class MainActivity : TauriActivity() {
     if (missing.isEmpty()) startSipService() else permissionRequest.launch(missing.toTypedArray())
   }
 
+  /** Puts the system's navigation bar under the page and gives the page the controls of it (`NativeTabs`). */
+  override fun onWebViewCreate(webView: WebView) {
+    webView.addJavascriptInterface(NativeTabs(this, webView), "ZephoneNative")
+  }
+
+  // What the Rust side asks of the phone's address book (`src-tauri/src/directory/system_contacts_android.rs`).
+  fun contactsAccess(): Int = contacts.access()
+  fun requestContactsAccess() = contacts.request()
+  fun readContactsJson(): String = contacts.readJson()
+
+  /** The application's page in the system settings, where its permissions can be allowed or taken back. */
+  fun openAppSettings() = runOnUiThread {
+    startActivity(
+      Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+  }
+
   override fun onDestroy() {
+    if (current === this) current = null
     runCatching { connectivity.unregisterNetworkCallback(networkCallback) }
     super.onDestroy()
+  }
+
+  companion object {
+    /** The activity that is on screen, for [ContactsBridge]. */
+    @Volatile
+    var current: MainActivity? = null
+      private set
   }
 
   private fun requiredPermissions(): List<String> {
