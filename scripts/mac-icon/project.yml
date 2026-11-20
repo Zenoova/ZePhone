@@ -1,0 +1,20 @@
+# A throw-away Xcode project whose only job is to let Xcode compile src-tauri/icons/ZePhone.icon (Icon Composer) into the
+# Assets.car of the macOS application, with its light, dark and tinted looks. `actool` refuses the icon when Tauri's
+# bundler runs it by hand; Xcode's own build system accepts it. See scripts/build-mac-icon.sh.
+name: zephone-mac-icon
+options:
+  deploymentTarget:
+    macOS: "11.0"
+targets:
+  ZePhone:
+    type: application
+    platform: macOS
+    sources:
+      - path: main.swift
+      - path: ../../src-tauri/icons/ZePhone.icon
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.zephone.softphone.icon
+        ASSETCATALOG_COMPILER_APPICON_NAME: ZePhone
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO

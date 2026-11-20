@@ -51,7 +51,8 @@
     "resources": {
       "resources/baresip/modules": "engine/modules",
       "resources/baresip/sounds": "engine/sounds",
-      "resources/baresip/licenses": "engine/licenses"
+      "resources/baresip/licenses": "engine/licenses",
+      "icons/mac/Assets.car": "Assets.car"
     },
     "macOS": {
       "minimumSystemVersion": "11.0",
