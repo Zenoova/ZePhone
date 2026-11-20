@@ -80,6 +80,8 @@ pub struct AppState {
     /// The local control socket (`zephone ctl`), when it could be opened.
     pub control_server: std::sync::Mutex<Option<socket::Server>>,
     pub shutting_down: AtomicBool,
+    /// Crash reports and anonymous usage counts, when the user allows them.
+    pub telemetry: Arc<crate::telemetry::Telemetry>,
 }
 
 /// Shows and focuses the main window (un-minimising / un-hiding it).

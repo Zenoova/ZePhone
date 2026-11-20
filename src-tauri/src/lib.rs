@@ -108,6 +108,21 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     let db = Arc::new(Database::open(&data_dir.join("zephone.db"))?);
     let settings = db.get_settings().unwrap_or_default();
 
+    // Crash reports and usage counts: nothing is sent until the user allows it (`settings.privacy`).
+    let crash_dir = data_dir.join("crash-reports");
+    telemetry::install_panic_hook(crash_dir.clone());
+    let telemetry = telemetry::Telemetry::new(
+        telemetry::Config::from_build(),
+        Arc::new(telemetry::HttpTransport::new()),
+        db.clone(),
+        crash_dir,
+    );
+    {
+        let telemetry = telemetry.clone();
+        let privacy = settings.privacy.clone();
+        tauri::async_runtime::spawn(async move { telemetry.apply(&privacy).await });
+    }
+
     let secrets = secrets::default_store(&data_dir);
     let paths = engine_paths(&handle, app.path().app_local_data_dir()?.join("engine"))?;
     log::info!("SIP engine executable: {}", paths.exe.display());
@@ -188,6 +203,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         meter: std::sync::Mutex::new(None),
         control_server: std::sync::Mutex::new(None),
         shutting_down: AtomicBool::new(false),
+        telemetry,
     });
     // `zephone ctl` is a desktop tool: a phone has no terminal to run it from.
     #[cfg(desktop)]
@@ -496,6 +512,9 @@ pub fn run() {
             commands::request_microphone_permission,
             commands::open_microphone_settings,
             commands::get_app_info,
+            commands::telemetry_track,
+            commands::telemetry_report_error,
+            commands::telemetry_reset_id,
             commands::quit_app,
             app::native_tabbar::native_tabbar_install,
             app::native_tabbar::native_tabbar_select,

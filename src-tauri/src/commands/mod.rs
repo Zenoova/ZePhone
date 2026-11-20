@@ -254,6 +254,9 @@ pub async fn update_settings(
         .set_routing(applied.settings.audio.routing.clone())
         .await;
 
+    // A consent given or withdrawn takes effect at once.
+    state.telemetry.apply(&applied.settings.privacy).await;
+
     // Desktop-shell settings take effect immediately.
     tray::set_visible(&app, settings.general.show_tray_icon);
     tray::set_do_not_disturb(&app, settings.general.do_not_disturb);
@@ -624,4 +627,42 @@ mod tests {
             assert!(validate_settings(&s).is_err(), "{bad}");
         }
     }
+}
+
+// ------------------------------------------------------------------------------------ diagnostics
+
+/// Counts an event of the short list in `telemetry::ga`; refused when it is not on it. Nothing happens unless
+/// the user allowed usage statistics.
+#[tauri::command]
+pub async fn telemetry_track(
+    state: S<'_>,
+    event: String,
+    params: Option<Vec<(String, String)>>,
+) -> AppResult<()> {
+    state
+        .telemetry
+        .track(&event, &params.unwrap_or_default())
+        .await
+        .map_err(AppError::validation)
+}
+
+/// An error caught in the webview. Nothing happens unless the user allowed crash reports.
+#[tauri::command]
+pub async fn telemetry_report_error(
+    state: S<'_>,
+    kind: String,
+    message: String,
+    stack: Option<String>,
+) -> AppResult<()> {
+    state
+        .telemetry
+        .report_webview_error(&kind, &message, &stack.unwrap_or_default())
+        .await;
+    Ok(())
+}
+
+/// Forgets this installation: the random identifier of the reports is replaced.
+#[tauri::command]
+pub fn telemetry_reset_id(state: S<'_>) {
+    state.telemetry.reset_install_id();
 }
