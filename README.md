@@ -321,6 +321,14 @@ npm run tauri android build -- --debug --target aarch64 --apk   # or: npm run ta
 ABI being built (`--abi arm64-v8a,x86_64` to choose) into `src-tauri/android/jniLibs/` ([`scripts/build-baresip-android.ps1`](scripts/build-baresip-android.ps1),
 PowerShell 7 on macOS/Linux). The first run takes about fifteen minutes. The Gradle project is `src-tauri/gen/android`.
 
+Navigation and contacts. The bottom bar is **Material 3's own navigation bar** (`BottomNavigationView`, [`NativeTabs.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/NativeTabs.kt)),
+under the page, instead of the page's dock; the page describes the tabs and follows the taps through a small bridge
+(`window.ZephoneNative`). The account sits in a button at the top right of the pages and the voice orb is chosen in Settings → General.
+The phone's **contacts** can be added as a read-only directory source (Settings → Directory → Add a source → Device contacts): Kotlin reads
+them with the `ContentResolver` ([`ContactsAccess.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/ContactsAccess.kt),
+permission `READ_CONTACTS`) and the Rust side parses the list ([`system_contacts_android.rs`](src-tauri/src/directory/system_contacts_android.rs)).
+Only names, company, job title, numbers, e-mail and SIP addresses are read.
+
 What the Android shell does ([`MainActivity.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/MainActivity.kt),
 [`SipService.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/SipService.kt)):
 
@@ -342,7 +350,10 @@ it from an elevated terminal.
 **Verified** on an Android 15 x86_64 emulator, against a throw-away SIP server: the application starts, the engine runs from the
 native-library folder, the account registers (`REGISTER` → `200 OK`), an outgoing call connects (`INVITE`/`ACK`), AAudio opens its
 streams, the phone switches to communication mode for the call and back after `BYE`, and the loudspeaker button routes the sound.
-**Not verified**: a real phone (and the arm64 build, which compiles but was not run), a real PBX, sound actually heard or captured
+The navigation bar and the contacts were also run on an **arm64 emulator** (Pixel 7a, Android 16 image) with the engine missing from the
+package (it was built without `libbaresip.so`, so the SIP engine reports an error there): the bar, its icons, the Directory with two contacts
+added through the system's contact provider. The system's own permission question was not clicked (`pm grant`).
+**Not verified**: a real phone, the Material bar's badge and its hiding behind the call screen on Android, a real PBX, sound actually heard or captured
 (the emulator's virtual microphone), SIP over TLS. **Not done**: incoming calls only ring while the process is alive (no push
 notification service, so a phone that killed the application does not ring); no full-screen incoming-call notification; Bluetooth
 headsets are not routed explicitly (and their permission is not requested).
