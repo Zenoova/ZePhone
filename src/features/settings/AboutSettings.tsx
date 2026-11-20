@@ -44,7 +44,8 @@ export function AboutSettings() {
 
       <p className="text-muted-foreground text-xs leading-relaxed">
         ZePhone relies on Baresip (BSD-3-Clause) and libre (BSD-3-Clause), shipped with the application. SIP passwords
-        are stored in the system keychain.
+        are stored in the system keychain. Crash reports and usage statistics are sent only if you allow them in
+        General.
       </p>
     </div>
   );
