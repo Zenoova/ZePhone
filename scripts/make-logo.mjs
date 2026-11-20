@@ -28,55 +28,52 @@ function parts(name) {
   return { body: groups[0], eyes: groups[1] ?? "" };
 }
 
-function mark(ink, paper) {
+/**
+ * The mark on a transparent background: nothing is painted in "paper" colour. Where one shape crosses the other, the
+ * gap is cut out of the ink with masks, so the logo works on any background.
+ */
+function mark(ink) {
   const a = parts(FACE_OUTLINE), b = parts(FACE_SOLID);
   const ta = FLIP ? `translate(${AX + 50 * S} ${H / 2 - 50 * S}) scale(${-S} ${S})` : `translate(${AX - 50 * S} ${H / 2 - 50 * S}) scale(${S})`;
   const tb = `translate(${BX - 50 * S} ${H / 2 - 50 * S}) scale(${S})`;
   // Strokes are in the avatars' own units: divide by the scale to get mark units.
   const ring = (OUTLINE * 2) / S, gap = (GAP * 2) / S;
-  const onB = (x) => x.replace(/<(path|circle|ellipse|rect)/g, `<$1 transform="${tb}"`);
   const box = `x="-20" y="-20" width="${W + 40}" height="${H + 40}"`;
   return `
 <defs>
-  <!-- the outline avatar's ring: its body grown by the ring thickness, minus its body (so no inner edges show) -->
-  <mask id="ring-a" maskUnits="userSpaceOnUse" ${box}>
+  <!-- the outline avatar's ring (its body grown by the ring thickness, minus the body), minus a gap around the solid avatar -->
+  <mask id="m-ring" maskUnits="userSpaceOnUse" ${box}>
     <rect ${box} fill="#000"/>
     <g transform="${ta}">
       <g fill="#fff" stroke="#fff" stroke-width="${ring}" stroke-linejoin="round">${a.body}</g>
       <g fill="#000">${a.body}</g>
     </g>
+    <g transform="${tb}"><g fill="#000" stroke="#000" stroke-width="${gap}" stroke-linejoin="round">${b.body}</g></g>
   </mask>
-  <clipPath id="solid-clip">${onB(b.body)}</clipPath>
+  <!-- the solid avatar: everything, minus where the ring crosses it, minus its eyes -->
+  <mask id="m-solid" maskUnits="userSpaceOnUse" ${box}>
+    <rect ${box} fill="#fff"/>
+    <g transform="${ta}">
+      <g fill="#000" stroke="#000" stroke-width="${ring}" stroke-linejoin="round">${a.body}</g>
+      <g fill="#fff">${a.body}</g>
+    </g>
+    <g transform="${tb}" fill="#000">${b.eyes}</g>
+  </mask>
 </defs>
-<rect ${box} fill="${ink}" mask="url(#ring-a)"/>
-<g transform="${tb}"><g fill="${paper}" stroke="${paper}" stroke-width="${gap}" stroke-linejoin="round">${b.body}</g></g>
-<g transform="${ta}"><g fill="${paper}">${a.body}</g></g>
-<g transform="${tb}"><g fill="${ink}">${b.body}</g></g>
-<g clip-path="url(#solid-clip)"><rect ${box} fill="${paper}" mask="url(#ring-a)"/></g>
-<g transform="${ta}" fill="${ink}">${a.eyes}</g>
-<g transform="${tb}" fill="${paper}">${b.eyes}</g>`;
+<rect ${box} fill="${ink}" mask="url(#m-ring)"/>
+<g mask="url(#m-solid)"><g transform="${tb}" fill="${ink}">${b.body}</g></g>
+<g transform="${ta}" fill="${ink}">${a.eyes}</g>`;
 }
 
-const squircle = (size, n = 4.6, steps = 240) => {
-  const r = size / 2, pts = [];
-  for (let i = 0; i < steps; i++) {
-    const t = (i / steps) * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
-    pts.push(`${(512 + r * Math.sign(c) * Math.abs(c) ** (2 / n)).toFixed(2)} ${(512 + r * Math.sign(s) * Math.abs(s) ** (2 / n)).toFixed(2)}`);
-  }
-  return `M${pts.join("L")}Z`;
-};
-
-function icon(ink, paper) {
-  const k = 3.63, x = (1024 - W * k) / 2, y = (1024 - H * k) / 2;
+function icon(ink) {
+  const k = 4.6, x = (1024 - W * k) / 2, y = (1024 - H * k) / 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-<defs><filter id="s" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.28"/></filter></defs>
-<path d="${squircle(824)}" fill="${paper}" filter="url(#s)"/>
-<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${k})">${mark(ink, paper)}</g>
+<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${k})">${mark(ink)}</g>
 </svg>
 `;
 }
 fs.mkdirSync(OUT_ICON, { recursive: true });
 fs.mkdirSync(OUT_PUBLIC, { recursive: true });
-fs.writeFileSync(`${OUT_ICON}/zephone-logo.svg`, icon("#000000", "#ffffff"));
-fs.writeFileSync(`${OUT_ICON}/zephone-logo-dark.svg`, icon("#ffffff", "#000000"));
-fs.writeFileSync(`${OUT_PUBLIC}/zephone-icon.svg`, icon("#000000", "#ffffff"));
+fs.writeFileSync(`${OUT_ICON}/zephone-logo.svg`, icon("#000000"));
+fs.writeFileSync(`${OUT_ICON}/zephone-logo-dark.svg`, icon("#ffffff"));
+fs.writeFileSync(`${OUT_PUBLIC}/zephone-icon.svg`, icon("#000000"));
