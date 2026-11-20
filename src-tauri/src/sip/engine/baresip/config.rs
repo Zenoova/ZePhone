@@ -24,6 +24,8 @@ pub fn audio_driver() -> &'static str {
         "wasapi"
     } else if cfg!(target_os = "android") {
         "aaudio"
+    } else if cfg!(target_os = "ios") {
+        "audiounit"
     } else {
         "alsa"
     }
@@ -123,6 +125,26 @@ fn android_network_lines(dns_servers: &[String]) -> String {
     c
 }
 
+/// iOS has no `/etc/resolv.conf` an application may read and no CA file on disk (the engine is given the
+/// application's own, see `ios.rs`): host names are resolved through the system (`getaddrinfo`, which follows the
+/// network's own DNS, VPNs and IPv6-only networks with NAT64), and the DNS servers of the active network answer
+/// the SRV and NAPTR records only a DNS server can. A public server is named only when the system names none, so
+/// that nothing is sent to it while the network's own can answer.
+fn ios_network_lines(dns_servers: &[String]) -> String {
+    let mut c = String::from("dns_getaddrinfo\t\tyes\n");
+    let mut any = false;
+    for s in dns_servers {
+        if let Some(addr) = sanitize_dns_server(s) {
+            c.push_str(&format!("dns_server\t\t{addr}\n"));
+            any = true;
+        }
+    }
+    if !any {
+        c.push_str("dns_fallback\t\t8.8.8.8:53\n");
+    }
+    c
+}
+
 /// A DNS server as Baresip wants it (`host:port`), from an IP literal; anything else is dropped.
 fn sanitize_dns_server(v: &str) -> Option<String> {
     let ip: std::net::IpAddr = v.trim().parse().ok()?;
@@ -189,6 +211,8 @@ pub fn render_config(input: &ConfigInput<'_>) -> String {
     }
     if cfg!(target_os = "android") {
         c.push_str(&android_network_lines(input.dns_servers));
+    } else if cfg!(target_os = "ios") {
+        c.push_str(&ios_network_lines(input.dns_servers));
     }
     c.push_str(&format!(
         "module_path\t\t{}\n",
@@ -392,6 +416,17 @@ module evil"
             "dns_fallback		8.8.8.8:53
 "
         ));
+    }
+
+    #[test]
+    fn ios_network_lines_use_the_systems_dns_and_name_a_public_one_only_as_a_last_resort() {
+        let lines = ios_network_lines(&["10.0.0.1".into(), "bad\nmodule evil".into()]);
+        assert!(lines.contains("dns_getaddrinfo\t\tyes\n"));
+        assert!(lines.contains("dns_server\t\t10.0.0.1:53\n"));
+        assert!(!lines.contains("evil") && !lines.contains("dns_fallback"));
+        let none = ios_network_lines(&[]);
+        assert!(none.contains("dns_fallback\t\t8.8.8.8:53\n"));
+        assert!(!none.contains("dns_server"));
     }
 
     #[test]

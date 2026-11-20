@@ -135,8 +135,35 @@ pub fn write_private_file(path: &Path, content: &str) -> std::io::Result<()> {
     Ok(())
 }
 
+/// The engine as the supervisor sees it: a child process, or on iOS a thread of the application.
+pub enum RunningEngine {
+    Child(Child),
+    Embedded(super::ios::Embedded),
+}
+
+impl RunningEngine {
+    /// Waits for the engine to end; says how.
+    pub async fn wait(&mut self) -> String {
+        match self {
+            Self::Child(child) => format!("{:?}", child.wait().await.ok()),
+            Self::Embedded(engine) => engine.wait().await,
+        }
+    }
+
+    /// Stops the engine for good (after a polite request, if any, went unanswered).
+    pub async fn kill(&mut self) {
+        match self {
+            Self::Child(child) => {
+                let _ = child.kill().await;
+                let _ = child.wait().await;
+            }
+            Self::Embedded(engine) => engine.stop().await,
+        }
+    }
+}
+
 pub struct Spawned {
-    pub child: Child,
+    pub child: RunningEngine,
     pub pid: Option<u32>,
 }
 
@@ -147,6 +174,12 @@ pub fn spawn(
     sink: Arc<LogSink>,
     sip_trace: bool,
 ) -> std::io::Result<Spawned> {
+    if cfg!(target_os = "ios") {
+        return Ok(Spawned {
+            child: RunningEngine::Embedded(super::ios::spawn(&paths.work_dir, sink, sip_trace)?),
+            pid: None,
+        });
+    }
     let mut cmd = Command::new(&paths.exe);
     cmd.arg("-f").arg(&paths.work_dir).arg("-c"); // -c: no ANSI colours in logs
     if sip_trace {
@@ -168,7 +201,10 @@ pub fn spawn(
         let _ = write_private_file(&paths.pid_file(), &pid.to_string());
         spawn_watchdog(std::process::id(), pid);
     }
-    Ok(Spawned { child, pid })
+    Ok(Spawned {
+        child: RunningEngine::Child(child),
+        pid,
+    })
 }
 
 /// Last line of defence against orphans: if the app is killed without any chance to clean

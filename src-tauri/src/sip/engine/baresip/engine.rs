@@ -17,7 +17,7 @@ use tokio::{
 use super::{
     client::ControlClient,
     config::{self, ConfigInput, EngineSettings},
-    process::{self, BaresipPaths, LogSink},
+    process::{self, BaresipPaths, LogSink, RunningEngine},
 };
 use crate::{
     security::redact::redact,
@@ -384,8 +384,8 @@ impl SipEngine for BaresipEngine {
         // The `auplay`/`ausrc` commands only accept real device names (the literal "default"
         // is valid in the config file but not in these commands): resolve "system default"
         // to the name of the current default device.
-        // (On Android the driver only knows the literal "default": the system routes the sound.)
-        let (default_in, default_out) = if cfg!(target_os = "android") {
+        // (On a phone the driver only knows the literal "default": the system routes the sound.)
+        let (default_in, default_out) = if cfg!(any(target_os = "android", target_os = "ios")) {
             (Some("default".to_owned()), Some("default".to_owned()))
         } else {
             crate::audio::default_names()
@@ -498,13 +498,18 @@ async fn supervise(
     }
 }
 
-/// The DNS servers of the active network: only Android needs to be told (it has no `/etc/resolv.conf`).
+/// The DNS servers of the active network: only a phone needs to be told (Android has no `/etc/resolv.conf`, and an
+/// iOS application may not read it).
 fn os_dns_servers() -> Vec<String> {
     #[cfg(target_os = "android")]
     {
         super::android::dns_servers()
     }
-    #[cfg(not(target_os = "android"))]
+    #[cfg(target_os = "ios")]
+    {
+        super::ios::dns_servers()
+    }
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     {
         Vec::new()
     }
@@ -516,9 +521,16 @@ async fn run_once(
     ready: &mut Option<oneshot::Sender<EngineResult<()>>>,
 ) -> Outcome {
     let paths = &inner.paths;
-    let settings = inner.settings.lock().unwrap().clone();
+    #[cfg_attr(not(target_os = "ios"), allow(unused_mut))]
+    let mut settings = inner.settings.lock().unwrap().clone();
+    // iOS has no CA file on disk: the application carries one.
+    #[cfg(target_os = "ios")]
+    if settings.ca_file.is_none() {
+        settings.ca_file = Some(super::ios::ca_file(paths));
+    }
 
-    if !paths.exe.is_file() {
+    // (The engine of iOS is part of the application: there is no executable to look for.)
+    if !cfg!(target_os = "ios") && !paths.exe.is_file() {
         return Outcome::StartFailed(format!(
             "Baresip executable not found: {}",
             paths.exe.display()
@@ -536,13 +548,18 @@ async fn run_once(
         Err(e) => return Outcome::StartFailed(format!("no local port available: {e}")),
     };
     let modules_dir = paths.modules_dir.clone();
-    // On Android every module is compiled into the engine: there is no folder to look in.
-    #[cfg(not(target_os = "android"))]
+    // On a phone every module is compiled into the engine: there is no folder to look in.
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
     let exists = move |m: &str| modules_dir.join(m).is_file();
     #[cfg(target_os = "android")]
     let exists = move |m: &str| {
         let _ = &modules_dir;
         super::android::module_exists(m)
+    };
+    #[cfg(target_os = "ios")]
+    let exists = move |m: &str| {
+        let _ = &modules_dir;
+        super::ios::module_exists(m)
     };
     let dns_servers = os_dns_servers();
     let cfg = config::render_config(&ConfigInput {
@@ -577,7 +594,7 @@ async fn run_once(
         tokio::select! {
             status = spawned.child.wait() => {
                 let tail = inner.sink.tail(6).join(" | ");
-                return Outcome::Died(format!("Baresip stopped at startup ({:?}) {tail}", status.ok()));
+                return Outcome::Died(format!("Baresip stopped at startup ({status}) {tail}"));
             }
             _ = &mut *stop_rx => {
                 shutdown_child(&mut spawned.child, None).await;
@@ -624,7 +641,7 @@ async fn run_once(
                 return Outcome::Stopped;
             }
             status = spawned.child.wait() => {
-                return Outcome::Died(format!("Baresip stopped ({:?})", status.ok()));
+                return Outcome::Died(format!("Baresip stopped ({status})"));
             }
             reason = &mut close_rx => {
                 let reason = reason.unwrap_or_else(|_| "control channel closed".into());
@@ -641,7 +658,7 @@ async fn run_once(
 }
 
 /// Graceful stop: ask Baresip to quit, wait a little, then kill.
-async fn shutdown_child(child: &mut tokio::process::Child, client: Option<&Arc<ControlClient>>) {
+async fn shutdown_child(child: &mut RunningEngine, client: Option<&Arc<ControlClient>>) {
     if let Some(c) = client {
         let _ = c
             .request_with_timeout("quit", "", Duration::from_millis(800))
@@ -649,10 +666,7 @@ async fn shutdown_child(child: &mut tokio::process::Child, client: Option<&Arc<C
     }
     match tokio::time::timeout(Duration::from_secs(2), child.wait()).await {
         Ok(_) => {}
-        Err(_) => {
-            let _ = child.kill().await;
-            let _ = child.wait().await;
-        }
+        Err(_) => child.kill().await,
     }
 }
 
