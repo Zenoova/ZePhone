@@ -49,12 +49,33 @@ fn consent(crash: bool, stats: bool) -> PrivacySettings {
 }
 
 #[tokio::test]
-async fn nothing_is_sent_until_the_user_agrees() {
+async fn nothing_is_sent_before_the_notice_of_the_first_launch_is_validated() {
     let (t, fake, _d) = service(true, true);
-    t.apply(&PrivacySettings::default()).await;
+    let fresh = PrivacySettings::default();
+    assert!(fresh.crash_reports && fresh.usage_stats && !fresh.answered, "on by default");
+    t.apply(&fresh).await;
     t.track("app_open", &[]).await.unwrap();
     t.report_webview_error("Error", "boom", "").await;
     assert!(fake.0.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn validating_the_notice_with_the_defaults_turns_both_on() {
+    let (t, fake, _d) = service(true, true);
+    t.apply(&PrivacySettings { answered: true, ..PrivacySettings::default() }).await;
+    t.report_webview_error("Error", "boom", "").await;
+    let sent = fake.0.lock().unwrap();
+    assert_eq!(sent.len(), 2, "{sent:?}");
+}
+
+#[tokio::test]
+async fn turning_one_off_keeps_the_other() {
+    let (t, fake, _d) = service(true, true);
+    t.apply(&consent(false, true)).await;
+    t.report_webview_error("Error", "boom", "").await;
+    let sent = fake.0.lock().unwrap();
+    assert_eq!(sent.len(), 1);
+    assert!(sent[0].0.contains("google-analytics"));
 }
 
 #[tokio::test]
@@ -114,7 +135,7 @@ async fn webview_errors_are_scrubbed_sent_and_limited() {
 }
 
 #[tokio::test]
-async fn a_crash_written_before_is_sent_at_the_next_start_only_with_consent() {
+async fn a_crash_written_before_is_sent_at_the_next_start_unless_turned_off() {
     let (t, fake, d) = service(true, false);
     sentry::write_pending(
         &d.path().join("crash"),
@@ -133,7 +154,7 @@ async fn a_crash_written_before_is_sent_at_the_next_start_only_with_consent() {
 }
 
 #[tokio::test]
-async fn refusing_deletes_what_was_waiting() {
+async fn turning_it_off_deletes_what_was_waiting() {
     let (t, fake, d) = service(true, false);
     sentry::write_pending(&d.path().join("crash"), &panic_report("x", "src/x.rs", 9));
     t.apply(&consent(false, false)).await;

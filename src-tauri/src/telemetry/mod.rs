@@ -1,7 +1,7 @@
 //! Optional diagnostics: crash reports (Sentry) and anonymous usage counts (Google Analytics).
 //!
-//! Both are **off until the user turns them on** (`PrivacySettings`), both are sent from here and never from the
-//! webview (whose content security policy stays closed), and everything is scrubbed first (`scrub`). Without the
+//! Both are **on by default and can be turned off** (`PrivacySettings`), but nothing is sent before the notice of
+//! the first launch has been validated. Both are sent from here and never from the webview (whose content security policy stays closed), and everything is scrubbed first (`scrub`). Without the
 //! build-time identifiers (`telemetry.env`, see `build.rs`) nothing is ever sent: development builds, tests and
 //! forks are silent. `docs/PRIVACY.md` lists what is collected.
 
@@ -172,15 +172,16 @@ impl Telemetry {
 
     /// Applies the user's choices: at start, and every time they change.
     pub async fn apply(&self, p: &PrivacySettings) {
-        let crash = p.crash_reports && self.cfg.dsn.is_some();
+        // Nothing leaves before the user has seen the notice of the first launch.
+        let crash = p.answered && p.crash_reports && self.cfg.dsn.is_some();
         self.crash_reports.store(crash, Ordering::SeqCst);
         CRASH_ARMED.store(crash, Ordering::SeqCst);
         self.usage_stats
-            .store(p.usage_stats && self.cfg.ga.is_some(), Ordering::SeqCst);
+            .store(p.answered && p.usage_stats && self.cfg.ga.is_some(), Ordering::SeqCst);
         if crash {
             self.send_pending().await;
         } else if p.answered {
-            // Withdrawn consent: what was waiting to be sent is thrown away.
+            // Turned off: what was waiting to be sent is thrown away.
             for f in sentry::pending_files(&self.crash_dir) {
                 let _ = std::fs::remove_file(f);
             }

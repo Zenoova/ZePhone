@@ -590,9 +590,9 @@ pub struct NetworkSettings {
     pub net_interface: Option<String>,
 }
 
-/// What the user lets ZePhone report. Both are off until the user says otherwise; `answered` only records that the
-/// question was asked, so that it is not asked again.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+/// What ZePhone reports. Both are on unless the user turns them off; nothing is sent before `answered`, which
+/// records that the notice of the first launch was shown and validated.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PrivacySettings {
     /// Send a report when the application crashes or hits an unexpected error (Sentry).
@@ -600,6 +600,16 @@ pub struct PrivacySettings {
     /// Send anonymous usage counts: the application was opened, an account or a call was made (Google Analytics).
     pub usage_stats: bool,
     pub answered: bool,
+}
+
+impl Default for PrivacySettings {
+    fn default() -> Self {
+        Self {
+            crash_reports: true,
+            usage_stats: true,
+            answered: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
