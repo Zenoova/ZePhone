@@ -10,6 +10,7 @@ pub mod recording;
 pub mod security;
 pub mod shortcuts;
 pub mod sip;
+pub mod telemetry;
 
 #[cfg(desktop)]
 use crate::app::{MAIN_WINDOW, show_main_window};

@@ -6866,6 +6866,7 @@ dependencies = [
  "objc2-avf-audio",
  "objc2-contacts",
  "objc2-foundation",
+ "regex",
  "reqwest",
  "rusqlite",
  "secrecy",
