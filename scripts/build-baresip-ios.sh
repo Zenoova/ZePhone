@@ -85,8 +85,10 @@ fi
 build_slice() {
   local slice="$1" sdk target_flag cmake_sysroot ossl_target
   case "$slice" in
-    device) sdk=iphoneos; cmake_sysroot=iphoneos; ossl_target=ios64-xcrun ;;
-    sim) sdk=iphonesimulator; cmake_sysroot=iphonesimulator; ossl_target=iossimulator-xcrun ;;
+    device) sdk=iphoneos; cmake_sysroot=iphoneos; ossl_target=ios64-xcrun
+      min_flag="-mios-version-min=$MIN_IOS"; clang_target="arm64-apple-ios$MIN_IOS" ;;
+    sim) sdk=iphonesimulator; cmake_sysroot=iphonesimulator; ossl_target=iossimulator-xcrun
+      min_flag="-mios-simulator-version-min=$MIN_IOS"; clang_target="arm64-apple-ios$MIN_IOS-simulator" ;;
   esac
   local dest="$OUT/$slice/libzephone_engine.a"
   if [[ -f "$dest" && $FORCE -eq 0 ]]; then
@@ -105,7 +107,7 @@ build_slice() {
     rm -rf "$b/openssl"; cp -R "$OPENSSL_SRC" "$b/openssl"
     ( cd "$b/openssl"
       ./Configure "$ossl_target" no-shared no-tests no-apps no-engine no-dso no-ui-console no-async \
-        "-mios-version-min=$MIN_IOS" --prefix="$prefix" --openssldir="$prefix/ssl" >"$b/openssl-configure.log" 2>&1
+        "$min_flag" --prefix="$prefix" --openssldir="$prefix/ssl" >"$b/openssl-configure.log" 2>&1
       make -j"$JOBS" build_libs >"$b/openssl-build.log" 2>&1
       make install_dev >"$b/openssl-install.log" 2>&1 )
   fi
@@ -139,7 +141,7 @@ build_slice() {
 
   # The entry point the application calls (Baresip's main(), made callable and stoppable).
   local entry="$b/zephone_engine.o"
-  xcrun --sdk "$sdk" clang -arch arm64 -isysroot "$sysroot" "-mios-version-min=$MIN_IOS" $([[ $slice == sim ]] && echo "-target arm64-apple-ios$MIN_IOS-simulator") \
+  xcrun --sdk "$sdk" clang -target "$clang_target" -isysroot "$sysroot" \
     -O2 -std=gnu11 -DSTATIC -I"$SRC/include" -I"$prefix/include/re" -I"$prefix/include" \
     -c "$ROOT/scripts/ios-engine/zephone_engine.c" -o "$entry"
 
@@ -147,6 +149,13 @@ build_slice() {
   mkdir -p "$(dirname "$dest")"
   xcrun libtool -static -o "$dest" "$b/baresip/libbaresip.a" "$prefix/lib/libre.a" "$prefix/lib/libssl.a" \
     "$prefix/lib/libcrypto.a" "$prefix/lib/libopus.a" "$entry" 2>&1 | grep -v 'has no symbols' || true
+  # Every object must be built for the slice's platform, or the application does not link.
+  local want bad
+  [[ $slice == sim ]] && want="IOSSIMULATOR" || want="IOS"
+  mkdir -p "$b/check"; rm -f "$b/check"/*.o
+  ( cd "$b/check" && xcrun ar x "$dest" )
+  bad="$(for o in "$b/check"/*.o; do xcrun vtool -show-build "$o" 2>/dev/null | awk -v f="$o" '/platform/ {print $2, f}'; done | grep -v "^$want " | head -3 || true)"
+  [[ -z "$bad" ]] || { echo "objects built for the wrong platform:" >&2; echo "$bad" >&2; exit 1; }
   echo "Prepared: $dest ($(du -h "$dest" | awk '{print $1}'))"
   xcrun nm -gU "$dest" 2>/dev/null | grep -E ' [TDS] _(zephone_engine_|exports_(opus|zeaudio|audiounit|g711|ctrl_tcp|vumeter|srtp|menu|auconv|auresamp))' | awk '{print "  " $3}' | sort -u | tr '\n' ' '
   echo
