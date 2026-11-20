@@ -1,5 +1,6 @@
 import { useTelephonyBootstrap } from "@/hooks/use-telephony-bootstrap";
 import { AppShell } from "@/layouts/AppShell";
+import { DiagnosticsPrompt } from "@/features/settings/DiagnosticsPrompt";
 import { ThemeSync, TranslucencySync } from "./AppSync";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -23,6 +24,7 @@ export default function App() {
       <ThemeSync />
       <TranslucencySync />
       {unavailable ? <BackendUnavailable /> : <AppShell />}
+      {!unavailable && <DiagnosticsPrompt />}
     </>
   );
 }

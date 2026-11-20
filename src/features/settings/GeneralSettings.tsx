@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/stores/settings-store";
 import type { Theme } from "@/types/telephony";
 
 import { SettingRow, SettingsSection } from "./parts";
+import { PrivacySettings } from "./PrivacySettings";
 
 const THEMES: Record<Theme, string> = { system: "Automatic (system)", light: "Light", dark: "Dark" };
 
@@ -96,6 +97,8 @@ export function GeneralSettings() {
           </SettingRow>
         </SettingsSection>
       )}
+
+      <PrivacySettings />
     </div>
   );
 }
