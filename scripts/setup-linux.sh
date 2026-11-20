@@ -30,6 +30,8 @@ if ! node_is_recent; then
   curl -fsSL -o "$TMP/$TARBALL" "https://nodejs.org/dist/$NODE_VERSION/$TARBALL"
   curl -fsSL -o "$TMP/SHASUMS256.txt" "https://nodejs.org/dist/$NODE_VERSION/SHASUMS256.txt"
   (cd "$TMP" && grep " $TARBALL\$" SHASUMS256.txt | sha256sum -c -)
+  # A new tarball over an old install mixes the two npm trees ("Class extends value undefined"): start clean.
+  rm -rf "$HOME/.local/node"
   mkdir -p "$HOME/.local/node"
   tar -xJf "$TMP/$TARBALL" -C "$HOME/.local/node" --strip-components=1
   rm -rf "$TMP"
