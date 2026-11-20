@@ -20,8 +20,8 @@ const STATUS: Record<BindingStatus["kind"], { label: string; tone: BadgeTone }> 
   failed: { label: "Not activated", tone: "danger" },
 };
 
-const IN_APP: ReadonlyArray<{ keys: string; what: string }> = [
-  { keys: "⌘1 to ⌘4", what: "Switch page (Keypad, Contacts, History, Settings)" },
+const inApp = (mac: boolean): ReadonlyArray<{ keys: string; what: string }> => [
+  { keys: mac ? "⌘1 to ⌘4" : "Ctrl+1 to Ctrl+4", what: "Switch page (Keypad, Contacts, History, Settings)" },
   { keys: "/", what: "Search the directory (Contacts page)" },
 ];
 
@@ -169,7 +169,7 @@ export function ShortcutsSettings() {
         title="In the application only"
         description="These shortcuts only work while the ZePhone window is in the foreground."
       >
-        {IN_APP.map((s) => (
+        {inApp(mac).map((s) => (
           <SettingRow key={s.keys} label={s.what}>
             <kbd className="bg-muted rounded-md border px-2 py-1 font-mono text-xs">{s.keys}</kbd>
           </SettingRow>

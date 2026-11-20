@@ -88,7 +88,7 @@ export function recordKey(
 export function showModifiers(modifiers: string[], mac: boolean): string {
   const symbol = (m: string): string => {
     if (mac) return { CommandOrControl: "⌘", Control: "⌃", Alt: "⌥", Shift: "⇧" }[m] ?? m;
-    return { CommandOrControl: "Ctrl", Super: "Win", Alt: "Alt", Shift: "Maj" }[m] ?? m;
+    return { CommandOrControl: "Ctrl", Super: "Win", Alt: "Alt", Shift: "Shift" }[m] ?? m;
   };
   return modifiers.map(symbol).join(mac ? "" : "+");
 }

@@ -3,7 +3,7 @@ import { AccountsDockItem } from "@/features/accounts/AccountsPopover";
 import { Dock, DockBadge, DockIcon, DockItem, DockLabel, DockSeparator } from "@/components/ui/dock";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { VoiceOrb } from "@/components/VoiceOrb";
-import { isMobile } from "@/lib/platform";
+import { appShortcut, isMobile } from "@/lib/platform";
 import { isTerminal, useCallsStore } from "@/stores/calls-store";
 import { countUnseenMissed, useHistoryStore } from "@/stores/history-store";
 import { cn } from "@/lib/utils";
@@ -36,7 +36,7 @@ function OrbItem() {
   );
 }
 
-/** The main navigation: a dock at the bottom of the window (⌘1…⌘4 reach the same pages). */
+/** The main navigation: a dock at the bottom of the window (⌘1…⌘4, or Ctrl+1…4, reach the same pages). */
 export function NavDock() {
   const section = useUiStore((s) => s.section);
   const setSection = useUiStore((s) => s.setSection);
@@ -75,7 +75,7 @@ export function NavDock() {
                   </DockIcon>
                   {missed > 0 && <DockBadge aria-hidden>{missed > 99 ? "99+" : missed}</DockBadge>}
                   <DockLabel>
-                    {label} {!mobile && <span className="opacity-60">⌘{shortcut}</span>}
+                    {label} {!mobile && <span className="opacity-60">{appShortcut(shortcut)}</span>}
                   </DockLabel>
                 </DockItem>
               );

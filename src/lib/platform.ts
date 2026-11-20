@@ -13,6 +13,16 @@ export function isIos(): boolean {
   return /iPhone|iPad/i.test(nav.userAgent) || (/Macintosh/i.test(nav.userAgent) && nav.maxTouchPoints > 1);
 }
 
+/** Whether the application runs on a Mac (not an iPad that asks for the desktop version of pages). */
+export function isMac(): boolean {
+  return typeof window !== "undefined" && /Macintosh/i.test(window.navigator.userAgent) && !isIos();
+}
+
+/** How a shortcut of the application is written: `⌘1` on a Mac, `Ctrl+1` on Windows and Linux. */
+export function appShortcut(key: string): string {
+  return isMac() ? `⌘${key}` : `Ctrl+${key}`;
+}
+
 /** What the user's device is called in a sentence: "this computer" on a computer, "this device" on a phone or a tablet. */
 export function thisDevice(): string {
   return isMobile() ? "this device" : "this computer";
