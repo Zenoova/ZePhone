@@ -86,10 +86,10 @@ cat > "$PAGES/index.html" <<EOF
 <h2>Debian, Ubuntu (apt)</h2>
 <pre>sudo curl -fsSL $SITE/zephone.gpg -o /usr/share/keyrings/zephone.gpg
 echo "deb [signed-by=/usr/share/keyrings/zephone.gpg] $SITE/apt ./" | sudo tee /etc/apt/sources.list.d/zephone.list
-sudo apt update &amp;&amp; sudo apt install zephone</pre>
+sudo apt update &amp;&amp; sudo apt install ze-phone</pre>
 <h2>Fedora, RHEL, openSUSE (dnf, yum)</h2>
 <pre>sudo curl -fsSL $SITE/zephone.repo -o /etc/yum.repos.d/zephone.repo
-sudo dnf install zephone</pre>
+sudo dnf install ze-phone</pre>
 EOF
 touch "$PAGES/.nojekyll"
 rm -rf "$work"

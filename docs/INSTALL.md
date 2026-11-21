@@ -31,14 +31,14 @@ Debian, Ubuntu:
 ```bash
 sudo curl -fsSL https://zenoova.github.io/ZePhone/zephone.gpg -o /usr/share/keyrings/zephone.gpg
 echo "deb [signed-by=/usr/share/keyrings/zephone.gpg] https://zenoova.github.io/ZePhone/apt ./" | sudo tee /etc/apt/sources.list.d/zephone.list
-sudo apt update && sudo apt install zephone
+sudo apt update && sudo apt install ze-phone
 ```
 
 Fedora, RHEL, openSUSE:
 
 ```bash
 sudo curl -fsSL https://zenoova.github.io/ZePhone/zephone.repo -o /etc/yum.repos.d/zephone.repo
-sudo dnf install zephone
+sudo dnf install ze-phone
 ```
 
 Ubuntu App Center and any system with snap: `sudo snap install zephone` (when published to the Snap Store).
