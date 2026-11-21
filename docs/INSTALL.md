@@ -7,6 +7,7 @@ releases automatically.
 
 ```bash
 brew tap zenoova/zephone
+brew trust zenoova/zephone         # recent Homebrew versions refuse a third-party tap until it is trusted
 brew install --cask zephone
 ```
 
