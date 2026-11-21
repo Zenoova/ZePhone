@@ -15,7 +15,10 @@
   "bundle": {
     "externalBin": [],
     "resources": {
-      "icons/mac/Assets.car": null
+      "icons/mac/Assets.car": null,
+      "resources/baresip/modules": null,
+      "resources/baresip/sounds": null,
+      "resources/baresip/licenses": null
     },
     "android": {
       "minSdkVersion": 28
