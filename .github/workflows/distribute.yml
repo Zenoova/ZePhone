@@ -1,0 +1,221 @@
+name: Distribute
+
+# Sends a published release to the stores and package managers. release.yml calls it after publishing; run it by hand
+# ("Run workflow", with a tag) to redo one channel. A channel only runs when its switch is on: a repository
+# variable ENABLE_<CHANNEL> set to `true`, which is set once the account and the credentials of that channel exist.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to distribute (vX.Y.Z)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: distribute-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  # ------------------------------------------------------------------------------------------------ Google Play
+  play:
+    name: Google Play (internal testing)
+    if: vars.ENABLE_PLAY == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" --pattern '*.aab' --dir dist
+      - uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.zenoova.zephone
+          releaseFiles: dist/*.aab
+          # The service account may only release to testing tracks. A new app must be sent as a draft once.
+          track: ${{ vars.PLAY_TRACK || 'internal' }}
+          status: ${{ vars.PLAY_STATUS || 'draft' }}
+
+  # ------------------------------------------------------------------------------------------------ Homebrew
+  homebrew:
+    name: Homebrew (tap)
+    if: vars.ENABLE_HOMEBREW == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cask
+        run: |
+          version="${TAG#v}"
+          mkdir dl
+          gh release download "$TAG" --pattern '*.dmg' --dir dl
+          sha_arm="$(sha256sum "dl/ZePhone_${version}_aarch64.dmg" | cut -d' ' -f1)"
+          sha_intel="$(sha256sum "dl/ZePhone_${version}_x64.dmg" | cut -d' ' -f1)"
+          mkdir -p out
+          sed -e "s/@VERSION@/$version/g" -e "s/@SHA_ARM@/$sha_arm/" -e "s/@SHA_INTEL@/$sha_intel/" \
+            packaging/homebrew/zephone.rb.in > out/zephone.rb
+      - name: Push to the tap
+        env:
+          DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          install -m 600 /dev/null ~/.ssh_key; printf '%s\n' "$DEPLOY_KEY" > ~/.ssh_key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone git@github.com:Zenoova/homebrew-zephone.git tap
+          mkdir -p tap/Casks && cp out/zephone.rb tap/Casks/zephone.rb
+          cd tap
+          git config user.name "zephone-release"; git config user.email "release@zenoova.com"
+          git add Casks/zephone.rb
+          git diff --cached --quiet && { echo "cask already up to date"; exit 0; }
+          git commit -m "zephone ${TAG#v}"
+          git push
+
+  # ------------------------------------------------------------------------------------------------ Scoop
+  scoop:
+    name: Scoop (bucket)
+    if: vars.ENABLE_SCOOP == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Manifest
+        run: |
+          version="${TAG#v}"
+          mkdir dl
+          gh release download "$TAG" --pattern '*_x64-setup.exe' --dir dl
+          sha_exe="$(sha256sum "dl/ZePhone_${version}_x64-setup.exe" | cut -d' ' -f1)"
+          mkdir -p out
+          sed -e "s/@VERSION@/$version/g" -e "s/@SHA_EXE@/$sha_exe/" packaging/scoop/zephone.json.in > out/zephone.json
+      - name: Push to the bucket
+        env:
+          DEPLOY_KEY: ${{ secrets.SCOOP_BUCKET_DEPLOY_KEY }}
+        run: |
+          install -m 600 /dev/null ~/.ssh_key; printf '%s\n' "$DEPLOY_KEY" > ~/.ssh_key
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone git@github.com:Zenoova/scoop-zephone.git bucket
+          mkdir -p bucket/bucket && cp out/zephone.json bucket/bucket/zephone.json
+          cd bucket
+          git config user.name "zephone-release"; git config user.email "release@zenoova.com"
+          git add bucket/zephone.json
+          git diff --cached --quiet && { echo "manifest already up to date"; exit 0; }
+          git commit -m "zephone ${TAG#v}"
+          git push
+
+  # ------------------------------------------------------------------------------------------------ winget
+  winget:
+    name: winget
+    if: vars.ENABLE_WINGET == 'true'
+    runs-on: windows-latest
+    steps:
+      # Updates a package that already exists in microsoft/winget-pkgs: the first version is submitted by hand.
+      - uses: vedantmgoyal9/winget-releaser@main
+        with:
+          identifier: Zenoova.ZePhone
+          release-tag: ${{ inputs.tag }}
+          installers-regex: '_x64_en-US\.msi$'
+          token: ${{ secrets.WINGET_TOKEN }}
+
+  # ------------------------------------------------------------------------------------------------ Chocolatey
+  chocolatey:
+    name: Chocolatey
+    if: vars.ENABLE_CHOCOLATEY == 'true'
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package
+        shell: bash
+        run: |
+          version="${TAG#v}"
+          mkdir dl
+          gh release download "$TAG" --pattern '*_x64_en-US.msi' --dir dl
+          sha_msi="$(sha256sum "dl/ZePhone_${version}_x64_en-US.msi" | cut -d' ' -f1)"
+          mkdir -p choco/tools
+          sed -e "s/@VERSION@/$version/g" packaging/chocolatey/zephone.nuspec.in > choco/zephone.nuspec
+          sed -e "s/@VERSION@/$version/g" -e "s/@SHA_MSI@/$sha_msi/" \
+            packaging/chocolatey/tools/chocolateyinstall.ps1.in > choco/tools/chocolateyinstall.ps1
+      - name: Pack and push
+        shell: bash
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          cd choco
+          choco pack
+          choco push "zephone.${TAG#v}.nupkg" --source https://push.chocolatey.org/ --api-key "$CHOCOLATEY_API_KEY"
+
+  # ------------------------------------------------------------------------------------------------ apt and dnf
+  linux-repositories:
+    name: apt and dnf repositories (GitHub Pages)
+    if: vars.ENABLE_LINUX_REPOSITORIES == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: sudo apt-get update && sudo apt-get install -y apt-utils createrepo-c gnupg
+      - name: The Pages branch
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
+            git clone --branch gh-pages --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" pages
+          else
+            mkdir pages && cd pages && git init -b gh-pages
+            git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+      - name: Release signing key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          printf '%s' "$GPG_PRIVATE_KEY" | base64 --decode | gpg --batch --import
+          echo "GPG_KEY_ID=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr:/ {print $10; exit}')" >> "$GITHUB_ENV"
+      - name: Build the repositories
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          PAGES: ${{ github.workspace }}/pages
+        run: packaging/linux-repo/build-repo.sh
+      - name: Publish
+        run: |
+          cd pages
+          git config user.name "zephone-release"; git config user.email "release@zenoova.com"
+          git add -A
+          git diff --cached --quiet && { echo "nothing to publish"; exit 0; }
+          git commit -m "packages for $TAG"
+          git push origin HEAD:gh-pages
+
+  # ------------------------------------------------------------------------------------------------ Snap Store
+  snap:
+    name: Snap Store
+    if: vars.ENABLE_SNAP == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version and package
+        run: |
+          version="${TAG#v}"
+          sed -i "s/@VERSION@/$version/g" snap/snapcraft.yaml
+          mkdir -p snap/local
+          gh release download "$TAG" --pattern "ZePhone_${version}_amd64.deb" --output snap/local/zephone.deb
+      - uses: snapcore/action-build@v1
+        id: build
+      - uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: ${{ vars.SNAP_CHANNEL || 'edge' }}
