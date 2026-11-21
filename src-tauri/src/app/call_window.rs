@@ -24,7 +24,9 @@ pub fn open(app: &AppHandle) {
                 .inner_size(440.0, 760.0)
                 .min_inner_size(380.0, 600.0)
                 .center()
-                .transparent(true)
+                // The frosted glass shows through a transparent window, which takes macOS's private API; the
+                // Mac App Store build is configured without it, and its windows are opaque.
+                .transparent(cfg!(not(target_os = "macos")) || handle.config().app.macos_private_api)
                 .focused(true)
                 .build();
         match built {

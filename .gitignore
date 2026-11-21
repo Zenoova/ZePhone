@@ -43,3 +43,6 @@ src-tauri/telemetry.env
 # Files the release builds put in place
 /snap/local/
 /*.snap
+
+# Mac App Store build (scripts/build-mas.sh)
+dist-mas/
