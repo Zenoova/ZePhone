@@ -106,7 +106,7 @@ mod imp {
             let loader = env
                 .call_method(&context, "getClassLoader", "()Ljava/lang/ClassLoader;", &[])?
                 .l()?;
-            let name = env.new_string("app.zephone.softphone.ContactsBridge")?;
+            let name = env.new_string("com.zenoova.zephone.ContactsBridge")?;
             let class = env
                 .call_method(
                     &loader,

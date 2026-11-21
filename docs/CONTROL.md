@@ -123,7 +123,7 @@ One line of JSON on standard output (`--pretty` to indent it):
 
 ### Security
 
-- **No network port.** The command goes through a **Unix socket** (`~/Library/Application Support/app.zephone.softphone/control.sock` on macOS), mode `0600`: only your user can connect to it, and ZePhone also checks the identity of the user of each connection. A web page cannot open a Unix socket: no page can drive ZePhone, and there is no token or header to protect.
+- **No network port.** The command goes through a **Unix socket** (`~/Library/Application Support/com.zenoova.zephone/control.sock` on macOS), mode `0600`: only your user can connect to it, and ZePhone also checks the identity of the user of each connection. A web page cannot open a Unix socket: no page can drive ZePhone, and there is no token or header to protect.
 - Only the commands above exist. Nothing is executed, no file is read; an unknown field (`{"cmd":"hangup","all":true}`) is refused.
 - Parameters are strictly validated (lengths, identifier characters, recipient) before reaching the engine; a request over 4 KB is refused.
 - The logs record the name of the command and its result, **never the number dialed**.

@@ -349,7 +349,7 @@ export function installMockBackend(): void {
       tauriVersion: "2.x",
       os: "macos",
       arch: "aarch64",
-      dataDir: "~/Library/Application Support/app.zephone.softphone",
+      dataDir: "~/Library/Application Support/com.zenoova.zephone",
       engine: engine(),
     }),
     list_accounts: () => accounts,

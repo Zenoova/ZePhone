@@ -106,12 +106,12 @@ mod tests {
     fn finds_the_native_library_folder_in_a_memory_map() {
         let maps = "\
 7f1000000000-7f1000100000 r--p 00000000 fd:00 1 /system/lib64/libc.so
-7f2000000000-7f2000100000 r-xp 00000000 fd:00 2 /data/app/~~x==/app.zephone.softphone-y==/lib/arm64/libzephone_lib.so
-7f3000000000-7f3000100000 r--p 00000000 fd:00 3 /data/app/~~x==/app.zephone.softphone-y==/lib/arm64/libzephone_lib.so";
+7f2000000000-7f2000100000 r-xp 00000000 fd:00 2 /data/app/~~x==/com.zenoova.zephone-y==/lib/arm64/libzephone_lib.so
+7f3000000000-7f3000100000 r--p 00000000 fd:00 3 /data/app/~~x==/com.zenoova.zephone-y==/lib/arm64/libzephone_lib.so";
         assert_eq!(
             lib_dir_from_maps(maps),
             Some(PathBuf::from(
-                "/data/app/~~x==/app.zephone.softphone-y==/lib/arm64"
+                "/data/app/~~x==/com.zenoova.zephone-y==/lib/arm64"
             ))
         );
         assert_eq!(lib_dir_from_maps("nothing here"), None);

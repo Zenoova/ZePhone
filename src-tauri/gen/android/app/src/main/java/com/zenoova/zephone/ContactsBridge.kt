@@ -1,4 +1,4 @@
-package app.zephone.softphone
+package com.zenoova.zephone
 
 /**
  * What the Rust side calls (`src-tauri/src/directory/system_contacts_android.rs`): static methods, because the native

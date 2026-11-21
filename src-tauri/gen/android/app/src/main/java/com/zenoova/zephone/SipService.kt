@@ -1,4 +1,4 @@
-package app.zephone.softphone
+package com.zenoova.zephone
 
 import android.app.Notification
 import android.app.NotificationChannel

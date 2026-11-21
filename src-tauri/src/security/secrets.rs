@@ -8,6 +8,8 @@ use secrecy::{ExposeSecret, SecretString};
 
 use crate::error::{AppError, AppResult};
 
+/// The name the SIP passwords are stored under. It was the application's identifier before it became
+/// `com.zenoova.zephone`; it stays as it is so that the passwords already saved are still found.
 pub const KEYCHAIN_SERVICE: &str = "app.zephone.softphone";
 
 pub trait SecretStore: Send + Sync {

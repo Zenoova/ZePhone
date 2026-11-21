@@ -1,6 +1,6 @@
 name: zephone
 options:
-  bundleIdPrefix: app.zephone.softphone
+  bundleIdPrefix: com.zenoova.zephone
   deploymentTarget:
     iOS: 15.0
 fileGroups: [../../src]
@@ -11,7 +11,7 @@ settingGroups:
   app:
     base:
       PRODUCT_NAME: ZePhone
-      PRODUCT_BUNDLE_IDENTIFIER: app.zephone.softphone
+      PRODUCT_BUNDLE_IDENTIFIER: com.zenoova.zephone
 targetTemplates:
   app:
     type: application

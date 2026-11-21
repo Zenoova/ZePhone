@@ -14,7 +14,7 @@ targets:
       - path: ../../src-tauri/icons/ZePhone.icon
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.zephone.softphone.icon
+        PRODUCT_BUNDLE_IDENTIFIER: com.zenoova.zephone.icon
         ASSETCATALOG_COMPILER_APPICON_NAME: ZePhone
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGNING_ALLOWED: NO

@@ -1,4 +1,4 @@
-package app.zephone.softphone
+package com.zenoova.zephone
 
 import android.Manifest
 import android.content.pm.PackageManager

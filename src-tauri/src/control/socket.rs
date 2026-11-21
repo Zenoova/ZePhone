@@ -22,7 +22,7 @@ const CLIENT_TIMEOUT: Duration = Duration::from_secs(25);
 const MAX_PATH_BYTES: usize = 100;
 
 pub const ENV_SOCKET: &str = "ZEPHONE_CONTROL_SOCKET";
-const APP_ID: &str = "app.zephone.softphone";
+const APP_ID: &str = "com.zenoova.zephone";
 
 /// Where the socket lives. The application and `zephone ctl` compute it the same way, so they always meet.
 /// `ZEPHONE_CONTROL_SOCKET` overrides it (tests, unusual setups).

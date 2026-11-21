@@ -324,16 +324,16 @@ npm run tauri android build -- --debug --target aarch64 --apk   # or: npm run ta
 ABI being built (`--abi arm64-v8a,x86_64` to choose) into `src-tauri/android/jniLibs/` ([`scripts/build-baresip-android.ps1`](scripts/build-baresip-android.ps1),
 PowerShell 7 on macOS/Linux). The first run takes about fifteen minutes. The Gradle project is `src-tauri/gen/android`.
 
-Navigation and contacts. The bottom bar is **Material 3's own navigation bar** (`BottomNavigationView`, [`NativeTabs.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/NativeTabs.kt)),
+Navigation and contacts. The bottom bar is **Material 3's own navigation bar** (`BottomNavigationView`, [`NativeTabs.kt`](src-tauri/gen/android/app/src/main/java/com/zenoova/zephone/NativeTabs.kt)),
 under the page, instead of the page's dock; the page describes the tabs and follows the taps through a small bridge
 (`window.ZephoneNative`). The account sits in a button at the top right of the pages and the voice orb is chosen in Settings → General.
 The phone's **contacts** can be added as a read-only directory source (Settings → Directory → Add a source → Device contacts): Kotlin reads
-them with the `ContentResolver` ([`ContactsAccess.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/ContactsAccess.kt),
+them with the `ContentResolver` ([`ContactsAccess.kt`](src-tauri/gen/android/app/src/main/java/com/zenoova/zephone/ContactsAccess.kt),
 permission `READ_CONTACTS`) and the Rust side parses the list ([`system_contacts_android.rs`](src-tauri/src/directory/system_contacts_android.rs)).
 Only names, company, job title, numbers, e-mail and SIP addresses are read.
 
-What the Android shell does ([`MainActivity.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/MainActivity.kt),
-[`SipService.kt`](src-tauri/gen/android/app/src/main/java/app/zephone/softphone/SipService.kt)):
+What the Android shell does ([`MainActivity.kt`](src-tauri/gen/android/app/src/main/java/com/zenoova/zephone/MainActivity.kt),
+[`SipService.kt`](src-tauri/gen/android/app/src/main/java/com/zenoova/zephone/SipService.kt)):
 
 - asks for the **microphone** (and notification, Bluetooth) permission at launch;
 - runs a **foreground service** (a permanent, low-priority notification) so that Android does not freeze the process: without it

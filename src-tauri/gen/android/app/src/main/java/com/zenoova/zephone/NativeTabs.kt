@@ -1,4 +1,4 @@
-package app.zephone.softphone
+package com.zenoova.zephone
 
 import android.view.Gravity
 import android.view.View
