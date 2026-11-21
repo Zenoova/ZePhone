@@ -1,16 +1,30 @@
 # Releasing ZePhone
 
-A release is a tag. Everything else is automatic.
+A release is a push to the **`stable`** branch. Everything else is automatic.
 
 ```bash
-git tag v1.2.3 && git push origin v1.2.3
+git push origin main:stable        # or merge main into stable
 ```
 
-`.github/workflows/release.yml` then builds every installer, attaches them to a GitHub Release, publishes it, and calls
-`.github/workflows/distribute.yml`, which sends it to the stores and package managers. The version of every installer
-is the tag's (`scripts/set-version.mjs` writes it into `package.json`, `tauri.conf.json` and `Cargo.toml` for the
-build). To **test the builds without publishing anything**, run the _Release_ workflow by hand from the Actions tab
-with a version: it creates a draft release only.
+`.github/workflows/release.yml` then:
+
+1. reads the **Conventional Commits** made since the last release tag and decides the next version
+   (`scripts/next-version.mjs`): `feat` bumps the minor, `fix` and `perf` the patch, a breaking change (`feat!:` or a
+   `BREAKING CHANGE:` footer) the major (the minor while the version is still `0.y.z`). `docs`, `chore`, `ci`, `test`,
+   `build`, `refactor` and `style` never release on their own: if there is nothing to release, nothing happens;
+2. writes the version into `package.json`, `tauri.conf.json`, `Cargo.toml` and the lock files, adds the release to
+   `CHANGELOG.md`, and commits that to `stable` as `chore(release): vX.Y.Z`: the application carries the version and the
+   tag points at that commit. (The first release is the version the files already carry.)
+3. builds every installer from that commit, attaches them to a GitHub Release (notes grouped by Features, Fixes,
+   Performance and Breaking changes), and publishes it;
+4. calls `.github/workflows/distribute.yml`, which sends it to the stores and package managers.
+
+Commit messages therefore matter: `feat(calls): add transfer` and `fix: crash on hang up` make a release, `docs: ...`
+does not.
+
+To **test the builds without publishing anything**, run the _Release_ workflow by hand from the Actions tab on any
+branch: it builds a draft release, commits nothing and publishes nothing. Give a version to build that one, or leave it
+empty to follow the commits.
 
 ## What a release produces
 
