@@ -1,0 +1,32 @@
+Package: ze-phone
+Architecture: amd64
+Version: 0.1.0
+Priority: optional
+Maintainer: you
+Installed-Size: 17501
+Depends: libayatana-appindicator3-1, libwebkit2gtk-4.1-0, libgtk-3-0
+Filename: pool/ZePhone_0.1.0_amd64.deb
+Size: 8496364
+MD5sum: 8fad491f4e98bafff0d5f7f1a2218035
+SHA1: bccd66ee362f87eab799624ffffbdbeaa01f19d2
+SHA256: bab095ca6e9b8439889e6ed464c258495be80f57312bd5ade2f28d0e928761ea
+SHA512: e3daad0f946fe3f38b74a8a8661d69ae7dbaa6b4a49939107d4e696063ac2aa1bdfa1fed0e11589b51522c1d87579393d7b662bb54092e82e0ced2a66189a4b8
+Description: Universal SIP softphone
+ ZePhone is a modern SIP softphone built on Baresip: multiple accounts, calls, contacts, history.
+
+Package: ze-phone
+Architecture: arm64
+Version: 0.1.0
+Priority: optional
+Maintainer: you
+Installed-Size: 15785
+Depends: libayatana-appindicator3-1, libwebkit2gtk-4.1-0, libgtk-3-0
+Filename: pool/ZePhone_0.1.0_arm64.deb
+Size: 8239554
+MD5sum: 1caa9c43f30eeb40e6921147c4061984
+SHA1: d06dc3a7fb65a89c7bd015925a8f883292bd5cfb
+SHA256: 433928142a38274bf6b545ff7575f441a449b00c7ed8130286121c5b40f389a1
+SHA512: e2d4ceb2007b0c83e6b6b9040e2092d3a968150ecfbd4ec9ad08c1e72c357710b825e809796b742974c4f6233afc22ea4ad5c925cd6647044e36760cd834b1a6
+Description: Universal SIP softphone
+ ZePhone is a modern SIP softphone built on Baresip: multiple accounts, calls, contacts, history.
+
