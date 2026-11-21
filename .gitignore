@@ -43,4 +43,3 @@ src-tauri/telemetry.env
 # Files the release builds put in place
 /snap/local/
 /*.snap
-/.baresip-build/
