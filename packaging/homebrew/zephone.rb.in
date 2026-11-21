@@ -1,0 +1,28 @@
+cask "zephone" do
+  arch arm: "aarch64", intel: "x64"
+
+  version "@VERSION@"
+  sha256 arm:   "@SHA_ARM@",
+         intel: "@SHA_INTEL@"
+
+  url "https://github.com/Zenoova/ZePhone/releases/download/v#{version}/ZePhone_#{version}_#{arch}.dmg",
+      verified: "github.com/Zenoova/ZePhone/"
+  name "ZePhone"
+  desc "Universal SIP softphone"
+  homepage "https://github.com/Zenoova/ZePhone"
+
+  livecheck do
+    url :url
+    strategy :github_latest
+  end
+
+  depends_on macos: ">= :big_sur"
+
+  app "ZePhone.app"
+
+  zap trash: [
+    "~/Library/Application Support/com.zenoova.zephone",
+    "~/Library/Caches/com.zenoova.zephone",
+    "~/Library/Preferences/com.zenoova.zephone.plist",
+  ]
+end

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>zephone</id>
+    <version>@VERSION@</version>
+    <title>ZePhone</title>
+    <authors>Zenoova</authors>
+    <projectUrl>https://github.com/Zenoova/ZePhone</projectUrl>
+    <packageSourceUrl>https://github.com/Zenoova/ZePhone/tree/main/packaging/chocolatey</packageSourceUrl>
+    <licenseUrl>https://github.com/Zenoova/ZePhone</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>sip voip softphone phone calls</tags>
+    <summary>Universal SIP softphone</summary>
+    <description>ZePhone is a modern SIP softphone built on Baresip: multiple accounts, calls, contacts, history and a company directory.</description>
+    <releaseNotes>https://github.com/Zenoova/ZePhone/releases/tag/v@VERSION@</releaseNotes>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

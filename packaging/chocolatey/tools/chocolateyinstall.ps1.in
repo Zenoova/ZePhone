@@ -1,0 +1,13 @@
+$ErrorActionPreference = 'Stop'
+
+$packageArgs = @{
+  packageName    = 'zephone'
+  fileType       = 'msi'
+  url64bit       = 'https://github.com/Zenoova/ZePhone/releases/download/v@VERSION@/ZePhone_@VERSION@_x64_en-US.msi'
+  checksum64     = '@SHA_MSI@'
+  checksumType64 = 'sha256'
+  silentArgs     = '/qn /norestart'
+  validExitCodes = @(0, 3010)
+}
+
+Install-ChocolateyPackage @packageArgs

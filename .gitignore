@@ -39,3 +39,8 @@ src-tauri/ios/libs/
 
 # Identifiers of the diagnostics services (see src-tauri/telemetry.env.example)
 src-tauri/telemetry.env
+
+# Files the release builds put in place
+/snap/local/
+/*.snap
+/.baresip-build/

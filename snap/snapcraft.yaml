@@ -1,0 +1,49 @@
+name: zephone
+title: ZePhone
+base: core22
+version: "@VERSION@"
+summary: Universal SIP softphone
+description: |
+  ZePhone is a modern SIP softphone built on Baresip: multiple accounts, calls,
+  contacts, history and a company directory.
+license: Proprietary
+website: https://github.com/Zenoova/ZePhone
+contact: kellis@zenoova.com
+icon: snap/gui/zephone.png
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+
+apps:
+  zephone:
+    command: usr/bin/zephone
+    desktop: usr/share/applications/ZePhone.desktop
+    extensions: [gnome]
+    plugs:
+      - network
+      - network-bind
+      - audio-playback
+      - audio-record
+      - password-manager-service
+      - desktop
+      - desktop-legacy
+      - wayland
+      - x11
+
+# The snap is the .deb of the release (built in release.yml) with the libraries it needs next to it.
+parts:
+  zephone:
+    plugin: dump
+    source: snap/local/zephone.deb
+    source-type: deb
+    stage-packages:
+      - libwebkit2gtk-4.1-0
+      - libayatana-appindicator3-1
+      - libssl3
+      - libopus0
+      - libasound2
+      - libsecret-1-0
+      - librsvg2-2
+      - libxdo3
