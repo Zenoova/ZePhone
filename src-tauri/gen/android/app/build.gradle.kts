@@ -25,6 +25,19 @@ android {
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
+    // Release signing comes from the environment (the CI's secrets): without ANDROID_KEYSTORE_FILE the release build
+    // is left unsigned, as on a developer's machine.
+    signingConfigs {
+        val keystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")
+        if (!keystoreFile.isNullOrEmpty()) {
+            create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "upload"
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         getByName("debug") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
@@ -39,6 +52,7 @@ android {
             }
         }
         getByName("release") {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
                enable = true
             }
