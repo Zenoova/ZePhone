@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:scripts": "node --test scripts/",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "sidecar": "node scripts/sidecar.mjs prepare",
     "test:pbx": "bash scripts/test-pbx-freeswitch.sh",
