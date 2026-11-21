@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- The Mac App Store build of the application (scripts/sign-mas.sh). The Developer ID build keeps
+       Entitlements.plist. The two identifiers the store requires (com.apple.application-identifier and
+       com.apple.developer.team-identifier) come from the provisioning profile: the script adds them. -->
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+  <!-- SIP signalling and RTP media (client), the sign-in redirect of the Microsoft directory on the loopback
+       and the sockets the engine opens for incoming media (server). -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+  <!-- Microphone. The engine (a child process) is covered by the same grant. -->
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <!-- USB headsets: the buttons of a call-control headset are read through IOHIDManager, which the sandbox
+       refuses without this entitlement. -->
+  <key>com.apple.security.device.usb</key>
+  <true/>
+  <!-- Contacts, read-only, after the user allowed it. -->
+  <key>com.apple.security.personal-information.addressbook</key>
+  <true/>
+</dict>
+</plist>
