@@ -45,12 +45,12 @@ sudo dnf install ze-phone
 Arch Linux (x86_64), from the AUR or from our signed repository:
 
 ```bash
-yay -S ze-phone-bin                     # AUR
+yay -S zephone-bin                     # AUR
 
 curl -fsSL https://zenoova.github.io/ZePhone/zephone.asc | sudo pacman-key --add -
 sudo pacman-key --lsign-key DD585D98B36BF3D081DFC775F5A2444E9D273B53
 printf '[zephone]\nSigLevel = Required DatabaseRequired\nServer = https://zenoova.github.io/ZePhone/pacman/$arch\n' | sudo tee -a /etc/pacman.conf
-sudo pacman -Sy ze-phone
+sudo pacman -Sy zephone
 ```
 
 Ubuntu App Center and any system with snap: `sudo snap install zephone` (when published to the Snap Store).

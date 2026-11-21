@@ -48,7 +48,7 @@ A channel runs only when its switch is on: a repository **variable** `ENABLE_<CH
 | Homebrew tap `Zenoova/homebrew-zephone` | `ENABLE_HOMEBREW` | `HOMEBREW_TAP_DEPLOY_KEY` | on |
 | Scoop bucket `Zenoova/scoop-zephone` | `ENABLE_SCOOP` | `SCOOP_BUCKET_DEPLOY_KEY` | on |
 | apt, dnf and pacman repositories (GitHub Pages) | `ENABLE_LINUX_REPOSITORIES` | `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` | on |
-| Arch User Repository (`ze-phone-bin`) | `ENABLE_AUR` | `AUR_SSH_PRIVATE_KEY`, and an account on aur.archlinux.org with the matching public key | off |
+| Arch User Repository (`zephone-bin`) | `ENABLE_AUR` | `AUR_SSH_PRIVATE_KEY`, and an account on aur.archlinux.org with the matching public key | off |
 | Snap Store | `ENABLE_SNAP` | `SNAPCRAFT_STORE_CREDENTIALS` (`snapcraft export-login`) | off |
 | winget | `ENABLE_WINGET` | `WINGET_TOKEN` (classic token, `public_repo`), and a first version submitted by hand | off |
 | Chocolatey | `ENABLE_CHOCOLATEY` | `CHOCOLATEY_API_KEY` | off |
