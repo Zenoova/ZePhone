@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZePhone - a SIP softphone for every device</title>
+<meta name="description" content="ZePhone is a SIP softphone for macOS, Windows, Linux, iPhone, iPad and Android. Bring your own server, no account with us.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+<a class="brand" href="/"><img src="/logo.svg" alt="">ZePhone</a>
+<nav><a href="/#features">Features</a><a href="/#download">Download</a><a href="/support">Support</a><a href="/privacy">Privacy</a></nav>
+</div></header>
+
+<main>
+<div class="wrap hero">
+<img src="/logo.svg" alt="ZePhone logo">
+<h1>Your SIP line, on every device.</h1>
+<p class="lead">ZePhone is a softphone that connects to your own PBX or SIP provider. You enter your server and your credentials: there is nothing to sign up for with us.</p>
+<a class="btn" href="#download">Download ZePhone</a><a class="btn alt" href="https://github.com/Zenoova/ZePhone">View the source</a>
+</div>
+
+<section id="features"><div class="wrap">
+<h2>Made for people who live on the phone</h2>
+<div class="grid">
+<div class="card"><h3>Works with your server</h3><p>Asterisk, FreeSWITCH, 3CX, a carrier or a hosted PBX: enter the server, port, transport (UDP, TCP or TLS) and credentials. Several accounts can be connected at the same time.</p></div>
+<div class="card"><h3>Clear voice</h3><p>HD codecs (Opus, plus G.722 on macOS) with G.711 as the universal fallback, SRTP encryption, separate volume for what you hear and what the other person hears.</p></div>
+<div class="card"><h3>Calls in their own window</h3><p>On computers, each call opens in a separate window while the keypad, contacts and history stay free. Hold, mute, DTMF keypad and blind transfer are one tap away.</p></div>
+<div class="card"><h3>Directory built in</h3><p>Local contacts, your company's LDAP or Active Directory, Microsoft 365, and the contacts of your device. Callers are shown by name when the number matches one person.</p></div>
+<div class="card"><h3>Recordings that stay with you</h3><p>Answered calls can be recorded automatically. The files are stored on your device only, and the option can be switched off in Settings.</p></div>
+<div class="card"><h3>See what the network is doing</h3><p>Advanced call statistics (jitter, round trip, lost packets, buffers) with a plain-words reading of where a dropout comes from.</p></div>
+<div class="card"><h3>Private by design</h3><p>Passwords live in the system keychain, never in clear text. Server certificates are always verified. <a href="/privacy">Read the privacy policy</a>.</p></div>
+<div class="card"><h3>Controlled your way</h3><p>Global keyboard shortcuts, headset buttons, a command line and a menu bar icon on the desktop; a native navigation bar on Android.</p></div>
+</div>
+</div></section>
+
+<section id="download"><div class="wrap">
+<h2>Download</h2>
+<p>ZePhone runs on macOS, Windows, Linux, iPhone, iPad and Android. Every version is on the <a href="https://github.com/Zenoova/ZePhone/releases/latest">releases page</a>; package managers follow automatically.</p>
+<h3>macOS</h3>
+<pre><code>brew tap zenoova/zephone
+brew install --cask zephone</code></pre>
+<h3>Windows</h3>
+<pre><code>winget install Zenoova.ZePhone
+choco install zephone</code></pre>
+<h3>Linux</h3>
+<p class="small">Debian and Ubuntu (apt), Fedora and RHEL (dnf), Arch (pacman), Snap and AppImage are available. Commands are in the <a href="https://github.com/Zenoova/ZePhone/blob/main/docs/INSTALL.md">installation guide</a>.</p>
+<h3>Mobile</h3>
+<p class="small">Android on Google Play and iPhone / iPad on the App Store: coming soon.</p>
+</div></section>
+</main>
+<footer><div class="wrap">
+<div>&copy; 2026 Zenoova. ZePhone is a SIP softphone built on the open-source <a href="https://github.com/baresip/baresip">Baresip</a> engine.</div>
+<div><a href="/support">Support</a><a href="/privacy">Privacy policy</a><a href="https://github.com/Zenoova/ZePhone">GitHub</a></div>
+</div></footer>
+</body>
+</html>

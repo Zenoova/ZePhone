@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ZePhone privacy policy</title>
+<meta name="description" content="What ZePhone stores on your device, what it sends to Zenoova's service providers, and the choices you have.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+<a class="brand" href="/"><img src="/logo.svg" alt="">ZePhone</a>
+<nav><a href="/#features">Features</a><a href="/#download">Download</a><a href="/support">Support</a><a href="/privacy">Privacy</a></nav>
+</div></header>
+
+<main><div class="wrap"><article>
+<h1>Privacy policy</h1>
+<p class="small">Last updated November 21, 2026</p>
+<p>ZePhone is published by Zenoova. This policy describes what the ZePhone application does with your information. The short version: your calls go straight between you and the SIP server you chose, and we do not run a server that sees them. The only things that reach us are optional crash reports and anonymous usage statistics, and you can turn them off.</p>
+
+<h2>What stays on your device</h2>
+<p>ZePhone stores the following in the application's private storage on your device. None of it is sent to Zenoova.</p>
+<ul>
+<li><strong>Your SIP accounts</strong>: server, port, transport, username. <strong>Passwords</strong> are kept in the system keychain (macOS, iOS) or in the application's private, encrypted-by-the-system storage (Android), never in clear text.</li>
+<li><strong>Call history</strong>: numbers or addresses, direction, time, duration, result.</li>
+<li><strong>Contacts you add in ZePhone</strong>, favourites and groups.</li>
+<li><strong>Call recordings</strong>, if automatic recording is on (it is on by default and can be turned off in Settings &rarr; Audio). Files stay on your device. Depending on where you and the other person are, recording a call may require their consent: informing them is your responsibility.</li>
+<li><strong>Settings</strong>, such as shortcuts, audio devices and theme.</li>
+</ul>
+<p>Deleting the application removes this data from your device.</p>
+
+<h2>Where your calls go</h2>
+<p>ZePhone connects to the SIP server you configure (your employer's PBX or your provider). Signalling and audio travel directly between your device and that server, and between that server and the other party. Whether they are encrypted depends on the transport (TLS) and media encryption (SRTP) your server supports. Your server operator, not Zenoova, has access to the call information they process. Server certificates are always verified.</p>
+
+<h2>Permissions</h2>
+<ul>
+<li><strong>Microphone</strong>: to talk during calls and, if you use it, to test your audio devices. Audio is never captured outside a call or an audio test that you start.</li>
+<li><strong>Contacts</strong> (optional): only if you add your device's contacts as a directory source. They are read on the device, are read-only and are not uploaded.</li>
+<li><strong>Notifications</strong>: to show incoming and missed calls.</li>
+<li><strong>Bluetooth</strong> (Android): to use a Bluetooth headset.</li>
+<li><strong>Local network</strong>: the app listens on local ports so that it can receive calls, as any softphone does.</li>
+</ul>
+
+<h2>Company directories</h2>
+<p>If you connect an LDAP or Active Directory server, or Microsoft 365, ZePhone reads the people and numbers you are allowed to see and caches them on your device. The connection is made from your device to your organization's service; nothing passes through Zenoova. You can remove a source at any time, which deletes its cache.</p>
+
+<h2>What is sent to Zenoova's service providers</h2>
+<p>Two optional features exist. Both are <strong>on by default</strong>. Nothing is sent before a notice at first launch, and you can turn each one off at any time in <strong>Settings &rarr; General &rarr; Diagnostics</strong>.</p>
+<h3>Crash reports (Sentry)</h3>
+<p>When ZePhone crashes or the interface hits an unexpected error, it sends the error message and the place in the code where it happened, the ZePhone version, the operating system and its architecture, and a random installation identifier. A crash report is written locally and sent at the next start. Turning crash reports off deletes anything waiting. Provider: Sentry (Functional Software, Inc.).</p>
+<h3>Usage statistics (Google Analytics)</h3>
+<p>Only these four events are sent, with the ZePhone version, the operating system and the random identifier:</p>
+<table>
+<tr><th>Event</th><th>When</th></tr>
+<tr><td><code>app_open</code></td><td>ZePhone starts</td></tr>
+<tr><td><code>account_added</code></td><td>A SIP account is created (with its transport: UDP, TCP or TLS)</td></tr>
+<tr><td><code>call_outgoing</code></td><td>A call is placed (no number, no address)</td></tr>
+<tr><td><code>call_incoming</code></td><td>A call arrives (no number, no address)</td></tr>
+</table>
+<p>The provider, Google, receives the IP address of the request as any server does, and may derive an approximate location from it; ZePhone adds nothing to it. This data is not used for advertising and is not combined with data from other apps.</p>
+<h3>What is never sent</h3>
+<p>Phone numbers, SIP addresses, display names, e-mail addresses, passwords, tokens, the content of calls, recordings, contacts, the call history and directory data. Everything that leaves the device passes through a scrubbing step first.</p>
+<h3>The random identifier</h3>
+<p>A random number created on first use that tells installations apart (for example, how many people are affected by a crash). It is linked to no account and no person. <strong>Reset</strong> in the Diagnostics settings replaces it.</p>
+
+<h2>What we do not do</h2>
+<ul>
+<li>We do not sell personal information.</li>
+<li>We do not show advertising and we do not use advertising identifiers.</li>
+<li>We do not require an account with Zenoova.</li>
+<li>We do not receive your calls, recordings, contacts or history.</li>
+</ul>
+
+<h2>Children</h2>
+<p>ZePhone is a general-purpose communication tool and is not directed to children under 13.</p>
+
+<h2>Your choices and rights</h2>
+<p>You can turn crash reports and statistics off and reset the identifier in the app. Because we cannot link the identifier to a person, we usually cannot look up data about you; if you believe we hold personal information about you, or want to exercise a right you have under the law that applies to you (such as access or deletion), write to us and we will answer.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes we will update the date above, and tell you in the application when the change affects what is collected.</p>
+
+<h2>Contact</h2>
+<p>Zenoova &middot; <a href="mailto:kellis@zenoova.com">kellis@zenoova.com</a></p>
+</article></div></main>
+<footer><div class="wrap">
+<div>&copy; 2026 Zenoova. ZePhone is a SIP softphone built on the open-source <a href="https://github.com/baresip/baresip">Baresip</a> engine.</div>
+<div><a href="/support">Support</a><a href="/privacy">Privacy policy</a><a href="https://github.com/Zenoova/ZePhone">GitHub</a></div>
+</div></footer>
+</body>
+</html>
