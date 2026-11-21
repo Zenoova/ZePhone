@@ -33,16 +33,17 @@ su builder -c "cd $build && makepkg --noconfirm --nodeps --skipinteg"
 
 # ---- the repository -------------------------------------------------------------------------------------------------
 mkdir -p "$repo"
-cp "$build"/*.pkg.tar.zst "$repo/"
+cp "$build"/ze-phone-[0-9]*.pkg.tar.zst "$repo/"
+rm -f "$repo"/ze-phone-debug-*
 # Newest first (version sort); drop what is beyond KEEP, with its signature.
-ls -1 "$repo"/ze-phone-*.pkg.tar.zst | sort -rV | tail -n +"$((KEEP + 1))" | while read -r old; do rm -f "$old" "$old.sig"; done
-for pkg in "$repo"/ze-phone-*.pkg.tar.zst; do
+ls -1 "$repo"/ze-phone-[0-9]*.pkg.tar.zst | sort -rV | tail -n +"$((KEEP + 1))" | while read -r old; do rm -f "$old" "$old.sig"; done
+for pkg in "$repo"/ze-phone-[0-9]*.pkg.tar.zst; do
   rm -f "$pkg.sig"
   gpg_sign --detach-sign --output "$pkg.sig" "$pkg"
 done
 cd "$repo"
 rm -f zephone.db* zephone.files*
-repo-add zephone.db.tar.zst ./ze-phone-*.pkg.tar.zst
+repo-add zephone.db.tar.zst ./ze-phone-[0-9]*.pkg.tar.zst
 # GitHub Pages does not follow the symbolic links repo-add makes: real copies, each one signed.
 for name in db files; do
   rm -f "zephone.$name"

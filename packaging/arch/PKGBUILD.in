@@ -12,6 +12,8 @@ depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'openssl' 'opus' 'als
 @EXTRA@
 source=("ZePhone_${pkgver}_amd64.deb::https://github.com/Zenoova/ZePhone/releases/download/v${pkgver}/ZePhone_${pkgver}_amd64.deb")
 sha256sums=('@SHA_DEB@')
+# The files are already built and stripped: no stripping, and no separate debug package.
+options=('!strip' '!debug')
 noextract=("ZePhone_${pkgver}_amd64.deb")
 
 package() {
