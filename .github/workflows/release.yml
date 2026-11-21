@@ -1,0 +1,319 @@
+name: Release
+
+# Pushing a tag `vX.Y.Z` builds every installer, attaches them to a GitHub Release, publishes it, then hands over to
+# distribute.yml (stores and package managers). The version of every installer is the tag's: scripts/set-version.mjs
+# writes it into package.json, tauri.conf.json and Cargo.toml for the build.
+#
+# Run it by hand ("Run workflow") to test the builds: it creates a DRAFT release and publishes nothing.
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, X.Y.Z (a draft release is created, nothing is published)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # ------------------------------------------------------------------------------------------------ the release
+  meta:
+    name: Version and draft release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      release_id: ${{ steps.release.outputs.id }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - id: v
+        env:
+          RAW: ${{ github.event.inputs.version || github.ref_name }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          version="${RAW#v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'$RAW' is not a version like 1.2.3"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          # A pushed tag publishes; a manual run only builds.
+          if [[ "$EVENT" == "push" ]]; then echo "publish=true" >> "$GITHUB_OUTPUT"; else echo "publish=false" >> "$GITHUB_OUTPUT"; fi
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name==\"$TAG\") | .id" | head -n1)"
+          if [[ -z "$id" ]]; then
+            id="$(gh api "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" \
+              -f name="ZePhone $VERSION" -F draft=true -F generate_release_notes=true --jq .id)"
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  # ------------------------------------------------------------------------------------------------ computers
+  desktop:
+    name: ${{ matrix.name }}
+    needs: meta
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: macOS (Apple silicon), os: macos-latest, target: aarch64-apple-darwin }
+          - { name: macOS (Intel), os: macos-15-intel, target: x86_64-apple-darwin }
+          - { name: Windows (x64), os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { name: Linux (x64), os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
+          - { name: Linux (arm64), os: ubuntu-22.04-arm, target: aarch64-unknown-linux-gnu }
+    runs-on: ${{ matrix.os }}
+    env:
+      ZEPHONE_SENTRY_DSN: ${{ vars.ZEPHONE_SENTRY_DSN }}
+      ZEPHONE_GA_MEASUREMENT_ID: ${{ vars.ZEPHONE_GA_MEASUREMENT_ID }}
+      ZEPHONE_GA_API_SECRET: ${{ secrets.ZEPHONE_GA_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ${{ matrix.target }}
+
+      - name: System libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git curl pkg-config xz-utils libssl-dev libopus-dev \
+            libasound2-dev libdbus-1-dev libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+            librsvg2-dev libxdo-dev libsecret-1-dev patchelf rpm file
+      - name: Build tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake pkgconf opus spandsp libre
+
+      - name: Cache the engine build
+        uses: actions/cache@v4
+        with:
+          path: .baresip-build
+          key: baresip-${{ matrix.target }}-${{ hashFiles('scripts/build-baresip*', 'scripts/prepare-baresip.sh', 'scripts/sidecar.mjs', 'scripts/baresip-modules/**') }}
+
+      - run: npm ci
+      - run: node scripts/set-version.mjs "${{ needs.meta.outputs.version }}"
+        shell: bash
+
+      # The engine (Baresip with Opus and G.722, plus ZePhone's own modules) is built from source on each system.
+      - name: Build the SIP engine
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then npm run sidecar:hd; else npm run sidecar; fi
+
+      # macOS: import the Developer ID certificate into a throw-away keychain, and sign every Mach-O file of the
+      # engine (Tauri signs the application, not the modules it loads at run time) before it is bundled.
+      - name: Sign the engine (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ vars.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          # The build always reads this file; it only says something when there is a real identity to sign with.
+          echo '{}' > "$RUNNER_TEMP/mac-sign.json"
+          if [[ -z "$APPLE_CERTIFICATE" || -z "$APPLE_SIGNING_IDENTITY" ]]; then
+            echo "No Developer ID certificate: the build stays ad hoc signed."
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/zephone.keychain-db"
+          password="$(uuidgen)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/certificate.p12"
+
+          for file in src-tauri/binaries/libs/*.dylib src-tauri/resources/baresip/modules/*.so; do
+            [[ -f "$file" ]] && codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$file"
+          done
+          codesign --force --options runtime --timestamp --entitlements src-tauri/Entitlements.plist \
+            --sign "$APPLE_SIGNING_IDENTITY" "src-tauri/binaries/baresip-${{ matrix.target }}"
+
+          # Notarization goes through the App Store Connect API key.
+          echo "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey_$APPLE_API_KEY.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey_$APPLE_API_KEY.p8" >> "$GITHUB_ENV"
+          echo "ZEPHONE_MAC_SIGNED=true" >> "$GITHUB_ENV"
+          # The configuration names "-" (ad hoc): the real identity replaces it for this build only.
+          printf '{"bundle":{"macOS":{"signingIdentity":"%s"}}}' "$APPLE_SIGNING_IDENTITY" > "$RUNNER_TEMP/mac-sign.json"
+
+      - name: Build and attach the installers
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        with:
+          projectPath: .
+          releaseId: ${{ needs.meta.outputs.release_id }}
+          args: --target ${{ matrix.target }} ${{ runner.os == 'macOS' && format('--config {0}/mac-sign.json', runner.temp) || '' }}
+
+  # ------------------------------------------------------------------------------------------------ Android
+  android:
+    name: Android
+    needs: meta
+    runs-on: ubuntu-latest
+    env:
+      ZEPHONE_SENTRY_DSN: ${{ vars.ZEPHONE_SENTRY_DSN }}
+      ZEPHONE_GA_MEASUREMENT_ID: ${{ vars.ZEPHONE_GA_MEASUREMENT_ID }}
+      ZEPHONE_GA_API_SECRET: ${{ secrets.ZEPHONE_GA_API_SECRET }}
+      NDK_VERSION: 27.2.12479018
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: android
+      - uses: android-actions/setup-android@v3
+      - name: Android platform, build tools and NDK
+        run: |
+          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "ndk;$NDK_VERSION"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - name: Cache the engine build
+        uses: actions/cache@v4
+        with:
+          path: .baresip-build
+          key: baresip-android-${{ hashFiles('scripts/build-baresip-android.ps1', 'scripts/sidecar.mjs', 'scripts/baresip-modules/**') }}
+      - run: npm ci
+      - run: node scripts/set-version.mjs "${{ needs.meta.outputs.version }}"
+      - name: Upload key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" ]]; then echo "No upload key: the build stays unsigned."; exit 0; fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+      - name: Build the bundle (Play Store) and the APK (everywhere else)
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
+        run: npx tauri android build --aab --apk --target aarch64 --target x86_64
+      - name: Name and attach the files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.meta.outputs.version }}
+          TAG: ${{ needs.meta.outputs.tag }}
+        run: |
+          mkdir -p dist-android
+          aab="$(find src-tauri/gen/android/app/build/outputs -name '*.aab' | head -n1)"
+          apk="$(find src-tauri/gen/android/app/build/outputs -name '*.apk' | head -n1)"
+          [[ -f "$aab" && -f "$apk" ]] || { echo "::error::no AAB or APK was produced"; exit 1; }
+          cp "$aab" "dist-android/ZePhone_${VERSION}_android.aab"
+          cp "$apk" "dist-android/ZePhone_${VERSION}_android.apk"
+          gh release upload "$TAG" dist-android/ZePhone_${VERSION}_android.apk --clobber
+          if [[ -n "${ANDROID_KEYSTORE_FILE:-}" ]]; then gh release upload "$TAG" dist-android/ZePhone_${VERSION}_android.aab --clobber; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist-android/
+          retention-days: 14
+
+  # ------------------------------------------------------------------------------------------------ iPhone and iPad
+  ios:
+    name: iPhone and iPad (TestFlight)
+    needs: meta
+    runs-on: macos-latest
+    env:
+      ZEPHONE_SENTRY_DSN: ${{ vars.ZEPHONE_SENTRY_DSN }}
+      ZEPHONE_GA_MEASUREMENT_ID: ${{ vars.ZEPHONE_GA_MEASUREMENT_ID }}
+      ZEPHONE_GA_API_SECRET: ${{ secrets.ZEPHONE_GA_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: ios
+      - run: brew install cmake
+      - name: Cache the engine build
+        uses: actions/cache@v4
+        with:
+          path: .baresip-build
+          key: baresip-ios-${{ hashFiles('scripts/build-baresip-ios.sh', 'scripts/sidecar.mjs', 'scripts/ios-engine/**', 'scripts/baresip-modules/**') }}
+      - run: npm ci
+      - run: node scripts/set-version.mjs "${{ needs.meta.outputs.version }}"
+      - name: Build the application (signed for the App Store)
+        env:
+          IOS_CERTIFICATE: ${{ secrets.APPLE_IOS_DISTRIBUTION_CERTIFICATE }}
+          IOS_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISION: ${{ secrets.APPLE_IOS_PROVISIONING_PROFILE }}
+          APPLE_DEVELOPMENT_TEAM: ${{ vars.APPLE_TEAM_ID }}
+        run: npx tauri ios build --export-method app-store-connect --build-number "${{ github.run_number }}"
+      - name: Send it to TestFlight
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          ipa="$(find src-tauri/gen/apple/build -name '*.ipa' | head -n1)"
+          [[ -f "$ipa" ]] || { echo "::error::no IPA was produced"; exit 1; }
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APPLE_API_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_$APPLE_API_KEY.p8
+          xcrun altool --upload-app --type ios --file "$ipa" --apiKey "$APPLE_API_KEY" --apiIssuer "$APPLE_API_ISSUER"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios
+          path: src-tauri/gen/apple/build/**/*.ipa
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # ------------------------------------------------------------------------------------------------ publish
+  publish:
+    name: Publish the release
+    needs: [meta, desktop, android]
+    if: needs.meta.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ needs.meta.outputs.release_id }}
+        run: gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false -F make_latest=true
+
+  distribute:
+    name: Stores and package managers
+    needs: [meta, publish, android]
+    if: needs.meta.outputs.publish == 'true'
+    uses: ./.github/workflows/distribute.yml
+    with:
+      tag: ${{ needs.meta.outputs.tag }}
+    secrets: inherit
