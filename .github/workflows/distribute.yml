@@ -222,7 +222,7 @@ jobs:
 
   # ------------------------------------------------------------------------------------------------ Arch User Repository
   aur:
-    name: Arch User Repository (ze-phone-bin)
+    name: Arch User Repository (zephone-bin)
     if: vars.ENABLE_AUR == 'true'
     runs-on: ubuntu-latest
     env:
@@ -236,13 +236,13 @@ jobs:
           mkdir dl out
           gh release download "$TAG" --pattern "ZePhone_${version}_amd64.deb" --dir dl
           sha="$(sha256sum "dl/ZePhone_${version}_amd64.deb" | cut -d' ' -f1)"
-          sed -e "s/@PKGNAME@/ze-phone-bin/" -e "s/@VERSION@/$version/" -e "s/@SHA_DEB@/$sha/" \
-            -e "s/@EXTRA@/provides=('ze-phone')\nconflicts=('ze-phone')/" packaging/arch/PKGBUILD.in > out/PKGBUILD
+          sed -e "s/@PKGNAME@/zephone-bin/" -e "s/@VERSION@/$version/" -e "s/@SHA_DEB@/$sha/" \
+            -e "s/@EXTRA@/provides=('zephone')\nconflicts=('zephone')/" packaging/arch/PKGBUILD.in > out/PKGBUILD
       - uses: KSXGitHub/github-actions-deploy-aur@v4
         with:
-          pkgname: ze-phone-bin
+          pkgname: zephone-bin
           pkgbuild: out/PKGBUILD
           commit_username: zephone-release
           commit_email: release@zenoova.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: ze-phone-bin ${{ inputs.tag }}
+          commit_message: zephone-bin ${{ inputs.tag }}

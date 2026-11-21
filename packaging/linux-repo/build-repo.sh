@@ -103,8 +103,8 @@ sudo dnf install ze-phone</pre>
 <pre>curl -fsSL $SITE/zephone.asc | sudo pacman-key --add -
 sudo pacman-key --lsign-key $GPG_KEY_ID
 printf '[zephone]\nSigLevel = Required DatabaseRequired\nServer = $SITE/pacman/\$arch\n' | sudo tee -a /etc/pacman.conf
-sudo pacman -Sy ze-phone</pre>
-<p>Or from the AUR: <code>yay -S ze-phone-bin</code>.</p>
+sudo pacman -Sy zephone</pre>
+<p>Or from the AUR: <code>yay -S zephone-bin</code>.</p>
 EOF
 touch "$PAGES/.nojekyll"
 rm -rf "$work"
