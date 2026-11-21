@@ -1,0 +1,22 @@
+# Maintainer: Zenoova <kellis@zenoova.com>
+#
+# Repackages the .deb of a ZePhone release: the application and its SIP engine are built by the release workflow.
+pkgname=@PKGNAME@
+pkgver=@VERSION@
+pkgrel=1
+pkgdesc="Universal SIP softphone"
+arch=('x86_64')
+url="https://github.com/Zenoova/ZePhone"
+license=('custom')
+depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'openssl' 'opus' 'alsa-lib' 'libsecret' 'librsvg')
+@EXTRA@
+source=("ZePhone_${pkgver}_amd64.deb::https://github.com/Zenoova/ZePhone/releases/download/v${pkgver}/ZePhone_${pkgver}_amd64.deb")
+sha256sums=('@SHA_DEB@')
+noextract=("ZePhone_${pkgver}_amd64.deb")
+
+package() {
+  cd "$srcdir"
+  # A .deb is an ar archive holding control.tar.* and data.tar.*: the files to install are in data.tar.*.
+  bsdtar -xf "ZePhone_${pkgver}_amd64.deb" --include 'data.tar*'
+  bsdtar -xf data.tar.* -C "$pkgdir"
+}

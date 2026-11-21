@@ -5,10 +5,11 @@
 #   TAG=v1.2.3 PAGES=/path/to/gh-pages-checkout GPG_KEY_ID=<fingerprint> GPG_PASSPHRASE=... \
 #     packaging/linux-repo/build-repo.sh
 #
-# Needs: gh (to download the release files), apt-utils (apt-ftparchive), createrepo-c, gnupg.
+# Needs: gh (to download the release files), apt-utils (apt-ftparchive), createrepo-c, gnupg, docker (for pacman).
 #
 #   apt : flat repository, `deb [signed-by=/usr/share/keyrings/zephone.gpg] https://zenoova.github.io/ZePhone/apt ./`
 #   rpm : one repository per CPU (`$basearch`), metadata signed (repo_gpgcheck=1)
+#   pacman : x86_64 only, packages and database signed (see build-pacman.sh)
 #
 # Only the newest KEEP versions are kept: every version is also on the GitHub Release, and Pages must stay small.
 set -euo pipefail
@@ -63,6 +64,14 @@ for arch in x86_64 aarch64; do
   fi
 done
 
+# ---- pacman (Arch Linux): built in an Arch container, where pacman and makepkg exist ---------------------------------
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+gpg --batch --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --armor --export-secret-keys "$GPG_KEY_ID" > "$work/key.asc"
+docker run --rm \
+  -v "$PAGES:/pages" -v "$work:/work" -v "$here:/scripts:ro" -v "$here/../arch:/packaging:ro" \
+  -e TAG -e GPG_KEY_ID -e GPG_PASSPHRASE -e GPG_KEY_FILE=key.asc \
+  archlinux:base-devel bash /scripts/build-pacman.sh
+
 # ---- public key and instructions ----------------------------------------------------------------------------------
 gpg --batch --armor --export "$GPG_KEY_ID" > "$PAGES/zephone.asc"
 gpg --batch --export "$GPG_KEY_ID" > "$PAGES/zephone.gpg"
@@ -90,6 +99,12 @@ sudo apt update &amp;&amp; sudo apt install ze-phone</pre>
 <h2>Fedora, RHEL, openSUSE (dnf, yum)</h2>
 <pre>sudo curl -fsSL $SITE/zephone.repo -o /etc/yum.repos.d/zephone.repo
 sudo dnf install ze-phone</pre>
+<h2>Arch Linux (pacman, x86_64)</h2>
+<pre>curl -fsSL $SITE/zephone.asc | sudo pacman-key --add -
+sudo pacman-key --lsign-key $GPG_KEY_ID
+printf '[zephone]\nSigLevel = Required DatabaseRequired\nServer = $SITE/pacman/\$arch\n' | sudo tee -a /etc/pacman.conf
+sudo pacman -Sy ze-phone</pre>
+<p>Or from the AUR: <code>yay -S ze-phone-bin</code>.</p>
 EOF
 touch "$PAGES/.nojekyll"
 rm -rf "$work"
