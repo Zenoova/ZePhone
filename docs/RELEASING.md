@@ -35,6 +35,7 @@ empty to follow the commits.
 | `.deb`, `.rpm`, `.AppImage` (x64 and arm64) | Linux | GitHub Release, apt, dnf and pacman (x86_64) repositories, AUR |
 | `.apk` (signed) and `.aab` | Linux | GitHub Release (APK), Google Play (AAB) |
 | iOS app | macOS | TestFlight |
+| `.pkg` for the Mac App Store (Apple silicon, sandboxed; when `ENABLE_MAS` is on) | macOS | App Store Connect |
 
 ## The channels
 
@@ -53,7 +54,7 @@ A channel runs only when its switch is on: a repository **variable** `ENABLE_<CH
 | winget | `ENABLE_WINGET` | `WINGET_TOKEN` (classic token, `public_repo`), and a first version submitted by hand | off |
 | Chocolatey | `ENABLE_CHOCOLATEY` | `CHOCOLATEY_API_KEY` | off |
 | Microsoft Store, Samsung Galaxy Store, Huawei AppGallery, Aptoide | – | accounts being verified, or an app entry to create first | not written yet |
-| Mac App Store | – | the sandbox (the engine is a helper process), certificates and a profile | not started |
+| Mac App Store | `ENABLE_MAS` | `APPLE_MAS_APPLICATION_CERTIFICATE`, `APPLE_MAS_INSTALLER_CERTIFICATE`, `APPLE_MAS_PROVISIONING_PROFILE` (see [MAC-APP-STORE.md](MAC-APP-STORE.md)) | off, needs the portal steps |
 
 ## Secrets and variables
 
@@ -64,6 +65,8 @@ A channel runs only when its switch is on: a repository **variable** `ENABLE_<CH
 | `APPLE_API_ISSUER`, `APPLE_API_KEY`, `APPLE_API_KEY_P8` | secret | App Store Connect API key (notarization, TestFlight) |
 | `APPLE_TEAM_ID` | variable | `3RWC6787PS` |
 | `APPLE_IOS_DISTRIBUTION_CERTIFICATE`, `APPLE_IOS_PROVISIONING_PROFILE` | secret | iOS distribution certificate and App Store profile |
+| `APPLE_MAS_APPLICATION_CERTIFICATE`, `APPLE_MAS_INSTALLER_CERTIFICATE`, `APPLE_MAS_PROVISIONING_PROFILE` | secret | Mac App Store: application certificate, installer certificate (both `.p12`, password `APPLE_CERTIFICATE_PASSWORD`), profile (base64) |
+| `APPLE_MAS_APP_IDENTITY`, `APPLE_MAS_INSTALLER_IDENTITY` | variable | their names; optional, read from the certificates when empty |
 | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD` | secret | Android upload key |
 | `ANDROID_KEY_ALIAS` | variable | `upload` |
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | secret | service account that may release to testing tracks |
