@@ -1,25 +1,30 @@
 name: Release
 
-# Pushing a tag `vX.Y.Z` builds every installer, attaches them to a GitHub Release, publishes it, then hands over to
-# distribute.yml (stores and package managers). The version of every installer is the tag's: scripts/set-version.mjs
-# writes it into package.json, tauri.conf.json and Cargo.toml for the build.
+# Pushing to `stable` makes a release, the conventional way:
+#   1. the commits since the last release tag (Conventional Commits: feat, fix, perf, breaking `!`) decide the next
+#      version (scripts/next-version.mjs). Nothing to release means nothing happens;
+#   2. the new version is committed to `stable` (package.json, tauri.conf.json, Cargo.toml, CHANGELOG.md), so the
+#      application carries it;
+#   3. every installer is built from that commit and attached to a GitHub Release, which is then published;
+#   4. distribute.yml sends it to the stores and package managers.
 #
-# Run it by hand ("Run workflow") to test the builds: it creates a DRAFT release and publishes nothing.
+# Run it by hand ("Run workflow") on any branch to test the builds: it creates a DRAFT release, commits nothing and
+# publishes nothing. Give a version to build that one, or leave it empty to follow the commits.
 on:
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+    branches: [stable]
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to build, X.Y.Z (a draft release is created, nothing is published)"
-        required: true
+        description: "Build this version (X.Y.Z) as a draft; empty follows the commits"
+        required: false
         type: string
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.event.inputs.version || github.ref_name }}
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -28,32 +33,76 @@ jobs:
     name: Version and draft release
     runs-on: ubuntu-latest
     outputs:
+      release: ${{ steps.v.outputs.release }}
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}
-      release_id: ${{ steps.release.outputs.id }}
       publish: ${{ steps.v.outputs.publish }}
+      sha: ${{ steps.commit.outputs.sha }}
+      release_id: ${{ steps.release.outputs.id }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the history and the tags decide the version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
       - id: v
         env:
-          RAW: ${{ github.event.inputs.version || github.ref_name }}
-          EVENT: ${{ github.event_name }}
+          GIVEN: ${{ github.event.inputs.version }}
+          REF: ${{ github.ref }}
         run: |
-          version="${RAW#v}"
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'$RAW' is not a version like 1.2.3"; exit 1; }
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
-          # A pushed tag publishes; a manual run only builds.
-          if [[ "$EVENT" == "push" ]]; then echo "publish=true" >> "$GITHUB_OUTPUT"; else echo "publish=false" >> "$GITHUB_OUTPUT"; fi
+          # Only `stable` publishes; any other run is a test build.
+          if [[ "$REF" == "refs/heads/stable" ]]; then publish=true; else publish=false; fi
+          if [[ -n "$GIVEN" ]]; then
+            version="${GIVEN#v}"
+            [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::'$GIVEN' is not a version like 1.2.3"; exit 1; }
+            release=true
+            printf 'Test build of %s.\n' "$version" > "$RUNNER_TEMP/notes.md"
+          else
+            node scripts/next-version.mjs --notes "$RUNNER_TEMP/notes.md" > "$RUNNER_TEMP/decision.json"
+            cat "$RUNNER_TEMP/decision.json"
+            release="$(jq -r .release "$RUNNER_TEMP/decision.json")"
+            version="$(jq -r .version "$RUNNER_TEMP/decision.json")"
+          fi
+          {
+            echo "release=$release"
+            echo "version=$version"
+            echo "tag=v$version"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+          [[ "$release" == "true" ]] || echo "Nothing to release: no feat, fix, perf or breaking commit since the last release."
+
+      # The version goes into the files that carry it, in a commit of its own, so that the application and the
+      # repository say the same thing as the tag. The tag will point at this commit.
+      - id: commit
+        if: steps.v.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+          PUBLISH: ${{ steps.v.outputs.publish }}
+        run: |
+          if [[ "$PUBLISH" == "true" ]]; then
+            node scripts/set-version.mjs "$VERSION"
+            node scripts/next-version.mjs --changelog CHANGELOG.md > /dev/null
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A package.json package-lock.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/Cargo.lock CHANGELOG.md
+            git commit -m "chore(release): v$VERSION" || echo "the files already carry this version"
+            git push origin HEAD:stable
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - id: release
+        if: steps.v.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.v.outputs.tag }}
           VERSION: ${{ steps.v.outputs.version }}
+          SHA: ${{ steps.commit.outputs.sha }}
         run: |
           id="$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq ".[] | select(.tag_name==\"$TAG\") | .id" | head -n1)"
           if [[ -z "$id" ]]; then
-            id="$(gh api "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" \
-              -f name="ZePhone $VERSION" -F draft=true -F generate_release_notes=true --jq .id)"
+            id="$(gh api "repos/$GITHUB_REPOSITORY/releases" -f tag_name="$TAG" -f target_commitish="$SHA" \
+              -f name="ZePhone $VERSION" -F body=@"$RUNNER_TEMP/notes.md" -F draft=true --jq .id)"
           fi
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
@@ -61,6 +110,7 @@ jobs:
   desktop:
     name: ${{ matrix.name }}
     needs: meta
+    if: needs.meta.outputs.release == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -77,6 +127,8 @@ jobs:
       ZEPHONE_GA_API_SECRET: ${{ secrets.ZEPHONE_GA_API_SECRET }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -175,6 +227,7 @@ jobs:
   android:
     name: Android
     needs: meta
+    if: needs.meta.outputs.release == 'true'
     runs-on: ubuntu-latest
     env:
       ZEPHONE_SENTRY_DSN: ${{ vars.ZEPHONE_SENTRY_DSN }}
@@ -183,6 +236,8 @@ jobs:
       NDK_VERSION: 27.2.12479018
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -248,6 +303,7 @@ jobs:
   ios:
     name: iPhone and iPad (TestFlight)
     needs: meta
+    if: needs.meta.outputs.release == 'true'
     runs-on: macos-latest
     env:
       ZEPHONE_SENTRY_DSN: ${{ vars.ZEPHONE_SENTRY_DSN }}
@@ -255,6 +311,8 @@ jobs:
       ZEPHONE_GA_API_SECRET: ${{ secrets.ZEPHONE_GA_API_SECRET }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -306,7 +364,7 @@ jobs:
   publish:
     name: Publish the release
     needs: [meta, desktop, android]
-    if: needs.meta.outputs.publish == 'true'
+    if: needs.meta.outputs.release == 'true' && needs.meta.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
       - env:
@@ -317,7 +375,7 @@ jobs:
   distribute:
     name: Stores and package managers
     needs: [meta, publish, android]
-    if: needs.meta.outputs.publish == 'true'
+    if: needs.meta.outputs.release == 'true' && needs.meta.outputs.publish == 'true'
     uses: ./.github/workflows/distribute.yml
     with:
       tag: ${{ needs.meta.outputs.tag }}
