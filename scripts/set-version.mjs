@@ -3,7 +3,7 @@
 //
 //   node scripts/set-version.mjs v1.2.3     (the leading `v` is optional)
 //   node scripts/set-version.mjs --check    print the version the files carry and fail if they disagree
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +12,11 @@ const files = {
   packageJson: join(root, "package.json"),
   tauriConf: join(root, "src-tauri", "tauri.conf.json"),
   cargoToml: join(root, "src-tauri", "Cargo.toml"),
+};
+// The lock files also name the application's own version: they follow, when they exist.
+const locks = {
+  packageLock: join(root, "package-lock.json"),
+  cargoLock: join(root, "src-tauri", "Cargo.lock"),
 };
 
 /** A plain `major.minor.patch`: installers (an MSI for one) do not accept anything fancier. */
@@ -61,6 +66,17 @@ if (updated === cargo && read().cargoToml !== version) {
   process.exit(1);
 }
 writeFileSync(files.cargoToml, updated);
+
+if (existsSync(locks.packageLock)) {
+  const lock = JSON.parse(readFileSync(locks.packageLock, "utf8"));
+  lock.version = version;
+  if (lock.packages?.[""]) lock.packages[""].version = version;
+  writeFileSync(locks.packageLock, `${JSON.stringify(lock, null, 2)}\n`);
+}
+if (existsSync(locks.cargoLock)) {
+  const lock = readFileSync(locks.cargoLock, "utf8");
+  writeFileSync(locks.cargoLock, lock.replace(/(\[\[package\]\]\nname = "zephone"\nversion = ")[^"]+/, `$1${version}`));
+}
 
 const found = read();
 console.log(`version set to ${version}: ${JSON.stringify(found)}`);
