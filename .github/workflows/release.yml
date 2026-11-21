@@ -281,6 +281,8 @@ jobs:
           APPLE_DEVELOPMENT_TEAM: ${{ vars.APPLE_TEAM_ID }}
         run: npx tauri ios build --export-method app-store-connect --build-number "${{ github.run_number }}"
       - name: Send it to TestFlight
+        # A manual run only checks that the build works: nothing is sent to Apple.
+        if: needs.meta.outputs.publish == 'true'
         env:
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
