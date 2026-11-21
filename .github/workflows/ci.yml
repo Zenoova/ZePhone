@@ -52,5 +52,7 @@ jobs:
           mkdir -p src-tauri/binaries src-tauri/resources/baresip/modules src-tauri/resources/baresip/sounds \
             src-tauri/resources/baresip/licenses dist
           touch "src-tauri/binaries/baresip-$triple" src-tauri/resources/baresip/modules/.keep \
-            src-tauri/resources/baresip/sounds/.keep src-tauri/resources/baresip/licenses/.keep
+            src-tauri/resources/baresip/licenses/.keep
+          # The ring tones the tests decode: the committed copies stand in for the ones the engine build stages.
+          cp src-tauri/android/sounds/*.wav src-tauri/resources/baresip/sounds/
       - run: cargo test --lib --manifest-path src-tauri/Cargo.toml
