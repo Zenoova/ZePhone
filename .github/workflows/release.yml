@@ -361,6 +361,128 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  # ------------------------------------------------------------------------------------------------ Mac App Store
+  # Off until the variable ENABLE_MAS is "true" (see docs/MAC-APP-STORE.md for the certificates and the profile it
+  # needs). The store build is not the Developer ID one: the application is sandboxed, signed with the store
+  # certificate, carries a provisioning profile and goes in an installer package. Apple silicon only: the engine
+  # is built for one architecture.
+  mas:
+    name: Mac App Store
+    needs: meta
+    if: needs.meta.outputs.release == 'true' && vars.ENABLE_MAS == 'true'
+    runs-on: macos-latest
+    env:
+      ZEPHONE_SENTRY_DSN: ${{ vars.ZEPHONE_SENTRY_DSN }}
+      ZEPHONE_GA_MEASUREMENT_ID: ${{ vars.ZEPHONE_GA_MEASUREMENT_ID }}
+      ZEPHONE_GA_API_SECRET: ${{ secrets.ZEPHONE_GA_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: mas
+      - run: brew install cmake pkgconf opus spandsp libre
+      - name: Cache the engine build
+        uses: actions/cache@v4
+        with:
+          path: .baresip-build
+          key: baresip-aarch64-apple-darwin-${{ hashFiles('scripts/build-baresip*', 'scripts/prepare-baresip.sh', 'scripts/sidecar.mjs', 'scripts/baresip-modules/**') }}
+      - run: npm ci
+      - run: node scripts/set-version.mjs "${{ needs.meta.outputs.version }}"
+      - run: npm run sidecar:hd
+
+      # The store certificates go into a throw-away keychain, like the Developer ID one of the desktop job.
+      - name: Certificates and profile
+        env:
+          APP_CERTIFICATE: ${{ secrets.APPLE_MAS_APPLICATION_CERTIFICATE }}
+          INSTALLER_CERTIFICATE: ${{ secrets.APPLE_MAS_INSTALLER_CERTIFICATE }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          PROFILE: ${{ secrets.APPLE_MAS_PROVISIONING_PROFILE }}
+        run: |
+          for name in APP_CERTIFICATE INSTALLER_CERTIFICATE PROFILE; do
+            [[ -n "${!name}" ]] || { echo "::error::a Mac App Store secret is missing ($name): see docs/MAC-APP-STORE.md"; exit 1; }
+          done
+          keychain="$RUNNER_TEMP/mas.keychain-db"
+          password="$(uuidgen)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          for kind in APP INSTALLER; do
+            var="${kind}_CERTIFICATE"
+            echo "${!var}" | base64 --decode > "$RUNNER_TEMP/$kind.p12"
+            security import "$RUNNER_TEMP/$kind.p12" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+            rm -f "$RUNNER_TEMP/$kind.p12"
+          done
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$password" "$keychain" > /dev/null
+          existing="$(security list-keychains -d user | tr -d '"')"
+          # shellcheck disable=SC2086
+          security list-keychains -d user -s "$keychain" $existing
+          # The throw-away keychain holds one code-signing identity and one installer one: their names are read
+          # from it, unless the variables name them.
+          app_identity="${{ vars.APPLE_MAS_APP_IDENTITY }}"
+          installer_identity="${{ vars.APPLE_MAS_INSTALLER_IDENTITY }}"
+          [[ -n "$app_identity" ]] || app_identity="$(security find-identity -v -p codesigning "$keychain" | awk -F'"' '/"/ {print $2; exit}')"
+          [[ -n "$installer_identity" ]] || installer_identity="$(security find-identity -v "$keychain" | awk -F'"' '/Installer/ {print $2; exit}')"
+          [[ -n "$app_identity" && -n "$installer_identity" ]] || { echo "::error::no signing identity found in the certificates"; exit 1; }
+          echo "Signing the code as: $app_identity"
+          echo "Signing the package as: $installer_identity"
+          echo "$PROFILE" | base64 --decode > "$RUNNER_TEMP/zephone.provisionprofile"
+          {
+            echo "MAS_KEYCHAIN=$keychain"
+            echo "MAS_APP_IDENTITY=$app_identity"
+            echo "MAS_INSTALLER_IDENTITY=$installer_identity"
+            echo "MAS_PROFILE=$RUNNER_TEMP/zephone.provisionprofile"
+            echo "MAS_TEAM_ID=${{ vars.APPLE_TEAM_ID }}"
+          } >> "$GITHUB_ENV"
+
+      # Tauri builds the application and signs it ad hoc; scripts/sign-mas.sh then signs every file of the bundle
+      # with the store certificate, from the inside out, and builds the package.
+      - name: Build the application
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          printf '{"bundle":{"macOS":{"signingIdentity":"-","entitlements":"Entitlements.mas.plist","bundleVersion":"%s"}}}' \
+            "$BUILD_NUMBER" > "$RUNNER_TEMP/mas-build.json"
+          npx tauri build --bundles app --target aarch64-apple-darwin --config "$RUNNER_TEMP/mas-build.json"
+      - name: Sign it and build the package
+        run: |
+          app="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/ZePhone.app"
+          mkdir -p dist-mas
+          scripts/sign-mas.sh "$app" --package "dist-mas/ZePhone_${{ needs.meta.outputs.version }}_mas.pkg"
+
+      - name: Have Apple check the package
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APPLE_API_KEY_P8" > "$HOME/.appstoreconnect/private_keys/AuthKey_$APPLE_API_KEY.p8"
+          xcrun altool --validate-app --type macos --file dist-mas/*.pkg --apiKey "$APPLE_API_KEY" --apiIssuer "$APPLE_API_ISSUER"
+      - name: Send it to App Store Connect
+        # A manual run only checks that the build is valid: nothing is sent.
+        if: needs.meta.outputs.publish == 'true'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: xcrun altool --upload-app --type macos --file dist-mas/*.pkg --apiKey "$APPLE_API_KEY" --apiIssuer "$APPLE_API_ISSUER"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-app-store
+          path: dist-mas/*.pkg
+          if-no-files-found: ignore
+          retention-days: 14
+
   # ------------------------------------------------------------------------------------------------ publish
   publish:
     name: Publish the release
