@@ -54,6 +54,10 @@
       "resources/baresip/licenses": "engine/licenses",
       "icons/mac/Assets.car": "Assets.car"
     },
+    "linux": {
+      "deb": { "provides": ["zephone"] },
+      "rpm": { "provides": ["zephone"] }
+    },
     "macOS": {
       "minimumSystemVersion": "11.0",
       "entitlements": "Entitlements.plist",
