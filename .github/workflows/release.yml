@@ -422,7 +422,7 @@ jobs:
             security import "$RUNNER_TEMP/$kind.p12" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
             rm -f "$RUNNER_TEMP/$kind.p12"
           done
-          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$password" "$keychain" > /dev/null
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
           existing="$(security list-keychains -d user | tr -d '"')"
           # shellcheck disable=SC2086
           security list-keychains -d user -s "$keychain" $existing
@@ -430,8 +430,8 @@ jobs:
           # from it, unless the variables name them.
           app_identity="${{ vars.APPLE_MAS_APP_IDENTITY }}"
           installer_identity="${{ vars.APPLE_MAS_INSTALLER_IDENTITY }}"
-          [[ -n "$app_identity" ]] || app_identity="$(security find-identity -v -p codesigning "$keychain" | awk -F'"' '/"/ {print $2; exit}')"
-          [[ -n "$installer_identity" ]] || installer_identity="$(security find-identity -v "$keychain" | awk -F'"' '/Installer/ {print $2; exit}')"
+          [[ -n "$app_identity" ]] || app_identity="$(security find-identity "$keychain" | grep -v Installer | awk -F'"' '/"/ {print $2; exit}')"
+          [[ -n "$installer_identity" ]] || installer_identity="$(security find-identity "$keychain" | awk -F'"' '/Installer/ {print $2; exit}')"
           [[ -n "$app_identity" && -n "$installer_identity" ]] || { echo "::error::no signing identity found in the certificates"; exit 1; }
           echo "Signing the code as: $app_identity"
           echo "Signing the package as: $installer_identity"
@@ -444,20 +444,13 @@ jobs:
             echo "MAS_TEAM_ID=${{ vars.APPLE_TEAM_ID }}"
           } >> "$GITHUB_ENV"
 
-      # Tauri builds the application and signs it ad hoc; scripts/sign-mas.sh then signs every file of the bundle
-      # with the store certificate, from the inside out, and builds the package.
-      - name: Build the application
+      # scripts/build-mas.sh builds the application (Tauri signs it ad hoc, without the private macOS API the store
+      # refuses), then scripts/sign-mas.sh signs every file of the bundle with the store certificate, from the
+      # inside out, embeds the profile and builds the package.
+      - name: Build, sign and package
         env:
-          BUILD_NUMBER: ${{ github.run_number }}
-        run: |
-          printf '{"bundle":{"macOS":{"signingIdentity":"-","entitlements":"Entitlements.mas.plist","bundleVersion":"%s"}}}' \
-            "$BUILD_NUMBER" > "$RUNNER_TEMP/mas-build.json"
-          npx tauri build --bundles app --target aarch64-apple-darwin --config "$RUNNER_TEMP/mas-build.json"
-      - name: Sign it and build the package
-        run: |
-          app="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/ZePhone.app"
-          mkdir -p dist-mas
-          scripts/sign-mas.sh "$app" --package "dist-mas/ZePhone_${{ needs.meta.outputs.version }}_mas.pkg"
+          MAS_BUILD_NUMBER: ${{ github.run_number }}
+        run: scripts/build-mas.sh
 
       - name: Have Apple check the package
         env:
