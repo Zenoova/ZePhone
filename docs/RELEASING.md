@@ -32,7 +32,7 @@ empty to follow the commits.
 |---|---|---|
 | `.dmg` (Apple silicon, Intel), signed with Developer ID and notarized | macOS | GitHub Release, Homebrew |
 | `.msi`, `.exe` (not signed) | Windows | GitHub Release, winget, Chocolatey, Scoop |
-| `.deb`, `.rpm`, `.AppImage` (x64 and arm64) | Linux | GitHub Release, apt and dnf repositories |
+| `.deb`, `.rpm`, `.AppImage` (x64 and arm64) | Linux | GitHub Release, apt, dnf and pacman (x86_64) repositories, AUR |
 | `.apk` (signed) and `.aab` | Linux | GitHub Release (APK), Google Play (AAB) |
 | iOS app | macOS | TestFlight |
 
@@ -47,7 +47,8 @@ A channel runs only when its switch is on: a repository **variable** `ENABLE_<CH
 | TestFlight | always (iOS job) | `APPLE_*` secrets | on |
 | Homebrew tap `Zenoova/homebrew-zephone` | `ENABLE_HOMEBREW` | `HOMEBREW_TAP_DEPLOY_KEY` | on |
 | Scoop bucket `Zenoova/scoop-zephone` | `ENABLE_SCOOP` | `SCOOP_BUCKET_DEPLOY_KEY` | on |
-| apt and dnf repositories (GitHub Pages) | `ENABLE_LINUX_REPOSITORIES` | `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` | on (Pages must be enabled on `gh-pages`) |
+| apt, dnf and pacman repositories (GitHub Pages) | `ENABLE_LINUX_REPOSITORIES` | `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` | on |
+| Arch User Repository (`ze-phone-bin`) | `ENABLE_AUR` | `AUR_SSH_PRIVATE_KEY`, and an account on aur.archlinux.org with the matching public key | off |
 | Snap Store | `ENABLE_SNAP` | `SNAPCRAFT_STORE_CREDENTIALS` (`snapcraft export-login`) | off |
 | winget | `ENABLE_WINGET` | `WINGET_TOKEN` (classic token, `public_repo`), and a first version submitted by hand | off |
 | Chocolatey | `ENABLE_CHOCOLATEY` | `CHOCOLATEY_API_KEY` | off |
@@ -69,7 +70,8 @@ A channel runs only when its switch is on: a repository **variable** `ENABLE_<CH
 | `ZEPHONE_SENTRY_DSN`, `ZEPHONE_GA_MEASUREMENT_ID` | variable | diagnostics identifiers (see [PRIVACY.md](PRIVACY.md)) |
 | `ZEPHONE_GA_API_SECRET` | secret | Google Analytics Measurement Protocol secret |
 | `HOMEBREW_TAP_DEPLOY_KEY`, `SCOOP_BUCKET_DEPLOY_KEY` | secret | SSH deploy keys with write access to the tap and the bucket |
-| `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` | secret | key that signs the apt and dnf repositories |
+| `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` | secret | key that signs the apt, dnf and pacman repositories |
+| `AUR_SSH_PRIVATE_KEY` | secret | SSH key of the AUR account |
 
 The signing keys were generated outside the Keychain and are kept in `~/.zephone-signing` on the maintainer's machine:
 keep a copy in a password manager, because GitHub never shows a secret again.
