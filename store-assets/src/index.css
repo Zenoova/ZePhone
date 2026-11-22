@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+/* The mockups use `dark:` variants: they follow a `dark` class on an ancestor, so a composition chooses its theme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body {
+  margin: 0;
+}
