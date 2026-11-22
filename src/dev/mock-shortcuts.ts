@@ -57,7 +57,7 @@ export function createMockShortcuts(): Record<string, (a: Args) => unknown> {
             ? { kind: "unassigned" }
             : !i.enabled
               ? { kind: "disabled" }
-              : i.action === "toggleHold"
+              : i.action === "toggleHold" && new URLSearchParams(window.location.search).get("mock") !== "showcase"
                 ? { kind: "failed", message: "The system refused this combination (preview: fake state)" }
                 : { kind: "active" },
     })),
