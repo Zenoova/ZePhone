@@ -355,6 +355,8 @@ export function installMockBackend(): void {
       h("h6", "outgoing", "answered", "1042", "Mia Tanaka", 60 * 30, 305),
       h("h7", "incoming", "missed", "1037", "Lucas Meyer", 60 * 52, 0),
     ];
+    // Opaque surfaces: the real window shows the system's vibrancy (or the plain theme) behind the glass, never a gradient.
+    settings = { ...settings, general: { ...settings.general, translucent: false } };
     recordings = [
       rec("r1", 42, "1002", "Bob Martin", "outgoing", 34),
       rec("r2", 215, "1001", "Alice Durand", "incoming", 95),
