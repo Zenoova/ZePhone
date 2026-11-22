@@ -1,15 +1,15 @@
 import { Composition } from "remotion";
-import { MacHero } from "./compositions/MacHero";
-import { PhonePair } from "./compositions/PhonePair";
-import { FeatureGraphic } from "./compositions/FeatureGraphic";
+import { IPHONE_PANORAMA, IphoneDna } from "./compositions/IphoneDna";
+import { MacHero, macHeroSize } from "./compositions/MacHero";
+import { PLAY_FEATURE, PlayFeature } from "./compositions/PlayFeature";
 
-// Each store image is a composition; the frame is chosen when rendering (the snapcn frames fade their screen in).
-const base = { fps: 30, durationInFrames: 90 };
+// Each store image is a composition; the render waits for the fonts and the shader before taking the frame.
+const base = { fps: 30, durationInFrames: 30 };
 
 export const Root = () => (
   <>
-    <Composition id="mac-hero" component={MacHero} width={2880} height={1800} {...base} />
-    <Composition id="phone-pair" component={PhonePair} width={2640} height={2868} {...base} />
-    <Composition id="feature-graphic" component={FeatureGraphic} width={2048} height={1000} {...base} />
+    <Composition id="mac-hero" component={MacHero} {...macHeroSize} {...base} />
+    <Composition id="iphone-dna" component={IphoneDna} {...IPHONE_PANORAMA} {...base} />
+    <Composition id="play-feature" component={PlayFeature} {...PLAY_FEATURE} {...base} />
   </>
 );

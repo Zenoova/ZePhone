@@ -1,19 +1,26 @@
 import { AbsoluteFill, staticFile } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Geist";
-import { LaptopFrame } from "../components/snap-cn/laptop-frame";
-import { Backdrop } from "./Backdrop";
+import { MacbookMockup } from "../components/mockups/macbook-mockup";
+import { colors, font } from "../theme";
+import { FxLayer } from "./FxLayer";
 
-const { fontFamily } = loadFont("normal", { weights: ["500", "700"], subsets: ["latin"] });
+const W = 2880;
+const H = 1800;
 
-export const MacHero = () => (
-  <AbsoluteFill style={{ fontFamily, color: "white" }}>
-    <Backdrop width={2880} height={1800} />
-    <AbsoluteFill style={{ transform: "translateY(310px)" }}>
-      <LaptopFrame screenSrc={staticFile("mac-history.png")} entrance="none" floatLoop={false} scale={2.75} mode="dark" restTilt={10} />
-    </AbsoluteFill>
-    <div style={{ position: "absolute", top: 110, left: 0, right: 0, textAlign: "center" }}>
-      <div style={{ fontSize: 150, fontWeight: 700, letterSpacing: -4, lineHeight: 1.02 }}>Your SIP line.</div>
-      <div style={{ fontSize: 150, fontWeight: 700, letterSpacing: -4, lineHeight: 1.02, opacity: 0.72 }}>On your Mac.</div>
+export const MacHero = ({ screen = "mac-history-light" }: { screen?: string }) => (
+  <AbsoluteFill style={{ background: colors.background, fontFamily: font, color: colors.ink }}>
+    <FxLayer origin={[0.5, 0.78]} />
+    <div style={{ position: "absolute", top: 150, left: 0, right: 0, textAlign: "center" }}>
+      <div style={{ fontSize: 138, fontWeight: 600, letterSpacing: -5, lineHeight: 1.02 }}>Your SIP line, on your Mac.</div>
+      <div style={{ fontSize: 56, fontWeight: 400, color: colors.muted, marginTop: 34, letterSpacing: -1 }}>
+        Bring your own server. No account, no ads.
+      </div>
+    </div>
+    <div style={{ position: "absolute", left: (W - 2000) / 2, top: 540, width: 2000 }}>
+      <MacbookMockup expandable={false} frameSrc={staticFile("macbook-frame.webp")}>
+        <img src={staticFile(`${screen}.png`)} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top" }} />
+      </MacbookMockup>
     </div>
   </AbsoluteFill>
 );
+
+export const macHeroSize = { width: W, height: H };
