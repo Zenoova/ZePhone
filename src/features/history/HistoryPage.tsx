@@ -32,7 +32,7 @@ import { ContactFormDialog } from "../contacts/ContactForm";
 
 const TABS: ReadonlyArray<{ value: HistoryKind; label: string }> = [
   { value: "all", label: "All" },
-  { value: "incoming", label: "Entrants" },
+  { value: "incoming", label: "Incoming" },
   { value: "outgoing", label: "Outgoing" },
   { value: "missed", label: "Missed" },
   { value: "failed", label: "Failed" },
@@ -84,7 +84,7 @@ export function HistoryPage() {
         actions={
           entries.length > 0 && (
             <ArcButton variant="secondary" onClick={() => setConfirmClear(true)}>
-              <Trash2 className="size-4" aria-hidden /> Tout effacer
+              <Trash2 className="size-4" aria-hidden /> Clear all
             </ArcButton>
           )
         }
