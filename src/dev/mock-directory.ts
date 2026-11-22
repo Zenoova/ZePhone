@@ -129,7 +129,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
     displayName: "Élodie Dupont",
     firstName: "Élodie",
     lastName: "Dupont",
-    company: "Demo Company",
+    company: showcase ? "Acme" : "Demo Company",
     department: "Accounting",
     title: "Chief financial officer",
     email: "elodie.dupont@demo.invalid",
@@ -183,7 +183,8 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
     groups: [],
     readOnly: true,
   });
-  for (let i = 0; i < 3000; i++) {
+  // The showcase has 30 × 30 distinct names: no two people look alike in the first rows.
+  for (let i = 0; i < (showcase ? 900 : 3000); i++) {
     const first = FIRST[i % FIRST.length]!;
     const last = LAST[(i * 7 + Math.floor(i / 30)) % LAST.length]!;
     const phones: PhoneEntry[] = [
@@ -287,12 +288,12 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
       name: msName,
       enabled: true,
       readOnly: true,
-      state: "needsReauth",
+      state: showcase ? "idle" : "needsReauth",
       contactCount: 29,
-      lastSuccessAt: new Date(Date.now() - 26 * 3600_000).toISOString(),
-      lastAttemptAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
-      lastError: "The Microsoft sign-in has expired or was revoked: reconnect the source.",
-      errorKind: "auth",
+      lastSuccessAt: new Date(Date.now() - (showcase ? 12 : 26) * 60_000).toISOString(),
+      lastAttemptAt: new Date(Date.now() - (showcase ? 12 : 120) * 60_000).toISOString(),
+      lastError: showcase ? null : "The Microsoft sign-in has expired or was revoked: reconnect the source.",
+      errorKind: showcase ? null : "auth",
       syncIntervalMin: 360,
       stale: false,
       config: { clientId: "00000000-0000-0000-0000-000000000000", tenant: "organizations", level: "full" },
