@@ -38,27 +38,33 @@ const dev = (
   ...extra,
 });
 
+// `?mock=showcase` (store screenshots): a headset that is plugged in and used for both roles, with plain names.
+const SHOWCASE = new URLSearchParams(window.location.search).get("mock") === "showcase";
+const TAG = SHOWCASE ? "" : " (preview)";
+
 export function createMockAudio(emit: (event: string, payload: unknown) => void): Record<string, (a: Args) => unknown> {
   const devices: DeviceInfo[] = [
     dev("mic", "MacBook Pro Microphone", "builtIn", 1, 0),
     dev("spk", "MacBook Pro Speakers", "builtIn", 0, 2),
-    dev("usb", "Jabra Evolve2 65 (preview)", "usb", 1, 2, { inUseElsewhere: true }),
-    dev("bt", "AirPods (preview)", "bluetooth", 1, 2),
+    dev("usb", `Jabra Evolve2 65${TAG}`, "usb", 1, 2, { inUseElsewhere: !SHOWCASE }),
+    dev("bt", `AirPods${TAG}`, "bluetooth", 1, 2),
   ];
   // The headset the user chose for the conversation is absent: the speaker role shows what happens meanwhile.
   const routing: Routing = {
     ...DEFAULT_SETTINGS.audio.routing,
     speaker: {
-      selection: { kind: "explicit", device: { uid: "gone", name: "Desk headset (preview)" } },
-      fallback: null,
+      selection: SHOWCASE
+        ? { kind: "explicit", device: { uid: "usb", name: "Jabra Evolve2 65" } }
+        : { kind: "explicit", device: { uid: "gone", name: "Desk headset (preview)" } },
+      fallback: SHOWCASE ? { uid: "spk", name: "MacBook Pro Speakers" } : null,
     },
     microphone: {
-      selection: { kind: "explicit", device: { uid: "usb", name: "Jabra Evolve2 65 (preview)" } },
+      selection: { kind: "explicit", device: { uid: "usb", name: `Jabra Evolve2 65${TAG}` } },
       fallback: { uid: "mic", name: "MacBook Pro Microphone" },
     },
   };
   const inCall = false;
-  const inUse: Record<Role, string | null> = { microphone: "usb", speaker: "spk", ringer: "spk" };
+  const inUse: Record<Role, string | null> = { microphone: "usb", speaker: SHOWCASE ? "usb" : "spk", ringer: "spk" };
 
   const fits = (role: Role, d: DeviceInfo) =>
     d.alive && (role === "microphone" ? d.inputChannels > 0 : d.outputChannels > 0);
@@ -106,8 +112,8 @@ export function createMockAudio(emit: (event: string, payload: unknown) => void)
     devices: [
       {
         id: "0b0e:0412:1",
-        product: "Jabra Evolve2 65 (preview)",
-        manufacturer: "GN Audio (preview)",
+        product: `Jabra Evolve2 65${TAG}`,
+        manufacturer: `GN Audio${TAG}`,
         transport: "USB",
         buttons: ["hookSwitch", "phoneMute"],
         inUse: true,
@@ -116,7 +122,7 @@ export function createMockAudio(emit: (event: string, payload: unknown) => void)
     log: [
       {
         at: new Date(Date.now() - 60_000).toISOString(),
-        device: "Jabra Evolve2 65 (preview)",
+        device: `Jabra Evolve2 65${TAG}`,
         button: "Answer / hang up",
         value: 1,
         result: "No incoming call to answer",
