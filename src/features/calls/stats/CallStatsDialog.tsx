@@ -151,12 +151,12 @@ export function CallStatsDialog({
               hint="Per second. Each bar is a possible gap in the voice."
               kind="bars"
               xs={xs}
-              unit="paquets"
+              unit="packets"
               minTop={4}
               digits={0}
               series={[
                 { key: "late", label: "Arrived too late", slot: 1, values: col((s) => s.jbufLate) },
-                { key: "lost", label: "Perdus", slot: 2, values: col((s) => s.jbufLost) },
+                { key: "lost", label: "Lost", slot: 2, values: col((s) => s.jbufLost) },
                 { key: "overflow", label: "Overflows", slot: 3, values: col((s) => s.jbufOverflow) },
                 { key: "flush", label: "Flushes", slot: 4, values: col((s) => s.jbufFlush) },
               ]}
