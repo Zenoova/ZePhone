@@ -175,3 +175,25 @@ ZePhone is built on the open-source Baresip engine and shares its core with the 
 Privacy policy: zephone.zenoova.com/privacy
 Support: kellis@zenoova.com
 ```
+
+## Images
+
+Drawn and rendered by [`store-assets/`](../store-assets/README.md) (`node scripts/render-all.mjs`, then `out/<set>/`). Every screen
+is a capture of the real application with invented data, in the light or the dark theme; the titles say what the application does
+that a plain SIP phone does not: one directory for the contacts, LDAP and Microsoft 365; statistics explained in plain words; the
+voice orb; local recordings; several lines with TLS and SRTP; global shortcuts; separate microphone, speaker and ringtone.
+
+| Store | Set | Size | Files |
+|---|---|---|---|
+| App Store, iPhone 6.9" | `out/iphone/` | 1320 × 2868 | `iphone-01-hero` and `iphone-02-hero` (one picture cut in two, with the icon), then `iphone-03` … `iphone-07` |
+| App Store, iPad 13" | `out/ipad/` | 2752 × 2064 | `ipad-01-hero` (with the icon) … `ipad-04-accounts` |
+| Mac App Store | `out/mac/` | 2880 × 1800 | `mac-01-hero` (with the icon) … `mac-05-audio` |
+| Google Play, phone (also Samsung Galaxy Store, Huawei AppGallery, Aptoide) | `out/android/` | 1080 × 1920 | `android-01-hero` … `android-06-accounts` |
+| Google Play, 10" tablet | `out/tablet/` | 2560 × 1600 | `tablet-01-hero` … `tablet-03-stats` |
+| Google Play, feature graphic | `out/android/` | 1024 × 500 | `play-feature-graphic-1024x500` |
+| Microsoft Store, Snap Store, Linux | `out/desktop/` | 1920 × 1080 | `desktop-01-hero` … `desktop-04-shortcuts` |
+
+The App Store pictures carry the [Icon Composer](../src-tauri/icons/ZePhone.icon) icon (light and dark renditions exported with
+`ictool`). The iPhone, iPad and Android pictures leave the desktop dock out: those platforms have their own navigation bar.
+Limits not covered yet: the Microsoft Store logos (300 × 300 and others), the Play 512 × 512 icon (Google rounds it itself: it needs
+a square, not the Icon Composer rendition), iPad portrait and Play 7" tablet sets.
