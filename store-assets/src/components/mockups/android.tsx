@@ -61,10 +61,11 @@ export function Android({
       {src && (
         <image
           href={src}
+          x="9"
+          y="14"
           width="360"
           height="800"
-          className="size-full object-cover"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="xMidYMin slice"
           clipPath="url(#clip0_514_20855)"
         />
       )}
@@ -73,7 +74,7 @@ export function Android({
           width="380"
           height="820"
           clipPath="url(#clip0_514_20855)"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="xMidYMin slice"
         >
           <video
             className="size-full object-cover"

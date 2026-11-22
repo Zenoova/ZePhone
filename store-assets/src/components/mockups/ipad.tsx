@@ -45,7 +45,7 @@ export function Ipad({ width = 520, height = 400, src, ...props }: IpadProps) {
           y="28.47"
           width="457.25"
           height="342.87"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="xMidYMin slice"
           clipPath="url(#roundedCorners)"
         />
       )}
