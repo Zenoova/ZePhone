@@ -320,6 +320,48 @@ export function installMockBackend(): void {
     rec("r3", 9, "2000", null, "incoming", 60 * 80),
   ];
 
+  // `?mock=showcase`: tidy data for the store screenshots (docs/STORE-LISTING.md, store-assets/): two registered lines,
+  // real-looking names, a clean history. Nothing else changes.
+  if (new URLSearchParams(window.location.search).get("mock") === "showcase") {
+    const person = (id: string, firstName: string, lastName: string, company: string | null, number: string): Contact => ({
+      id,
+      firstName,
+      lastName,
+      company,
+      number,
+      createdAt: now(),
+      updatedAt: now(),
+    });
+    accounts = accounts.map((a) =>
+      a.id === "acc2" ? { ...a, label: "Home line", server: "sip.voipbox.net", domain: "voipbox.net", username: "0412345678" } : a,
+    );
+    statuses["acc2"] = { accountId: "acc2", state: "registered", sipCode: 200, reason: "OK", message: null, updatedAt: now() };
+    contacts = [
+      person("c1", "Alice", "Durand", "Acme", "1001"),
+      person("c2", "Bob", "Martin", "Acme", "1002"),
+      person("c3", "Chloé", "Bernard", "Support", "1010"),
+      person("c4", "Daniel", "Okafor", "Sales", "1024"),
+      person("c5", "Emma", "Rossi", "Reception", "1000"),
+      person("c6", "Lucas", "Meyer", "Engineering", "1037"),
+      person("c7", "Mia", "Tanaka", "Design", "1042"),
+      person("c8", "", "", "Front desk", "sip:frontdesk@example.com"),
+    ];
+    history = [
+      h("h1", "incoming", "missed", "1010", "Chloé Bernard", 9, 0),
+      h("h2", "outgoing", "answered", "1002", "Bob Martin", 34, 342),
+      h("h3", "incoming", "answered", "1001", "Alice Durand", 95, 612),
+      h("h4", "outgoing", "answered", "1024", "Daniel Okafor", 200, 128),
+      h("h5", "incoming", "answered", "1000", "Emma Rossi", 60 * 26, 47),
+      h("h6", "outgoing", "answered", "1042", "Mia Tanaka", 60 * 30, 305),
+      h("h7", "incoming", "missed", "1037", "Lucas Meyer", 60 * 52, 0),
+    ];
+    recordings = [
+      rec("r1", 42, "1002", "Bob Martin", "outgoing", 34),
+      rec("r2", 215, "1001", "Alice Durand", "incoming", 95),
+      rec("r3", 128, "1024", "Daniel Okafor", "outgoing", 200),
+    ];
+  }
+
   const engine = () => ({ name: "baresip", version: "4.13.0", codecs: ["PCMU", "PCMA"], state: "running" as const });
   const setCall = (c: Call) => {
     calls.set(c.id, c);
