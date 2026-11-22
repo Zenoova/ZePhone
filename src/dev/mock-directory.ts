@@ -114,9 +114,11 @@ function ref(sourceId: string, name: string, kind: SourceKind, external: string)
 }
 
 export function createMockDirectory(emit: (event: string, payload: unknown) => void, getLocal: () => Contact[]) {
-  const ldapName = "DEMO · LDAP directory (fictional)";
-  const msName = "DEMO · Microsoft 365 (fictional)";
-  const outlookName = "DEMO · Outlook contacts (fictional)";
+  // `?mock=showcase` (store screenshots) uses plain names; everywhere else the demo sources say what they are.
+  const showcase = new URLSearchParams(window.location.search).get("mock") === "showcase";
+  const ldapName = showcase ? "Acme directory (LDAP)" : "DEMO · LDAP directory (fictional)";
+  const msName = showcase ? "Microsoft 365" : "DEMO · Microsoft 365 (fictional)";
+  const outlookName = showcase ? "Outlook contacts" : "DEMO · Outlook contacts (fictional)";
 
   const people: DirectoryEntry[] = [];
   const add = (e: DirectoryEntry) => people.push(e);
@@ -231,7 +233,7 @@ export function createMockDirectory(emit: (event: string, payload: unknown) => v
   }
 
   // The device's own address book (connected on demand): invented cards, like everything here.
-  const deviceName = "DEMO · Mac contacts (fictional)";
+  const deviceName = showcase ? "Contacts of this Mac" : "DEMO · Mac contacts (fictional)";
   for (const [i, [first, last, number, kind]] of (
     [
       ["Mom", "(demo)", "06 11 22 33 44", "mobile"],

@@ -27,6 +27,7 @@ type Handler = (payload: unknown) => void;
 type Args = Record<string, unknown> | undefined;
 
 const now = () => new Date().toISOString();
+const SHOWCASE = new URLSearchParams(window.location.search).get("mock") === "showcase";
 const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
 
 export function installMockBackend(): void {
@@ -239,9 +240,10 @@ export function installMockBackend(): void {
         txBusyMaxUs: 15 + Math.random() * 20,
         recDropped: 0,
         totals: {
-          codec: "PCMA",
-          txCodec: "PCMA",
-          clockRate: 8000,
+          // The showcase data shows the wideband codec the app prefers when the server offers it.
+          codec: SHOWCASE ? "opus" : "PCMA",
+          txCodec: SHOWCASE ? "opus" : "PCMA",
+          clockRate: SHOWCASE ? 48000 : 8000,
           rxPackets,
           txPackets: (prev?.txPackets ?? 0) + 50,
           rxBytes: rxPackets * 160,
