@@ -178,22 +178,29 @@ Support: kellis@zenoova.com
 
 ## Images
 
-Drawn and rendered by [`store-assets/`](../store-assets/README.md) (`node scripts/render-all.mjs`, then `out/<set>/`). Every screen
-is a capture of the real application with invented data, in the light or the dark theme; the titles say what the application does
-that a plain SIP phone does not: one directory for the contacts, LDAP and Microsoft 365; statistics explained in plain words; the
-voice orb; local recordings; several lines with TLS and SRTP; global shortcuts; separate microphone, speaker and ringtone.
+Drawn and rendered by [`store-assets/`](../store-assets/README.md) (`node scripts/render-all.mjs`, then `out/<set>/`). Every picture
+shows the real application with invented data, in the light or the dark theme, on the device of the platform, with real pieces of the
+interface floating over it (a contact's card, the plain-words reading of a call, the orb picker, the accounts list with its little
+faces) and the shad-fx rings behind. The iPhone and iPad screens are photographed in the **iOS Simulator** (iOS 26), so the
+navigation bar is the system's own Liquid Glass tab bar; the Mac, Android and Windows ones come from the application in Chrome.
+The first two pictures of every set are one panorama cut in two (a helix of screens, or two laptops, runs across the seam: put
+them side by side). What the titles say is what the application does that a plain SIP phone does not: one directory for the
+contacts, LDAP and Microsoft 365; statistics explained in plain words; 14 voice orbs to pick from; a little face (companion) for every
+account; local recordings; global shortcuts; separate microphone, speaker and ringtone. No other application is named on a picture
+(both stores reject metadata that names another app).
 
 | Store | Set | Size | Files |
 |---|---|---|---|
-| App Store, iPhone 6.9" | `out/iphone/` | 1320 × 2868 | `iphone-01-hero` and `iphone-02-hero` (one picture cut in two, with the icon), then `iphone-03` … `iphone-07` |
-| App Store, iPad 13" | `out/ipad/` | 2752 × 2064 | `ipad-01-hero` (with the icon) … `ipad-04-accounts` |
-| Mac App Store | `out/mac/` | 2880 × 1800 | `mac-01-hero` (with the icon) … `mac-05-audio` |
-| Google Play, phone (also Samsung Galaxy Store, Huawei AppGallery, Aptoide) | `out/android/` | 1080 × 1920 | `android-01-hero` … `android-06-accounts` |
-| Google Play, 10" tablet | `out/tablet/` | 2560 × 1600 | `tablet-01-hero` … `tablet-03-stats` |
+| App Store, iPhone 6.9" | `out/iphone/` | 1320 × 2868 | `iphone-01-hero` + `iphone-02-hero` (the panorama), `iphone-03-directory` … `iphone-08-features` |
+| App Store, iPad 13" | `out/ipad/` | 2752 × 2064 | `ipad-01-hero` + `ipad-02-hero`, `ipad-03-directory` … `ipad-06-features` |
+| Mac App Store | `out/mac/` | 2880 × 1800 | `mac-01-hero` + `mac-02-hero`, `mac-03-directory` … `mac-09-features` |
+| Google Play, phone (also Samsung Galaxy Store, Huawei AppGallery, Aptoide) | `out/android/` | 1080 × 1920 | `android-01-hero` + `android-02-hero`, `android-03-directory` … `android-08-features` |
+| Google Play, 10" tablet | `out/tablet/` | 2560 × 1600 | `tablet-01-hero` + `tablet-02-hero`, `tablet-03-directory` … `tablet-05-orbs` |
 | Google Play, feature graphic | `out/android/` | 1024 × 500 | `play-feature-graphic-1024x500` |
-| Microsoft Store, Snap Store, Linux | `out/desktop/` | 1920 × 1080 | `desktop-01-hero` … `desktop-04-shortcuts` |
+| Microsoft Store, Snap Store, Linux | `out/desktop/` | 1920 × 1080 | `desktop-01-hero` + `desktop-02-hero`, `desktop-03-directory` … `desktop-07-features` (a Windows laptop) |
 
-The App Store pictures carry the [Icon Composer](../src-tauri/icons/ZePhone.icon) icon (light and dark renditions exported with
-`ictool`). The iPhone, iPad and Android pictures leave the desktop dock out: those platforms have their own navigation bar.
-Limits not covered yet: the Microsoft Store logos (300 × 300 and others), the Play 512 × 512 icon (Google rounds it itself: it needs
-a square, not the Icon Composer rendition), iPad portrait and Play 7" tablet sets.
+The logo on the pictures is the two companions, without the icon's tile. The Icon Composer icon (with its tile, light and dark
+renditions exported with `ictool`) is for the listing itself. Limits not covered yet: the Microsoft Store logos (300 × 300 and
+others), the Play 512 × 512 icon (Google rounds it itself: it needs a square, not the Icon Composer rendition), iPad portrait and Play
+7" tablet sets. The Android pictures use the layout of the application in Chrome: the Material navigation bar of the real Android
+shell is not on them (not photographed in the Android emulator).
