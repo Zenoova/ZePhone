@@ -8,8 +8,9 @@ export interface AndroidProps extends SVGProps<SVGSVGElement> {
 }
 
 export function Android({
-  width = 433,
-  height = 882,
+  // The body of the phone (with its buttons) spans 380 × 830: a wider box left it off-centre.
+  width = 380,
+  height = 830,
   src,
   videoSrc,
   ...props

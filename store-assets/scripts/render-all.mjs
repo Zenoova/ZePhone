@@ -7,7 +7,7 @@ import { bundle } from "@remotion/bundler";
 import { renderStill, selectComposition } from "@remotion/renderer";
 import sharp from "sharp";
 import { enableTailwind } from "@remotion/tailwind-v4";
-import { SLIDES } from "../src/slides.ts";
+import { PAIRS, SIZES, SLIDES } from "../src/slides.ts";
 
 const root = path.resolve(import.meta.dirname, "..");
 const only = process.argv.slice(2);
@@ -21,10 +21,10 @@ const serveUrl = await bundle({
   },
 });
 
-// id → [set, final file names]. The pair and the Play graphic need a second step.
+// One job per picture; the pairs (one panorama cut in two) and the Play graphic need a second step.
 const jobs = [];
 for (const s of SLIDES) jobs.push({ id: s.id, set: s.set });
-jobs.push({ id: "iphone-dna-light", set: "iphone", post: "pair" });
+for (const p of PAIRS) jobs.push({ id: p.id, set: p.set, pair: p });
 jobs.push({ id: "play-feature", set: "android", post: "feature" });
 
 for (const job of jobs.filter((j) => !only.length || only.some((o) => j.id.startsWith(o)))) {
@@ -32,12 +32,13 @@ for (const job of jobs.filter((j) => !only.length || only.some((o) => j.id.start
   await mkdir(dir, { recursive: true });
   const composition = await selectComposition({ serveUrl, id: job.id, browserExecutable: CHROME, chromiumOptions: { gl: "angle" } });
   // Pictures that need a second step (the pair to cut in two, the Play graphic to scale down) are first drawn in out/_work.
-  const file = job.post ? path.join(root, "out", "_work", `${job.id}.png`) : path.join(dir, `${job.id}.png`);
-  if (job.post) await mkdir(path.dirname(file), { recursive: true });
+  const work = job.pair || job.post;
+  const file = work ? path.join(root, "out", "_work", `${job.id}.png`) : path.join(dir, `${job.id}.png`);
+  if (work) await mkdir(path.dirname(file), { recursive: true });
   await renderStill({ composition, serveUrl, output: file, frame: 0, browserExecutable: CHROME, chromiumOptions: { gl: "angle" } });
-  if (job.post === "pair") {
-    await sharp(file).extract({ left: 0, top: 0, width: 1320, height: 2868 }).toFile(path.join(dir, "iphone-01-hero.png"));
-    await sharp(file).extract({ left: 1320, top: 0, width: 1320, height: 2868 }).toFile(path.join(dir, "iphone-02-hero.png"));
+  if (job.pair) {
+    const { width, height } = SIZES[job.pair.kind];
+    for (const [i, name] of job.pair.files.entries()) await sharp(file).extract({ left: i * width, top: 0, width, height }).toFile(path.join(dir, `${name}.png`));
   }
   if (job.post === "feature") await sharp(file).resize(1024, 500, { kernel: "lanczos3" }).toFile(path.join(dir, "play-feature-graphic-1024x500.png"));
   console.log("rendered", job.id);

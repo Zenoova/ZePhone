@@ -1,0 +1,58 @@
+[
+ {
+  "id": "shdr-11",
+  "label": "Orbital"
+ },
+ {
+  "id": "shdr-13",
+  "label": "Plasma"
+ },
+ {
+  "id": "shdr-32",
+  "label": "Galaxy"
+ },
+ {
+  "id": "shdr-21",
+  "label": "Cloud"
+ },
+ {
+  "id": "shdr-16",
+  "label": "Caustics"
+ },
+ {
+  "id": "shdr-17",
+  "label": "Storm"
+ },
+ {
+  "id": "shdr-27",
+  "label": "Radar"
+ },
+ {
+  "id": "shdr-33",
+  "label": "Thermal"
+ },
+ {
+  "id": "shdr-30",
+  "label": "Meadow"
+ },
+ {
+  "id": "shdr-24",
+  "label": "Voxel Earth"
+ },
+ {
+  "id": "shdr-12",
+  "label": "Bricks"
+ },
+ {
+  "id": "shdr-29",
+  "label": "LED Wall"
+ },
+ {
+  "id": "shdr-14",
+  "label": "Pixels"
+ },
+ {
+  "id": "shdr-23",
+  "label": "ASCII"
+ }
+]
