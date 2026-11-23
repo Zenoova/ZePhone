@@ -1,7 +1,7 @@
 import { OrbPicker } from "@/components/OrbPicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { hasNativeTabBar, isMobile } from "@/lib/platform";
+import { hasNativeTabBar, isMac as onMac, isMobile } from "@/lib/platform";
 import { useSettingsStore } from "@/stores/settings-store";
 import type { Theme } from "@/types/telephony";
 
@@ -13,7 +13,8 @@ const THEMES: Record<Theme, string> = { system: "Automatic (system)", light: "Li
 export function GeneralSettings() {
   const g = useSettingsStore((s) => s.settings.general);
   const update = useSettingsStore((s) => s.update);
-  const isMac = navigator.userAgent.includes("Mac");
+  // An iPhone's user agent says "like Mac OS X": ask the platform helper, which knows an iPhone and an iPad from a Mac.
+  const isMac = onMac();
   // Starting at login, the tray icon and a window to close are a computer's: a phone's system starts and keeps the
   // application as it needs.
   const mobile = isMobile();
