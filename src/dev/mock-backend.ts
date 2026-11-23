@@ -30,7 +30,27 @@ const now = () => new Date().toISOString();
 const SHOWCASE = new URLSearchParams(window.location.search).get("mock") === "showcase";
 const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
 
+/** The shell's own bridge, reachable from a preview that runs in a frame of the real webview (the simulator): see below. */
+type RealInternals = {
+  invoke: (cmd: string, args?: unknown) => Promise<unknown>;
+  transformCallback: (cb: Handler) => number;
+};
+
 export function installMockBackend(): void {
+  // In the iOS Simulator the preview runs in a frame of the real app's webview (`store-assets/scripts/sim-proxy.mjs`): the shell
+  // freezes its bridge in the page itself, but the frame has none, so this backend is installed there. The navigation bar is
+  // the system's own (Liquid Glass), drawn by the real shell: its commands and its tap event go through the parent page.
+  const shell = (() => {
+    try {
+      return window.parent !== window
+        ? (window.parent as unknown as { __TAURI_INTERNALS__?: RealInternals }).__TAURI_INTERNALS__
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+  const realInvoke = shell?.invoke.bind(shell);
+  const realTransformCallback = shell?.transformCallback.bind(shell);
   const listeners = new Map<string, Array<{ id: number; handler: number }>>();
   let nextListenerId = 1;
   let nextCallbackId = 1;
@@ -325,7 +345,13 @@ export function installMockBackend(): void {
   // `?mock=showcase`: tidy data for the store screenshots (docs/STORE-LISTING.md, store-assets/): two registered lines,
   // real-looking names, a clean history. Nothing else changes.
   if (new URLSearchParams(window.location.search).get("mock") === "showcase") {
-    const person = (id: string, firstName: string, lastName: string, company: string | null, number: string): Contact => ({
+    const person = (
+      id: string,
+      firstName: string,
+      lastName: string,
+      company: string | null,
+      number: string,
+    ): Contact => ({
       id,
       firstName,
       lastName,
@@ -335,9 +361,18 @@ export function installMockBackend(): void {
       updatedAt: now(),
     });
     accounts = accounts.map((a) =>
-      a.id === "acc2" ? { ...a, label: "Home line", server: "sip.voipbox.net", domain: "voipbox.net", username: "0412345678" } : a,
+      a.id === "acc2"
+        ? { ...a, label: "Home line", server: "sip.voipbox.net", domain: "voipbox.net", username: "0412345678" }
+        : a,
     );
-    statuses["acc2"] = { accountId: "acc2", state: "registered", sipCode: 200, reason: "OK", message: null, updatedAt: now() };
+    statuses["acc2"] = {
+      accountId: "acc2",
+      state: "registered",
+      sipCode: 200,
+      reason: "OK",
+      message: null,
+      updatedAt: now(),
+    };
     contacts = [
       person("c1", "Alice", "Durand", "Acme", "1001"),
       person("c2", "Bob", "Martin", "Acme", "1002"),
@@ -589,8 +624,15 @@ export function installMockBackend(): void {
     },
     convertFileSrc: (p: string) => p,
     invoke: async (cmd: string, args?: Args): Promise<unknown> => {
+      if (realInvoke && cmd.startsWith("native_tabbar_")) return realInvoke(cmd, args);
       if (cmd === "plugin:event|listen") {
         const { event, handler } = args as { event: string; handler: number };
+        if (realInvoke && realTransformCallback && event === "native-tab-selected")
+          void realInvoke("plugin:event|listen", {
+            event,
+            target: { kind: "Any" },
+            handler: realTransformCallback((e) => emit(event, (e as { payload: unknown }).payload)),
+          });
         const id = nextListenerId++;
         listeners.set(event, [...(listeners.get(event) ?? []), { id, handler }]);
         return id;
@@ -663,6 +705,24 @@ export function installMockBackend(): void {
       emit,
     },
   });
+  // The shell tells the height of its tab bar to its own page: pass it on to this frame.
+  if (shell)
+    window.setInterval(() => {
+      try {
+        const h = window.parent.document.documentElement.style.getPropertyValue("--native-tabbar-height");
+        if (h) document.documentElement.style.setProperty("--native-tabbar-height", h);
+      } catch {
+        /* no parent page */
+      }
+    }, 300);
+  // `?section=`, `?scene=`…: the state a script wants to photograph (see `mock-scenes.ts`).
+  void import("./mock-scenes").then(({ runScene }) =>
+    runScene(
+      new URLSearchParams(window.location.search),
+      (window as unknown as { __mock: { incoming: () => string } }).__mock,
+      (id) => internals.invoke("answer_call", { id }),
+    ),
+  );
   document.documentElement.dataset.preview = "1";
   console.warn("[ZePhone] OFFLINE PREVIEW: in-memory simulated backend, no real SIP communication.");
 }
