@@ -66,8 +66,9 @@ export const PairSlide = ({ pair }: { pair: Pair }) => {
   const portrait = pair.kind === "iphone" || pair.kind === "android";
   usePreload([staticFile("logo.svg"), ...pair.screens.map((n) => shotUrl(n, theme)), ...(pair.twin ? [pair.twin.a.main, pair.twin.a.call, pair.twin.b.main, pair.twin.b.call].map((n) => shotUrl(n, theme)) : [])]);
 
-  const font1 = W * (portrait ? 0.148 : 0.062);
-  const logo = W * (portrait ? 0.21 : 0.07);
+  const small = pair.kind === "desktop";
+  const font1 = W * (portrait ? 0.148 : small ? 0.05 : 0.062);
+  const logo = W * (portrait ? 0.21 : small ? 0.045 : 0.07);
   const logoTop = H * (portrait ? 0.052 : 0.04);
   const titleTop = logoTop + logo * 1.02;
   const line = { position: "absolute" as const, top: titleTop, width: W, textAlign: "center" as const, fontSize: font1, fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1, color: p.ink };

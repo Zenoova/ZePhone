@@ -115,7 +115,7 @@ const wideCards = {
 export const SLIDES: Slide[] = [
   // ---- App Store, iPhone (the first two pictures are the pair below)
   { id: "iphone-03-directory", set: "iphone", kind: "iphone", theme: "dark", recipe: "device", ...D.directory, screen: "ios-directory", cards: [phoneCards.contact(0.12, 0.555, 0.84, 2.5)], chips: [{ text: "Acme directory (LDAP)", x: 0.04, y: 0.455, dot: "#3b82f6" }, { text: "Microsoft 365", x: 0.62, y: 0.405, dot: "#00a152", rot: 3 }] },
-  { id: "iphone-04-stats", set: "iphone", kind: "iphone", theme: "light", recipe: "device", ...D.stats, screen: "ios-stats", cards: [phoneCards.reading(0.06, 0.62, 0.88, -2)], chips: [{ text: "Opus · 48 kHz", x: 0.045, y: 0.352, dot: "#00a152", rot: -2 }, { text: "Wi-Fi, VPN or router?", x: 0.5, y: 0.575, dot: "#f59e0b", rot: 2 }] },
+  { id: "iphone-04-stats", set: "iphone", kind: "iphone", theme: "light", recipe: "device", ...D.stats, screen: "ios-stats", cards: [phoneCards.reading(0.06, 0.62, 0.88, -2)], chips: [{ text: "Opus · 48 kHz", x: 0.045, y: 0.262, dot: "#00a152", rot: -2 }, { text: "Wi-Fi, VPN or router?", x: 0.5, y: 0.575, dot: "#f59e0b", rot: 2 }] },
   { id: "iphone-05-orbs", set: "iphone", kind: "iphone", theme: "dark", recipe: "orbs", ...D.orbs },
   { id: "iphone-06-faces", set: "iphone", kind: "iphone", theme: "light", recipe: "faces", ...D.faces },
   { id: "iphone-07-recordings", set: "iphone", kind: "iphone", theme: "dark", recipe: "device", ...D.recordings, screen: "ios-recordings", cards: [phoneCards.player(0.08, 0.7, 0.86, -2.5)], chips: [{ text: "Stored on this device", x: 0.05, y: 0.43, dot: "#00a152" }] },
@@ -137,11 +137,11 @@ export const SLIDES: Slide[] = [
   { id: "mac-09-features", set: "mac", kind: "mac", theme: "dark", recipe: "features", ...D.features, logo: true },
 
   // ---- Google Play, phone (also Samsung Galaxy Store, Huawei AppGallery, Aptoide)
-  { id: "android-03-directory", set: "android", kind: "android", theme: "dark", recipe: "device", ...D.directory, screen: "phone-directory" },
-  { id: "android-04-stats", set: "android", kind: "android", theme: "light", recipe: "device", ...D.stats, screen: "phone-stats", cards: [phoneCards.reading(0.06, 0.62, 0.88, -2)], chips: [{ text: "Opus · 48 kHz", x: 0.045, y: 0.352, dot: "#00a152", rot: -2 }, { text: "Wi-Fi, VPN or router?", x: 0.5, y: 0.575, dot: "#f59e0b", rot: 2 }] },
+  { id: "android-03-directory", set: "android", kind: "android", theme: "dark", recipe: "device", ...D.directory, screen: "phone-directory", cards: [phoneCards.contact(0.12, 0.6, 0.84, 2.5)], chips: [{ text: "Acme directory (LDAP)", x: 0.04, y: 0.5, dot: "#3b82f6" }, { text: "Microsoft 365", x: 0.6, y: 0.45, dot: "#00a152", rot: 3 }] },
+  { id: "android-04-stats", set: "android", kind: "android", theme: "light", recipe: "device", ...D.stats, screen: "phone-stats", cards: [phoneCards.reading(0.06, 0.62, 0.88, -2)], chips: [{ text: "Opus · 48 kHz", x: 0.045, y: 0.262, dot: "#00a152", rot: -2 }, { text: "Wi-Fi, VPN or router?", x: 0.5, y: 0.575, dot: "#f59e0b", rot: 2 }] },
   { id: "android-05-orbs", set: "android", kind: "android", theme: "dark", recipe: "orbs", ...D.orbs },
   { id: "android-06-faces", set: "android", kind: "android", theme: "light", recipe: "faces", ...D.faces },
-  { id: "android-07-recordings", set: "android", kind: "android", theme: "dark", recipe: "device", ...D.recordings, screen: "phone-recordings" },
+  { id: "android-07-recordings", set: "android", kind: "android", theme: "dark", recipe: "device", ...D.recordings, screen: "phone-recordings", cards: [phoneCards.player(0.08, 0.72, 0.86, -2.5)], chips: [{ text: "Stored on this device", x: 0.05, y: 0.47, dot: "#00a152" }] },
   { id: "android-08-features", set: "android", kind: "android", theme: "light", recipe: "features", ...D.features, logo: true },
 
   // ---- Google Play, 10" tablet

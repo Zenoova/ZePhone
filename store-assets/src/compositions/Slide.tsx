@@ -48,11 +48,11 @@ const MacScene = ({ s, width }: { s: SlideSpec; width: number }) => {
 const place = (s: SlideSpec, W: number, H: number) => {
   const k = s.kind;
   const portrait = isPortrait(k);
-  const dw = portrait ? W * (k === "iphone" ? 0.8 : 0.64) : W * (s.split ? 0.6 : { ipad: 0.7, tablet: 0.64, mac: 0.7, desktop: 0.58 }[k as "ipad"]);
+  const dw = portrait ? W * (k === "iphone" ? 0.8 : 0.64) : W * (s.split ? 0.6 : { ipad: 0.7, tablet: 0.64, mac: 0.7, desktop: 0.55 }[k as "ipad"]);
   const ratio = { iphone: RATIO.iphone, android: RATIO.android, ipad: RATIO.ipad, tablet: RATIO.tablet, mac: RATIO.mac, desktop: RATIO.win }[k];
   const dh = dw / ratio;
   const left = portrait ? (W - dw) / 2 : s.split ? W * 0.37 : (W - dw) / 2;
-  const top = portrait ? H * (k === "iphone" ? 0.285 : 0.27) : s.split ? (H - dh) / 2 + H * 0.02 : H * (k === "desktop" ? 0.255 : 0.265);
+  const top = portrait ? H * (k === "iphone" ? 0.285 : 0.27) : s.split ? (H - dh) / 2 + H * 0.02 : H * (k === "desktop" ? 0.285 : 0.265);
   return { left, top, dw, dh };
 };
 
