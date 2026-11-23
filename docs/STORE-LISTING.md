@@ -212,9 +212,10 @@ the two halves of the panorama stay side by side as the first two pictures:
 | `4-google-play-phone` | Play Console → Grow → Store presence → Main store listing → Phone screenshots (8 of 8); the same files for Samsung, Huawei, Aptoide |
 | `5-google-play-tablet` | the same page → Tablet assets → 10-inch and 7-inch tablet screenshots, the same five in both (5 of 8) |
 | `6-google-play-feature-graphic` | the same page → Feature graphic |
+| `8-app-icon-512` | the 512 × 512 app icon (the two companions, black on white, flat PNG, as the Android launcher icon): Play Console → Main store listing → App icon, and AppGallery Connect → App information → Icon |
 | `7-microsoft-store` | Partner Center → the product → Store listing → Screenshots (7 of 10); also what the Snap Store and Linux listings use |
 
 The logo on the pictures is the two companions, without the icon's tile. The Icon Composer icon (with its tile, light and dark
 renditions exported with `ictool`) is for the listing itself. Limits not covered yet: the Microsoft Store logos (300 × 300 and
-others), the Play 512 × 512 icon (Google rounds it itself: it needs a square, not the Icon Composer rendition), iPad portrait sets. The Android pictures use the layout of the application in Chrome: the Material navigation bar of the real Android
+others), iPad portrait sets. (The 512 × 512 icon for Play and Huawei is made by `pack-upload.mjs` from `src-tauri/icons/icon.png`; Google and Huawei round it themselves.) The Android pictures use the layout of the application in Chrome: the Material navigation bar of the real Android
 shell is not on them (not photographed in the Android emulator).

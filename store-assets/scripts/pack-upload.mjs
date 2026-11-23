@@ -59,5 +59,21 @@ for (const slot of SLOTS) {
   console.log(`${problems.length ? "✗" : "✓"} ${slot.dir.padEnd(34)} ${String(files.length).padStart(2)} × ${[...seen].join(", ").padEnd(10)} ${slot.rule}`);
   for (const p of problems) console.log(`    ${p}`);
 }
+// The 512 x 512 app icon (Google Play, Huawei AppGallery): the two companions of the Android launcher icon, black on white, flat PNG.
+{
+  const to = join(dest, "8-app-icon-512");
+  mkdirSync(to, { recursive: true });
+  const logo = await sharp(join(root, "..", "src-tauri", "icons", "icon.png")).resize(460, 460, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
+  const file = join(to, "app-icon-512.png");
+  await sharp({ create: { width: 512, height: 512, channels: 3, background: "#ffffff" } }).composite([{ input: logo, gravity: "center" }]).removeAlpha().png({ compressionLevel: 9 }).toFile(file);
+  const m = await sharp(file).metadata();
+  const problems = [];
+  if (m.width !== 512 || m.height !== 512) problems.push(`${m.width}x${m.height}, expected 512x512`);
+  if (m.hasAlpha) problems.push("has a transparency channel");
+  if (statSync(file).size > 1 * MB) problems.push("heavier than 1 MB");
+  failed += problems.length;
+  console.log(`${problems.length ? "✗" : "✓"} ${"8-app-icon-512".padEnd(34)} ${String(1).padStart(2)} × ${"512x512".padEnd(10)} Google Play and Huawei AppGallery app icon`);
+  for (const p of problems) console.log(`    ${p}`);
+}
 console.log(failed ? `\n${failed} problem(s)` : `\nAll slots are fine: ${dest}`);
 process.exit(failed ? 1 : 0);
