@@ -128,7 +128,7 @@ export const WinWindow = ({
 };
 
 /** The taskbar of Windows 11: icons in the middle, the system tray and the clock on the right. */
-const Taskbar = ({ theme, w, s }: { theme: Theme; w: number; s: number }) => {
+const Taskbar = ({ theme, s }: { theme: Theme; s: number }) => {
   const dark = theme === "dark";
   const ink = dark ? "#f0f0f4" : "#202024";
   const h = 46 * s;
@@ -216,7 +216,7 @@ export const WinDesktop = ({
       {windows.map((w, i) => (
         <WinWindow key={i} theme={theme} src={w.src} left={w.x * s} top={w.y * s} width={w.w * s} height={w.h * s} s={s} title={w.title} z={i + 1} />
       ))}
-      <Taskbar theme={theme} w={width} s={s} />
+      <Taskbar theme={theme} s={s} />
     </div>
   );
 };
