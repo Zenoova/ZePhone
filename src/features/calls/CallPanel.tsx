@@ -92,7 +92,7 @@ export function CallPanel({ call }: { call: Call }) {
       {/* soft light behind the orbs */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-3/4 bg-[radial-gradient(55%_50%_at_50%_38%,color-mix(in_oklab,var(--primary)_16%,transparent),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-3/4 [mask-image:linear-gradient(to_bottom,transparent,black_30%)] bg-[radial-gradient(55%_50%_at_50%_38%,color-mix(in_oklab,var(--primary)_16%,transparent),transparent)]"
       />
 
       <header className="relative z-10 flex flex-col items-center gap-0.5 text-center">
