@@ -116,7 +116,7 @@ export function OrbPicker() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-2" data-testid="orb-picker">
+    <div className="flex w-full flex-col items-center gap-2" data-testid="orb-picker">
       <div
         role="radiogroup"
         aria-label="Voice orb"
