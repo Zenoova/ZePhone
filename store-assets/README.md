@@ -54,6 +54,7 @@ for p in iOS macOS; do for r in Default Dark; do     # the Icon Composer icon, l
 done; done
 node scripts/render-all.mjs                          # every picture, in out/<set>/ (about 15 minutes)
 node scripts/contact-sheet.mjs                       # one sheet per set, in out/_sheets/
+node scripts/pack-upload.mjs                         # out/upload/: one folder per store slot, checked against the store's rules
 ```
 
 The compositions wait for their images, the font and the shader effect (a few seconds) before the frame is taken. Sizes the stores ask for are in

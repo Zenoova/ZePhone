@@ -199,6 +199,20 @@ account; local recordings; global shortcuts; separate microphone, speaker and ri
 | Google Play, feature graphic | `out/android/` | 1024 × 500 | `play-feature-graphic-1024x500` |
 | Microsoft Store, Snap Store, Linux | `out/desktop/` | 1920 × 1080 | `desktop-01-hero` + `desktop-02-hero`, `desktop-03-directory` … `desktop-07-features` (a Windows laptop) |
 
+`node scripts/pack-upload.mjs` (in `store-assets/`) gathers them into `out/upload/`, one folder per slot of a store, and checks each
+folder against the store's rules (exact size, PNG with no transparency, count, weight). Drag a folder's files in file-name order, so
+the two halves of the panorama stay side by side as the first two pictures:
+
+| Folder in `out/upload/` | Where it goes |
+|---|---|
+| `1-app-store-iphone-6.9` | App Store Connect → the app → the version → Previews and Screenshots → iPhone 6.9" (8 of 10) |
+| `2-app-store-ipad-13` | the same page → iPad 13" (6 of 10) |
+| `3-mac-app-store` | the macOS app's version page → Screenshots (9 of 10) |
+| `4-google-play-phone` | Play Console → Grow → Store presence → Main store listing → Phone screenshots (8 of 8); the same files for Samsung, Huawei, Aptoide |
+| `5-google-play-tablet-10` | the same page → 10-inch tablet screenshots (5 of 8) |
+| `6-google-play-feature-graphic` | the same page → Feature graphic |
+| `7-microsoft-store` | Partner Center → the product → Store listing → Screenshots (7 of 10); also what the Snap Store and Linux listings use |
+
 The logo on the pictures is the two companions, without the icon's tile. The Icon Composer icon (with its tile, light and dark
 renditions exported with `ictool`) is for the listing itself. Limits not covered yet: the Microsoft Store logos (300 × 300 and
 others), the Play 512 × 512 icon (Google rounds it itself: it needs a square, not the Icon Composer rendition), iPad portrait and Play
