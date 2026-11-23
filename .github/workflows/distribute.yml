@@ -67,10 +67,11 @@ jobs:
       # listing (icon, category, texts, screenshots) is complete. The first time, open the draft version page and save it once.
       - name: Send to AppGallery Connect
         env:
-          HUAWEI_CLIENT_ID: ${{ secrets.HUAWEI_CLIENT_ID }}
-          HUAWEI_CLIENT_SECRET: ${{ secrets.HUAWEI_CLIENT_SECRET }}
+          # The whole key file of a developer-level Service Account. HUAWEI_API_HOST (optional variable) pins one Connect API host;
+          # without it the script tries the Germany host, then the global one.
+          HUAWEI_SERVICE_ACCOUNT_JSON: ${{ secrets.HUAWEI_SERVICE_ACCOUNT_JSON }}
           HUAWEI_APP_ID: ${{ vars.HUAWEI_APP_ID || '119951951' }}
-          HUAWEI_API_HOST: ${{ vars.HUAWEI_API_HOST || 'https://connect-api-dre.cloud.huawei.com' }}
+          HUAWEI_API_HOST: ${{ vars.HUAWEI_API_HOST }}
         run: node scripts/huawei-upload.mjs dist/*.apk
 
   # ------------------------------------------------------------------------------------------------ Homebrew
