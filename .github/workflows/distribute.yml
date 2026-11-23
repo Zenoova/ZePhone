@@ -43,6 +43,36 @@ jobs:
           track: ${{ vars.PLAY_TRACK || 'internal' }}
           status: ${{ vars.PLAY_STATUS || 'draft' }}
 
+  # ------------------------------------------------------------------------------------------------ Huawei AppGallery
+  huawei:
+    name: Huawei AppGallery (draft)
+    if: vars.ENABLE_HUAWEI == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Download the APK
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*_android.apk' --dir dist
+      # Without the upload key the release builds an unsigned APK, which AppGallery would refuse: stop here with a clear message.
+      - name: Check that the APK is signed
+        run: |
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n1)"
+          "$apksigner" verify --print-certs dist/*.apk
+      # Uploads the file and attaches it to the app's draft version. It never submits for review: do that in the console once the
+      # listing (icon, category, texts, screenshots) is complete. The first time, open the draft version page and save it once.
+      - name: Send to AppGallery Connect
+        env:
+          HUAWEI_CLIENT_ID: ${{ secrets.HUAWEI_CLIENT_ID }}
+          HUAWEI_CLIENT_SECRET: ${{ secrets.HUAWEI_CLIENT_SECRET }}
+          HUAWEI_APP_ID: ${{ vars.HUAWEI_APP_ID || '119951951' }}
+          HUAWEI_API_HOST: ${{ vars.HUAWEI_API_HOST || 'https://connect-api-dre.cloud.huawei.com' }}
+        run: node scripts/huawei-upload.mjs dist/*.apk
+
   # ------------------------------------------------------------------------------------------------ Homebrew
   homebrew:
     name: Homebrew (tap)

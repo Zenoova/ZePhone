@@ -53,7 +53,8 @@ A channel runs only when its switch is on: a repository **variable** `ENABLE_<CH
 | Snap Store | `ENABLE_SNAP` | `SNAPCRAFT_STORE_CREDENTIALS` (`snapcraft export-login`) | off |
 | winget | `ENABLE_WINGET` | `WINGET_TOKEN` (classic token, `public_repo`), and a first version submitted by hand | off |
 | Chocolatey | `ENABLE_CHOCOLATEY` | `CHOCOLATEY_API_KEY` | off |
-| Microsoft Store, Samsung Galaxy Store, Huawei AppGallery, Aptoide | – | accounts being verified, or an app entry to create first | not written yet |
+| Huawei AppGallery (APK, draft: uploaded and attached to the draft version, never submitted) | `ENABLE_HUAWEI` | `HUAWEI_CLIENT_ID`, `HUAWEI_CLIENT_SECRET` (an API client of AppGallery Connect), variables `HUAWEI_APP_ID` (`119951951`) and `HUAWEI_API_HOST` (Germany: `https://connect-api-dre.cloud.huawei.com`) | off, see [the limits](#known-limits) |
+| Microsoft Store, Samsung Galaxy Store, Aptoide | – | accounts being verified, or an app entry to create first | not written yet |
 | Mac App Store | `ENABLE_MAS` | `APPLE_MAS_APPLICATION_CERTIFICATE`, `APPLE_MAS_INSTALLER_CERTIFICATE`, `APPLE_MAS_PROVISIONING_PROFILE` (see [MAC-APP-STORE.md](MAC-APP-STORE.md)) | off, needs the portal steps |
 
 ## Secrets and variables
@@ -75,6 +76,7 @@ A channel runs only when its switch is on: a repository **variable** `ENABLE_<CH
 | `HOMEBREW_TAP_DEPLOY_KEY`, `SCOOP_BUCKET_DEPLOY_KEY` | secret | SSH deploy keys with write access to the tap and the bucket |
 | `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE` | secret | key that signs the apt, dnf and pacman repositories |
 | `AUR_SSH_PRIVATE_KEY` | secret | SSH key of the AUR account |
+| `HUAWEI_CLIENT_ID`, `HUAWEI_CLIENT_SECRET` | secret | AppGallery Connect API client (Users and permissions → Connect API → API client), created by the account holder, with a role that may release the app |
 
 The signing keys were generated outside the Keychain and are kept in `~/.zephone-signing` on the maintainer's machine:
 keep a copy in a password manager, because GitHub never shows a secret again.
@@ -89,3 +91,9 @@ See [INSTALL.md](INSTALL.md).
 - The Play upload is a **draft** on the _internal_ track until the app has been released once from the Play Console.
 - Each iOS build asks App Store Connect for the export-compliance answer (the app uses TLS and SRTP).
 - apt and dnf repositories keep the three newest versions; older ones stay on the GitHub Release.
+- Huawei: `scripts/huawei-upload.mjs` follows Huawei's Connect API reference (token, upload URL, upload, app file information) and is
+  tested against a local stand-in, **not against the real API**: the first real run may need a fix, so run it by hand first (_Distribute_
+  workflow, with a tag, after setting `ENABLE_HUAWEI`). It needs a **signed** APK (the job checks it), an app whose listing was saved once
+  in the console (icon, category, and the draft version page for the countries of release), and an API client: Huawei says service
+  accounts will replace API clients, so the day it is retired the token step has to be redone with a service-account key. The project's
+  data location decides the host (`HUAWEI_API_HOST`): this one is in Germany. The job never submits for review.
