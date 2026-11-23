@@ -78,7 +78,7 @@ export const SIZES: Record<Kind, { width: number; height: number }> = {
   ipad: { width: 2752, height: 2064 }, // App Store, 13" landscape
   mac: { width: 2880, height: 1800 }, // Mac App Store
   android: { width: 1080, height: 1920 }, // Google Play phone, Samsung, Huawei, Aptoide
-  tablet: { width: 2560, height: 1600 }, // Google Play 10" tablet
+  tablet: { width: 2560, height: 1440 }, // Google Play 7" and 10" tablets (the console takes 16:9 or 9:16 only)
   desktop: { width: 1920, height: 1080 }, // Microsoft Store, Snap Store
 };
 

@@ -14,19 +14,21 @@ const MB = 1024 * 1024;
 
 /** One slot = one folder to fill in a store's page. `sizes` are the exact pixel sizes the store accepts; `ok` is a free check. */
 const SLOTS = [
-  { dir: "1-app-store-iphone-6.9", from: "iphone", sizes: ["1320x2868"], count: [1, 10], max: 10 * MB, rule: "App Store Connect, iPhone 6.9\" (the smaller iPhones are scaled from it)" },
+  // App Store Connect asks for the 6.1"/6.3" set (the "medium display" slot) and takes the 6.5"-6.9" one as an option: both are filled.
+  { dir: "1-app-store-iphone-6.3", from: "iphone", resize: [1206, 2622], sizes: ["1206x2622"], count: [1, 10], max: 10 * MB, rule: "App Store Connect, iPhone 6.1\"/6.3\" (required slot; the 6.9\" pictures scaled by 0.914)" },
+  { dir: "1b-app-store-iphone-6.9", from: "iphone", sizes: ["1320x2868"], count: [1, 10], max: 10 * MB, rule: "App Store Connect, iPhone 6.5\"/6.7\"/6.9\" (optional large display slot)" },
   { dir: "2-app-store-ipad-13", from: "ipad", sizes: ["2752x2064", "2064x2752"], count: [1, 10], max: 10 * MB, rule: "App Store Connect, iPad 13\" (the smaller iPads are scaled from it)" },
   { dir: "3-mac-app-store", from: "mac", sizes: ["2880x1800", "2560x1600", "1440x900", "1280x800"], count: [1, 10], max: 10 * MB, rule: "App Store Connect, macOS" },
   { dir: "4-google-play-phone", from: "android", pick: (f) => f.startsWith("android-"), sizes: null, count: [2, 8], max: 8 * MB, rule: "Play Console phone (also Samsung Galaxy Store, Huawei AppGallery, Aptoide)", ok: playOk },
-  { dir: "5-google-play-tablet-10", from: "tablet", sizes: null, count: [1, 8], max: 8 * MB, rule: "Play Console 10-inch tablet", ok: playOk },
+  { dir: "5-google-play-tablet", from: "tablet", sizes: ["2560x1440"], count: [1, 8], max: 8 * MB, rule: "Play Console 7-inch and 10-inch tablets (16:9 only)", ok: playOk },
   { dir: "6-google-play-feature-graphic", from: "android", pick: (f) => f.startsWith("play-feature-graphic"), sizes: ["1024x500"], count: [1, 1], max: 15 * MB, rule: "Play Console feature graphic" },
   { dir: "7-microsoft-store", from: "desktop", sizes: null, count: [1, 10], max: 50 * MB, rule: "Microsoft Partner Center (also Snap Store, Linux listings)", ok: (w, h) => w >= 1366 && h >= 768 },
 ];
 
-/** Play: every side between 320 and 3840 px, the long side at most twice the short one. */
+/** Play: exactly 16:9 or 9:16, every side between 320 and 3840 px (10-inch tablets: 1080 to 7680). */
 function playOk(w, h) {
-  const [s, l] = [Math.min(w, h), Math.max(w, h)];
-  return s >= 320 && l <= 3840 && l <= 2 * s;
+  const [short, long] = [Math.min(w, h), Math.max(w, h)];
+  return short >= 320 && long <= 3840 && Math.abs(long / short - 16 / 9) < 0.01;
 }
 
 rmSync(dest, { recursive: true, force: true });
@@ -40,7 +42,8 @@ for (const slot of SLOTS) {
   const problems = [];
   const seen = new Set();
   for (const f of files) {
-    copyFileSync(join(out, slot.from, f), join(to, f));
+    if (slot.resize) await sharp(join(out, slot.from, f)).resize(slot.resize[0], slot.resize[1], { fit: "fill" }).png({ compressionLevel: 9 }).toFile(join(to, f));
+    else copyFileSync(join(out, slot.from, f), join(to, f));
     const m = await sharp(join(to, f)).metadata();
     const size = `${m.width}x${m.height}`;
     seen.add(size);

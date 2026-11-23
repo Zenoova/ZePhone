@@ -191,11 +191,11 @@ account; local recordings; global shortcuts; separate microphone, speaker and ri
 
 | Store | Set | Size | Files |
 |---|---|---|---|
-| App Store, iPhone 6.9" | `out/iphone/` | 1320 × 2868 | `iphone-01-hero` + `iphone-02-hero` (the panorama), `iphone-03-directory` … `iphone-08-features` |
+| App Store, iPhone 6.9" (6.5"–6.9" slot) | `out/iphone/` | 1320 × 2868 | `iphone-01-hero` + `iphone-02-hero` (the panorama), `iphone-03-directory` … `iphone-08-features` |
 | App Store, iPad 13" | `out/ipad/` | 2752 × 2064 | `ipad-01-hero` + `ipad-02-hero`, `ipad-03-directory` … `ipad-06-features` |
 | Mac App Store | `out/mac/` | 2880 × 1800 | `mac-01-hero` + `mac-02-hero`, `mac-03-directory` … `mac-09-features` |
 | Google Play, phone (also Samsung Galaxy Store, Huawei AppGallery, Aptoide) | `out/android/` | 1080 × 1920 | `android-01-hero` + `android-02-hero`, `android-03-directory` … `android-08-features` |
-| Google Play, 10" tablet | `out/tablet/` | 2560 × 1600 | `tablet-01-hero` + `tablet-02-hero`, `tablet-03-directory` … `tablet-05-orbs` |
+| Google Play, 7" and 10" tablets | `out/tablet/` | 2560 × 1440 (the console takes 16:9 or 9:16 only) | `tablet-01-hero` + `tablet-02-hero`, `tablet-03-directory` … `tablet-05-orbs` |
 | Google Play, feature graphic | `out/android/` | 1024 × 500 | `play-feature-graphic-1024x500` |
 | Microsoft Store, Snap Store, Linux | `out/desktop/` | 1920 × 1080 | `desktop-01-hero` + `desktop-02-hero`, `desktop-03-directory` … `desktop-07-features` (a Windows laptop) |
 
@@ -205,16 +205,16 @@ the two halves of the panorama stay side by side as the first two pictures:
 
 | Folder in `out/upload/` | Where it goes |
 |---|---|
-| `1-app-store-iphone-6.9` | App Store Connect → the app → the version → Previews and Screenshots → iPhone 6.9" (8 of 10) |
-| `2-app-store-ipad-13` | the same page → iPad 13" (6 of 10) |
+| `1-app-store-iphone-6.3` | App Store Connect → the app → the version → Media Manager → iPhone → "iPhone with Dynamic Island (medium display)", the one **required** slot (the 6.9" pictures scaled to 1206 × 2622; Apple uses it for every iPhone size unless a larger one is added) (8 of 10) |
+| `1b-app-store-iphone-6.9` | the same page → "iPhone with Dynamic Island (large display)", optional: the full-size pictures for the 6.5"–6.9" phones (8 of 10) |
+| `2-app-store-ipad-13` | Media Manager → iPad → "13" display" (required; used for every iPad size) (6 of 10) |
 | `3-mac-app-store` | the macOS app's version page → Screenshots (9 of 10) |
 | `4-google-play-phone` | Play Console → Grow → Store presence → Main store listing → Phone screenshots (8 of 8); the same files for Samsung, Huawei, Aptoide |
-| `5-google-play-tablet-10` | the same page → 10-inch tablet screenshots (5 of 8) |
+| `5-google-play-tablet` | the same page → Tablet assets → 10-inch and 7-inch tablet screenshots, the same five in both (5 of 8) |
 | `6-google-play-feature-graphic` | the same page → Feature graphic |
 | `7-microsoft-store` | Partner Center → the product → Store listing → Screenshots (7 of 10); also what the Snap Store and Linux listings use |
 
 The logo on the pictures is the two companions, without the icon's tile. The Icon Composer icon (with its tile, light and dark
 renditions exported with `ictool`) is for the listing itself. Limits not covered yet: the Microsoft Store logos (300 × 300 and
-others), the Play 512 × 512 icon (Google rounds it itself: it needs a square, not the Icon Composer rendition), iPad portrait and Play
-7" tablet sets. The Android pictures use the layout of the application in Chrome: the Material navigation bar of the real Android
+others), the Play 512 × 512 icon (Google rounds it itself: it needs a square, not the Icon Composer rendition), iPad portrait sets. The Android pictures use the layout of the application in Chrome: the Material navigation bar of the real Android
 shell is not on them (not photographed in the Android emulator).
